@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lychee-FD | Hierarchical Acoustic-Semantic Modeling</title>
+  <meta name="description" content="Lychee-FD static research page draft: a native full-duplex spoken language model with hierarchical acoustic-semantic modeling." />
+  <meta name="theme-color" content="#08110d" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <div class="aurora aurora-one" aria-hidden="true"></div>
+    <div class="aurora aurora-two" aria-hidden="true"></div>
+    <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
+
+    <header class="site-header" id="top">
+      <a class="brand" href="#top" aria-label="Lychee-FD home">
+        <span class="brand-mark">L</span>
+        <span class="brand-text">Lychee-FD</span>
+      </a>
+      <nav class="nav-links" aria-label="页面导航">
+        <a href="#overview">Overview</a>
+        <a href="#insights">Insights</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#demos">Demos</a>
+        <a href="#results">Results</a>
+        <a href="#roadmap">TODO</a>
+      </nav>
+      <a class="nav-cta" href="https://github.com/HITsz-TMG/Lychee-FD" target="_blank" rel="noreferrer">GitHub</a>
+    </header>
+
+    <main>
+      <section class="hero section-pad">
+        <div class="hero-copy reveal">
+          <div class="pill-row">
+            <span class="pill">ACL 2026 · Camera Ready</span>
+            <span class="pill pill-soft">Native Full-Duplex SLM</span>
+          </div>
+          <h1>Hierarchical Acoustic-Semantic Modeling for Full-Duplex Spoken Language Models</h1>
+          <p class="hero-subtitle">
+            Lychee-FD targets the core bottleneck of full-duplex speech interaction: modality interference between semantic reasoning and acoustic generation.
+            This page is an expandable static-web draft inspired by modern research product pages.
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#demos">Explore demos</a>
+            <a class="button button-secondary" href="#architecture">View architecture</a>
+          </div>
+          <div class="metric-strip" aria-label="paper highlight metrics">
+            <article>
+              <strong>+7.4%</strong>
+              <span>Spoken QA S→S gain</span>
+            </article>
+            <article>
+              <strong>+28.5%</strong>
+              <span>FullDuplexBench 1.5 gain</span>
+            </article>
+            <article>
+              <strong>4.50</strong>
+              <span>UTMOS score</span>
+            </article>
+            <article>
+              <strong>570ms</strong>
+              <span>Interruption stop</span>
+            </article>
+          </div>
+        </div>
+
+        <div class="hero-visual reveal delay-1" aria-label="Full duplex interaction visualization">
+          <div class="visual-toolbar">
+            <span></span><span></span><span></span>
+            <b>full_duplex_runtime.preview</b>
+          </div>
+          <div class="duplex-card">
+            <div class="stream stream-user">
+              <small>Listening channel</small>
+              <div class="wave wave-user" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+              <p>User keeps speaking, pauses, or interrupts.</p>
+            </div>
+            <div class="model-stack">
+              <div class="stack-layer shared">Shared Transformer Backbone</div>
+              <div class="head-grid">
+                <div class="head semantic">Semantic Head</div>
+                <div class="head acoustic">Acoustic Head</div>
+                <div class="head control">Control Head</div>
+              </div>
+              <div class="token-rail" aria-hidden="true">
+                <span class="token token-text"></span><span class="token token-audio"></span><span class="token token-control"></span>
+                <span class="token token-text"></span><span class="token token-audio"></span><span class="token token-control"></span>
+              </div>
+            </div>
+            <div class="stream stream-ai">
+              <small>Speaking channel</small>
+              <div class="wave wave-ai" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+              <p>Assistant speaks while still tracking semantic intent.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section-pad" id="overview">
+        <div class="section-heading reveal">
+          <span class="eyebrow">01 · Motivation</span>
+          <h2>From rigid turn-taking to natural full-duplex conversation.</h2>
+          <p>
+            The page should quickly explain why full-duplex SLMs matter, where existing paradigms fail, and why Lychee-FD is positioned as an efficiency-intelligence bridge.
+          </p>
+        </div>
+        <div class="problem-grid">
+          <article class="glass-card reveal">
+            <span class="card-index">A</span>
+            <h3>Half-duplex feels unnatural</h3>
+            <p>Traditional systems strictly alternate between listening and speaking, which breaks the rhythm of human conversation.</p>
+          </article>
+          <article class="glass-card reveal delay-1">
+            <span class="card-index">B</span>
+            <h3>Native sharing causes interference</h3>
+            <p>Fully shared speech-text models are efficient, but deep-layer objectives can fight each other and degrade knowledge retention.</p>
+          </article>
+          <article class="glass-card reveal delay-2">
+            <span class="card-index">C</span>
+            <h3>Thinker-Talker adds latency</h3>
+            <p>Decoupling modules can protect semantic ability, but separate generation paths often increase inference cost and engineering complexity.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section section-pad split-section" id="insights">
+        <div class="section-heading compact reveal">
+          <span class="eyebrow">02 · Core Insight</span>
+          <h2>Two optimization symptoms motivate the design.</h2>
+          <p>These cards are intentionally modular: later you can replace each SVG mock chart with the final paper figure, animation, or interactive Plotly panel.</p>
+        </div>
+        <div class="insight-grid">
+          <article class="insight-card reveal">
+            <div class="chart-frame">
+              <svg viewBox="0 0 420 220" role="img" aria-label="Gradient cosine similarity placeholder chart">
+                <defs>
+                  <linearGradient id="conflictFill" x1="0" x2="1">
+                    <stop offset="0%" stop-color="rgba(91, 226, 154, .22)"/>
+                    <stop offset="100%" stop-color="rgba(255, 95, 122, .24)"/>
+                  </linearGradient>
+                </defs>
+                <rect width="420" height="220" rx="20" fill="rgba(255,255,255,.035)"/>
+                <line x1="40" y1="128" x2="380" y2="128" stroke="rgba(255,255,255,.22)" stroke-dasharray="6 6"/>
+                <path d="M45 58 C85 78, 92 104, 127 110 C164 117, 178 142, 208 143 C250 145, 275 158, 312 153 C345 149, 365 142, 382 133" fill="none" stroke="#5be29a" stroke-width="4"/>
+                <path d="M45 58 C85 78, 92 104, 127 110 C164 117, 178 142, 208 143 C250 145, 275 158, 312 153 C345 149, 365 142, 382 133 L382 185 L45 185 Z" fill="url(#conflictFill)"/>
+                <text x="45" y="35" fill="#9ff4c2" font-size="14">Task synergy</text>
+                <text x="285" y="92" fill="#ff95a5" font-size="14">Task conflict</text>
+                <text x="170" y="204" fill="rgba(255,255,255,.62)" font-size="13">Layer index →</text>
+              </svg>
+            </div>
+            <div class="insight-copy">
+              <h3>Gradient direction conflict</h3>
+              <p>Shallow layers can share representations, but deeper layers show increasingly orthogonal or negative optimization directions between semantic and acoustic objectives.</p>
+              <a href="#architecture" class="text-link">Design response: split deep heads →</a>
+            </div>
+          </article>
+          <article class="insight-card reveal delay-1">
+            <div class="chart-frame">
+              <svg viewBox="0 0 420 220" role="img" aria-label="Gradient magnitude ratio placeholder chart">
+                <rect width="420" height="220" rx="20" fill="rgba(255,255,255,.035)"/>
+                <line x1="45" y1="160" x2="380" y2="160" stroke="rgba(255,255,255,.22)" stroke-dasharray="6 6"/>
+                <path d="M50 54 C75 68, 96 72, 120 81 C150 90, 172 103, 205 99 C238 94, 255 87, 287 102 C325 119, 350 130, 380 132" fill="none" stroke="#7ab8ff" stroke-width="4"/>
+                <path d="M50 88 C79 91, 106 98, 135 105 C170 113, 194 124, 222 133 C252 143, 275 155, 305 170 C338 187, 356 190, 380 183" fill="none" stroke="#ff7891" stroke-width="4"/>
+                <circle cx="50" cy="54" r="4" fill="#7ab8ff"/><circle cx="50" cy="88" r="4" fill="#ff7891"/>
+                <text x="62" y="52" fill="#a9cdfd" font-size="13">Dense text</text>
+                <text x="62" y="86" fill="#ff9aaa" font-size="13">Aligned text</text>
+                <text x="154" y="204" fill="rgba(255,255,255,.62)" font-size="13">Semantic gradient ratio →</text>
+              </svg>
+            </div>
+            <div class="insight-copy">
+              <h3>Semantic supervision dilution</h3>
+              <p>Padding sparse text tokens into dense audio frames weakens the semantic learning signal, letting acoustic reconstruction dominate the optimization process.</p>
+              <a href="#architecture" class="text-link">Design response: semantic channel →</a>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section section-pad" id="architecture">
+        <div class="section-heading reveal">
+          <span class="eyebrow">03 · Architecture</span>
+          <h2>Shared shallow layers, separated deep heads, coherent semantic channel.</h2>
+          <p>Use this area as the future visual center of the page: it can become a polished architecture diagram, animation, or scroll-driven narrative.</p>
+        </div>
+
+        <div class="architecture-panel reveal">
+          <div class="arch-column muted">
+            <h3>Thinker-Talker</h3>
+            <div class="mini-arch">
+              <div>Transformer</div><span>↓</span><div>Talker</div><span>↓</span><div>Speech</div>
+            </div>
+            <p>Strong semantic separation, but usually higher latency and more training stages.</p>
+          </div>
+          <div class="arch-column muted">
+            <h3>Native End-to-End</h3>
+            <div class="mini-arch single">
+              <div>Shared Transformer</div><span>↕</span><div>Text + Audio + Control</div>
+            </div>
+            <p>Efficient, but fully shared deep parameters can entangle acoustic and semantic objectives.</p>
+          </div>
+          <div class="arch-column featured">
+            <div class="tag">Lychee-FD</div>
+            <h3>Hierarchical Separation</h3>
+            <div class="mini-arch split">
+              <div class="shared-block">Shared Backbone</div>
+              <div class="split-heads"><span>Text</span><span>Audio</span><span>Control</span></div>
+            </div>
+            <p>Separate deep heads mitigate conflicts while a text channel preserves semantic coherence.</p>
+          </div>
+        </div>
+
+        <div class="feature-list">
+          <article class="feature-item reveal">
+            <h3>Semantic Head</h3>
+            <p>Maintains internal monologue and language modeling signal.</p>
+          </article>
+          <article class="feature-item reveal delay-1">
+            <h3>Acoustic Head</h3>
+            <p>Generates speech tokens while avoiding deep-layer semantic interference.</p>
+          </article>
+          <article class="feature-item reveal delay-2">
+            <h3>Control Head</h3>
+            <p>Predicts start/stop behaviors for interruption and turn-taking control.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section section-pad" id="demos">
+        <div class="section-heading reveal">
+          <span class="eyebrow">04 · Interactive Demos</span>
+          <h2>Placeholder samples for future audio/video demonstrations.</h2>
+          <p>Today these cards use generated placeholder tones and editable transcripts. Later, replace the audio files and transcript JSON without changing the layout.</p>
+        </div>
+        <div class="demo-grid" id="demoGrid" aria-live="polite"></div>
+      </section>
+
+      <section class="section section-pad" id="results">
+        <div class="section-heading reveal">
+          <span class="eyebrow">05 · Results</span>
+          <h2>Key benchmark blocks prepared for final figures.</h2>
+          <p>Keep the numbers as research anchors, then later swap in official charts, tables, or animated counters.</p>
+        </div>
+        <div class="result-grid">
+          <article class="result-card reveal">
+            <span>Spoken QA</span>
+            <strong>51.5 / 46.2</strong>
+            <p>Average S→T / S→S accuracy for Lychee-FD.</p>
+          </article>
+          <article class="result-card reveal delay-1">
+            <span>FullDuplexBench 1.5</span>
+            <strong>78 / 69</strong>
+            <p>Interruption response rate / backchannel resume rate.</p>
+          </article>
+          <article class="result-card reveal delay-2">
+            <span>Speech Quality</span>
+            <strong>4.50</strong>
+            <p>UTMOS score on the LlamaQ speech generation evaluation.</p>
+          </article>
+        </div>
+        <div class="table-wrap reveal">
+          <table>
+            <caption>Editable result table placeholder</caption>
+            <thead>
+              <tr><th>Model</th><th>Type</th><th>S→T Avg</th><th>S→S Avg</th><th>Interaction note</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Freeze-Omni</td><td>System-level</td><td>44.6</td><td>33.4</td><td>External VAD pipeline</td></tr>
+              <tr><td>VITA 1.5</td><td>System-level</td><td>50.8</td><td>35.4</td><td>Strong baseline</td></tr>
+              <tr><td>Moshi</td><td>Native</td><td>35.5</td><td>30.5</td><td>Efficient but knowledge drop</td></tr>
+              <tr><td>Lychee-FD</td><td>Native</td><td>51.5</td><td>46.2</td><td>Hierarchical acoustic-semantic design</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section section-pad" id="pipeline">
+        <div class="section-heading reveal">
+          <span class="eyebrow">06 · Data Pipeline</span>
+          <h2>Training-data narrative prepared for visual expansion.</h2>
+        </div>
+        <div class="timeline reveal">
+          <div class="timeline-item"><span>1</span><p>Multi-agent dialogue simulation</p></div>
+          <div class="timeline-item"><span>2</span><p>Inject interruptions and backchannels</p></div>
+          <div class="timeline-item"><span>3</span><p>CosyVoice 2 speech synthesis</p></div>
+          <div class="timeline-item"><span>4</span><p>Quality and logic filtering</p></div>
+          <div class="timeline-item"><span>5</span><p>~140K full-duplex dialogue instances</p></div>
+        </div>
+      </section>
+
+      <section class="section section-pad" id="roadmap">
+        <div class="section-heading reveal">
+          <span class="eyebrow">07 · Next Iterations</span>
+          <h2>What to polish after this initial scaffold.</h2>
+        </div>
+        <div class="todo-board reveal">
+          <article>
+            <h3>Content</h3>
+            <p>Replace TODO copy with final paper-level story, author information, links, and Chinese/English versions.</p>
+          </article>
+          <article>
+            <h3>Visuals</h3>
+            <p>Swap placeholder SVGs for official Figure 1–5 assets, animated architecture, and real demo videos.</p>
+          </article>
+          <article>
+            <h3>Interaction</h3>
+            <p>Add waveform, transcript highlighting, before/after model comparison, and scroll-driven figure explanation.</p>
+          </article>
+          <article>
+            <h3>Deployment</h3>
+            <p>Place this folder at the GitHub Pages root or under <code>docs/</code>, then enable Pages in repository settings.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>Lychee-FD static page draft · Replace placeholder assets before final release.</p>
+      <a href="#top">Back to top ↑</a>
+    </footer>
+  </div>
+  <script src="./script.js"></script>
+</body>
+</html>
