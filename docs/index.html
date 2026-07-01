@@ -3,326 +3,335 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Lychee-FD | Hierarchical Acoustic-Semantic Modeling</title>
-  <meta name="description" content="Lychee-FD static research page draft: a native full-duplex spoken language model with hierarchical acoustic-semantic modeling." />
-  <meta name="theme-color" content="#08110d" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./styles.css" />
+  <meta name="description" content="Lychee-FD 全双工大模型驱动的具身类人交互中文技术展示页" />
+  <title>Lychee-FD｜全双工大模型驱动的具身类人交互</title>
+  <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
-  <div class="page-shell">
-    <div class="aurora aurora-one" aria-hidden="true"></div>
-    <div class="aurora aurora-two" aria-hidden="true"></div>
-    <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
+  <div id="top" class="page-top-anchor" aria-hidden="true"></div>
+  <div class="page-shell" id="pageShell">
+    <div class="ambient ambient-a"></div>
+    <div class="ambient ambient-b"></div>
+    <div class="ambient ambient-c"></div>
 
-    <header class="site-header" id="top">
-      <a class="brand" href="#top" aria-label="Lychee-FD home">
-        <span class="brand-mark">L</span>
-        <span class="brand-text">Lychee-FD</span>
-      </a>
-      <nav class="nav-links" aria-label="页面导航">
-        <a href="#overview">Overview</a>
-        <a href="#insights">Insights</a>
-        <a href="#architecture">Architecture</a>
-        <a href="#demos">Demos</a>
-        <a href="#results">Results</a>
-        <a href="#roadmap">TODO</a>
-      </nav>
-      <a class="nav-cta" href="https://github.com/HITsz-TMG/Lychee-FD" target="_blank" rel="noreferrer">GitHub</a>
-    </header>
+    <aside class="side-nav-shell" aria-label="页面章节导航">
+      <div class="side-nav-card">
+        <span class="side-nav-kicker">目录</span>
+        <nav class="site-nav side-nav" data-nav-mount aria-label="页面导航"></nav>
+      </div>
+    </aside>
 
     <main>
-      <section class="hero section-pad">
-        <div class="hero-copy reveal">
-          <div class="pill-row">
-            <span class="pill">ACL 2026 · Camera Ready</span>
-            <span class="pill pill-soft">Native Full-Duplex SLM</span>
+      <!-- 01 首页首屏 -->
+      <section class="hero section hero-static" id="hero">
+        <div class="hero-layout">
+          <div class="hero-copy reveal">
+            <div class="eyebrow"><span></span><span data-config-text="subtitle">全双工大模型驱动的具身类人交互</span></div>
+            <h1 data-config-text="title">Lychee-FD</h1>
+            <p class="hero-slogan" data-config-text="slogan">从轮流说话，到自然共话。</p>
+            <p class="hero-desc" data-config-text="description">
+              让 AI 在真实对话中同时倾听、表达、理解打断与生成反馈，从“轮流说话”走向“自然共话”。
+            </p>
+            <div class="hero-actions">
+              <a class="primary-btn" href="#demo">查看真实对话 Demo</a>
+              <a class="ghost-btn" href="#technology">理解技术解读</a>
+            </div>
+            <div class="capability-pills" id="heroPills" aria-label="核心能力"></div>
           </div>
-          <h1>Hierarchical Acoustic-Semantic Modeling for Full-Duplex Spoken Language Models</h1>
-          <p class="hero-subtitle">
-            Lychee-FD targets the core bottleneck of full-duplex speech interaction: modality interference between semantic reasoning and acoustic generation.
-            This page is an expandable static-web draft inspired by modern research product pages.
-          </p>
-          <div class="hero-actions">
-            <a class="button button-primary" href="#demos">Explore demos</a>
-            <a class="button button-secondary" href="#architecture">View architecture</a>
-          </div>
-          <div class="metric-strip" aria-label="paper highlight metrics">
-            <article>
-              <strong>+7.4%</strong>
-              <span>Spoken QA S→S gain</span>
-            </article>
-            <article>
-              <strong>+28.5%</strong>
-              <span>FullDuplexBench 1.5 gain</span>
-            </article>
-            <article>
-              <strong>4.50</strong>
-              <span>UTMOS score</span>
-            </article>
-            <article>
-              <strong>570ms</strong>
-              <span>Interruption stop</span>
-            </article>
-          </div>
-        </div>
 
-        <div class="hero-visual reveal delay-1" aria-label="Full duplex interaction visualization">
-          <div class="visual-toolbar">
-            <span></span><span></span><span></span>
-            <b>full_duplex_runtime.preview</b>
-          </div>
-          <div class="duplex-card">
-            <div class="stream stream-user">
-              <small>Listening channel</small>
-              <div class="wave wave-user" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
-              <p>User keeps speaking, pauses, or interrupts.</p>
-            </div>
-            <div class="model-stack">
-              <div class="stack-layer shared">Shared Transformer Backbone</div>
-              <div class="head-grid">
-                <div class="head semantic">Semantic Head</div>
-                <div class="head acoustic">Acoustic Head</div>
-                <div class="head control">Control Head</div>
-              </div>
-              <div class="token-rail" aria-hidden="true">
-                <span class="token token-text"></span><span class="token token-audio"></span><span class="token token-control"></span>
-                <span class="token token-text"></span><span class="token token-audio"></span><span class="token token-control"></span>
-              </div>
-            </div>
-            <div class="stream stream-ai">
-              <small>Speaking channel</small>
-              <div class="wave wave-ai" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
-              <p>Assistant speaks while still tracking semantic intent.</p>
-            </div>
-          </div>
+          <div class="hero-stage hero-video-stage reveal delay-1" id="heroPromoMount" data-hero-promo></div>
+
+          <div class="metric-row hero-metrics reveal delay-2" data-metrics></div>
         </div>
       </section>
 
-      <section class="section section-pad" id="overview">
-        <div class="section-heading reveal">
-          <span class="eyebrow">01 · Motivation</span>
-          <h2>From rigid turn-taking to natural full-duplex conversation.</h2>
+      <!-- 02 技术解读 -->
+      <section class="section technology-section" id="technology">
+        <div class="section-head reveal">
+          <p class="section-index">02 技术解读</p>
+          <h2>为什么全双工交互很难？</h2>
           <p>
-            The page should quickly explain why full-duplex SLMs matter, where existing paradigms fail, and why Lychee-FD is positioned as an efficiency-intelligence bridge.
+            这一章把项目背景、核心挑战、技术根因、方法架构、语义对齐通道和技术亮点合并成一条完整阅读线：
+            先理解真实对话为什么不是一问一答，再看 Lychee-FD 如何用结构设计解决全双工训练与交互控制问题。
           </p>
         </div>
-        <div class="problem-grid">
-          <article class="glass-card reveal">
-            <span class="card-index">A</span>
-            <h3>Half-duplex feels unnatural</h3>
-            <p>Traditional systems strictly alternate between listening and speaking, which breaks the rhythm of human conversation.</p>
-          </article>
-          <article class="glass-card reveal delay-1">
-            <span class="card-index">B</span>
-            <h3>Native sharing causes interference</h3>
-            <p>Fully shared speech-text models are efficient, but deep-layer objectives can fight each other and degrade knowledge retention.</p>
-          </article>
-          <article class="glass-card reveal delay-2">
-            <span class="card-index">C</span>
-            <h3>Thinker-Talker adds latency</h3>
-            <p>Decoupling modules can protect semantic ability, but separate generation paths often increase inference cost and engineering complexity.</p>
-          </article>
-        </div>
-      </section>
 
-      <section class="section section-pad split-section" id="insights">
-        <div class="section-heading compact reveal">
-          <span class="eyebrow">02 · Core Insight</span>
-          <h2>Two optimization symptoms motivate the design.</h2>
-          <p>These cards are intentionally modular: later you can replace each SVG mock chart with the final paper figure, animation, or interactive Plotly panel.</p>
-        </div>
-        <div class="insight-grid">
-          <article class="insight-card reveal">
-            <div class="chart-frame">
-              <svg viewBox="0 0 420 220" role="img" aria-label="Gradient cosine similarity placeholder chart">
-                <defs>
-                  <linearGradient id="conflictFill" x1="0" x2="1">
-                    <stop offset="0%" stop-color="rgba(91, 226, 154, .22)"/>
-                    <stop offset="100%" stop-color="rgba(255, 95, 122, .24)"/>
-                  </linearGradient>
-                </defs>
-                <rect width="420" height="220" rx="20" fill="rgba(255,255,255,.035)"/>
-                <line x1="40" y1="128" x2="380" y2="128" stroke="rgba(255,255,255,.22)" stroke-dasharray="6 6"/>
-                <path d="M45 58 C85 78, 92 104, 127 110 C164 117, 178 142, 208 143 C250 145, 275 158, 312 153 C345 149, 365 142, 382 133" fill="none" stroke="#5be29a" stroke-width="4"/>
-                <path d="M45 58 C85 78, 92 104, 127 110 C164 117, 178 142, 208 143 C250 145, 275 158, 312 153 C345 149, 365 142, 382 133 L382 185 L45 185 Z" fill="url(#conflictFill)"/>
-                <text x="45" y="35" fill="#9ff4c2" font-size="14">Task synergy</text>
-                <text x="285" y="92" fill="#ff95a5" font-size="14">Task conflict</text>
-                <text x="170" y="204" fill="rgba(255,255,255,.62)" font-size="13">Layer index →</text>
-              </svg>
-            </div>
-            <div class="insight-copy">
-              <h3>Gradient direction conflict</h3>
-              <p>Shallow layers can share representations, but deeper layers show increasingly orthogonal or negative optimization directions between semantic and acoustic objectives.</p>
-              <a href="#architecture" class="text-link">Design response: split deep heads →</a>
-            </div>
-          </article>
-          <article class="insight-card reveal delay-1">
-            <div class="chart-frame">
-              <svg viewBox="0 0 420 220" role="img" aria-label="Gradient magnitude ratio placeholder chart">
-                <rect width="420" height="220" rx="20" fill="rgba(255,255,255,.035)"/>
-                <line x1="45" y1="160" x2="380" y2="160" stroke="rgba(255,255,255,.22)" stroke-dasharray="6 6"/>
-                <path d="M50 54 C75 68, 96 72, 120 81 C150 90, 172 103, 205 99 C238 94, 255 87, 287 102 C325 119, 350 130, 380 132" fill="none" stroke="#7ab8ff" stroke-width="4"/>
-                <path d="M50 88 C79 91, 106 98, 135 105 C170 113, 194 124, 222 133 C252 143, 275 155, 305 170 C338 187, 356 190, 380 183" fill="none" stroke="#ff7891" stroke-width="4"/>
-                <circle cx="50" cy="54" r="4" fill="#7ab8ff"/><circle cx="50" cy="88" r="4" fill="#ff7891"/>
-                <text x="62" y="52" fill="#a9cdfd" font-size="13">Dense text</text>
-                <text x="62" y="86" fill="#ff9aaa" font-size="13">Aligned text</text>
-                <text x="154" y="204" fill="rgba(255,255,255,.62)" font-size="13">Semantic gradient ratio →</text>
-              </svg>
-            </div>
-            <div class="insight-copy">
-              <h3>Semantic supervision dilution</h3>
-              <p>Padding sparse text tokens into dense audio frames weakens the semantic learning signal, letting acoustic reconstruction dominate the optimization process.</p>
-              <a href="#architecture" class="text-link">Design response: semantic channel →</a>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section class="section section-pad" id="architecture">
-        <div class="section-heading reveal">
-          <span class="eyebrow">03 · Architecture</span>
-          <h2>Shared shallow layers, separated deep heads, coherent semantic channel.</h2>
-          <p>Use this area as the future visual center of the page: it can become a polished architecture diagram, animation, or scroll-driven narrative.</p>
-        </div>
-
-        <div class="architecture-panel reveal">
-          <div class="arch-column muted">
-            <h3>Thinker-Talker</h3>
-            <div class="mini-arch">
-              <div>Transformer</div><span>↓</span><div>Talker</div><span>↓</span><div>Speech</div>
-            </div>
-            <p>Strong semantic separation, but usually higher latency and more training stages.</p>
+        <div class="tech-subsection reveal delay-1" id="background">
+          <div class="tech-subhead">
+            <span>2.1 真实对话</span>
+            <h3>不是一问一答，而是并行流动</h3>
+            <p>
+              现实交流中，倾听、表达、打断、反馈、停顿和接话往往同时发生。传统语音助手长期受限于半双工范式，
+              用户必须先说完，系统才能回答；系统一旦开始长篇回答，用户也很难自然插话。
+            </p>
           </div>
-          <div class="arch-column muted">
-            <h3>Native End-to-End</h3>
-            <div class="mini-arch single">
-              <div>Shared Transformer</div><span>↕</span><div>Text + Audio + Control</div>
-            </div>
-            <p>Efficient, but fully shared deep parameters can entangle acoustic and semantic objectives.</p>
+          <div class="compare-grid">
+            <article class="compare-card muted-card">
+              <div class="compare-icon">①</div>
+              <h3>传统半双工</h3>
+              <p>用户说完，系统才回答。用户必须等待系统完整说完。</p>
+            </article>
+            <article class="compare-card muted-card">
+              <div class="compare-icon">②</div>
+              <h3>级联系统</h3>
+              <p>依赖语音识别、语言模型、语音合成、外部打断检测等多个模块，容易产生延迟和错误传播。</p>
+            </article>
+            <article class="compare-card active-card">
+              <div class="compare-icon">荔</div>
+              <h3>Lychee-FD</h3>
+              <p>原生端到端全双工建模，在统一框架内同时处理听、说、语义和控制。</p>
+            </article>
           </div>
-          <div class="arch-column featured">
-            <div class="tag">Lychee-FD</div>
-            <h3>Hierarchical Separation</h3>
-            <div class="mini-arch split">
-              <div class="shared-block">Shared Backbone</div>
-              <div class="split-heads"><span>Text</span><span>Audio</span><span>Control</span></div>
+          <div class="before-after">
+            <div class="before-box">
+              <span>优化前</span>
+              <h3>等待、冗长、难以插话</h3>
+              <p>用户只能等系统讲完，再重新表达需求。</p>
             </div>
-            <p>Separate deep heads mitigate conflicts while a text channel preserves semantic coherence.</p>
+            <div class="switch-flow" aria-hidden="true"><span></span><span></span><span></span></div>
+            <div class="after-box">
+              <span>优化后</span>
+              <h3>插话、停止、立即调整</h3>
+              <p>用户像真人沟通一样随时补充，系统实时理解并改口。</p>
+            </div>
+          </div>
+          <div class="asset-strip" data-asset-list="background" data-asset-variant="wide"></div>
+        </div>
+
+        <div class="tech-subsection reveal delay-2" id="challenge">
+          <div class="tech-subhead">
+            <span>2.2 核心挑战</span>
+            <h3>语义准确、打断响应、反馈及时</h3>
+          </div>
+          <div class="challenge-grid">
+            <article class="challenge-card">
+              <span class="challenge-num">01</span>
+              <h3>语义准确保持</h3>
+              <p>用户长时间表达、补充条件、自我纠正时，系统仍要保持语义一致，不能越说越偏。</p>
+              <div class="case-tags"><span>用户补充条件</span><span>会议助理长段记录</span><span>复杂任务实时改写</span></div>
+            </article>
+            <article class="challenge-card hot">
+              <span class="challenge-num">02</span>
+              <h3>打断精确响应</h3>
+              <p>用户真正改变需求时，系统要立即停止当前回答，并切换到新的语义指令。</p>
+              <div class="case-tags"><span>中途改需求</span><span>要求变短</span><span>立即纠正</span></div>
+            </article>
+            <article class="challenge-card warm">
+              <span class="challenge-num">03</span>
+              <h3>反馈及时触达</h3>
+              <p>用户说“嗯”“对”“明白”时，系统不能误以为是打断；模型自己也应该能用短反馈降低等待焦虑。</p>
+              <div class="case-tags"><span>用户附和</span><span>模型附和</span><span>情感陪伴</span><span>会议记录</span></div>
+            </article>
           </div>
         </div>
 
-        <div class="feature-list">
-          <article class="feature-item reveal">
-            <h3>Semantic Head</h3>
-            <p>Maintains internal monologue and language modeling signal.</p>
-          </article>
-          <article class="feature-item reveal delay-1">
-            <h3>Acoustic Head</h3>
-            <p>Generates speech tokens while avoiding deep-layer semantic interference.</p>
-          </article>
-          <article class="feature-item reveal delay-2">
-            <h3>Control Head</h3>
-            <p>Predicts start/stop behaviors for interruption and turn-taking control.</p>
-          </article>
+        <div class="tech-subsection reveal" id="root-cause">
+          <div class="tech-subhead">
+            <span>2.3 技术根因</span>
+            <h3>模态冲突与语义稀释</h3>
+            <p>问题不只是“能不能打断”，而是全双工训练时语音、语义与控制目标如何共存。</p>
+          </div>
+          <div class="root-grid">
+            <article class="root-card">
+              <div class="root-header"><span>模态冲突</span><strong>深层目标开始分叉</strong></div>
+              <div class="asset-mount root-asset-mount" data-asset-id="modalityConflict" data-asset-variant="technical"></div>
+              <p>在浅层，语音和语义目标还能共享一些通用表示；但到了深层，声学建模和语义建模的优化方向会出现冲突。</p>
+            </article>
+            <article class="root-card">
+              <div class="root-header"><span>语义稀释</span><strong>文本监督被音频密度淹没</strong></div>
+              <div class="asset-mount root-asset-mount" data-asset-id="semanticSparsity" data-asset-variant="technical"></div>
+              <p>音频 token 很密，文本 token 很稀。时间对齐会引入大量 padding，导致语义监督变弱。</p>
+            </article>
+          </div>
+          <p class="root-summary">Lychee-FD 的设计不是简单堆模块，而是针对这两个根因进行结构性解决。</p>
+          <details class="asset-accordion">
+            <summary>查看更多技术图</summary>
+            <div class="asset-strip compact" data-asset-list="methodEffectiveness" data-asset-variant="technical"></div>
+          </details>
+        </div>
+
+        <div class="tech-subsection reveal" id="architecture">
+          <div class="tech-subhead">
+            <span>2.4 方法架构</span>
+            <h3>浅层共享，深层分离</h3>
+            <p>能共享的地方共享，会冲突的地方分离。Lychee-FD 不是普通拼接，而是针对模态干扰进行结构性解决。</p>
+          </div>
+          <div class="asset-stack" data-asset-list="architecture" data-asset-variant="architecture"></div>
+          <div class="architecture-panel">
+            <div class="arch-left">
+              <div class="arch-node input-node">用户语音输入</div>
+              <div class="arch-arrow"></div>
+              <div class="arch-node">音频编码 / token 表示</div>
+              <div class="arch-arrow"></div>
+              <div class="arch-node shared-node">共享 Transformer 主干</div>
+            </div>
+            <div class="channel-group">
+              <article class="channel-card semantic"><span>语义通道</span><h3>理解与逻辑</h3><p>负责内容理解、文本语义和逻辑一致。</p></article>
+              <article class="channel-card acoustic"><span>声学通道</span><h3>音色与自然度</h3><p>负责语音生成、音色保持和自然度。</p></article>
+              <article class="channel-card control"><span>控制通道</span><h3>开始、停止与接话</h3><p>负责开始、停止、打断、恢复和接话。</p></article>
+            </div>
+          </div>
+        </div>
+
+        <div class="tech-subsection semantic-section reveal" id="semantic-channel">
+          <div class="tech-subhead">
+            <span>2.5 语义对齐通道</span>
+            <h3>模型的“内部独白”</h3>
+            <p>语义对齐通道在训练时提供连续、清晰的文本语义监督，让模型在生成语音的同时仍然保持逻辑连贯。</p>
+          </div>
+          <div class="semantic-showcase">
+            <div class="semantic-copy-card">
+              <span class="mini-label">内部独白</span>
+              <h3>语义锚点持续发光</h3>
+              <p>在语音生成过程中，语义对齐通道为模型保留一条连续文本轨迹，让“说出来的声音”和“脑中的意思”保持同步。</p>
+            </div>
+            <div class="flow-visual">
+              <div class="flow-row semantic-flow"><b>语义流</b><span>我</span><span>明白</span><span>你的</span><span>意思</span><span>我们</span><span>重新</span><span>安排</span><span>……</span></div>
+              <div class="flow-row acoustic-flow"><b>声学流</b><span>音频帧</span><span>音频帧</span><span>音频帧</span><span>音频帧</span><span>音频帧</span><span>音频帧</span><span>音频帧</span><span>……</span></div>
+              <div class="flow-row control-flow"><b>控制流</b><span>开始</span><span>继续</span><span>监听</span><span>停止</span><span>更新</span><span>恢复</span><span>接话</span><span>……</span></div>
+            </div>
+          </div>
+          <div class="semantic-compare">
+            <article>
+              <span>没有语义对齐</span>
+              <h3>语义被 padding 稀释</h3>
+              <p>文本监督断续变弱，模型更容易只跟随声学目标。</p>
+            </article>
+            <article class="semantic-strong">
+              <span>加入语义对齐</span>
+              <h3>内部独白稳定牵引</h3>
+              <p>语义流持续发光，回答更连贯，也更不容易越说越偏。</p>
+            </article>
+          </div>
+          <p class="center-note">Lychee-FD 不是盲目发声，而是一边说话，一边保持清晰思考。</p>
+        </div>
+
+        <div class="tech-subsection reveal" id="highlights">
+          <div class="tech-subhead">
+            <span>2.6 技术亮点总结</span>
+            <h3>端到端全双工、参数分离、实时推理优化</h3>
+          </div>
+          <div class="highlight-grid" id="highlightGrid"></div>
         </div>
       </section>
 
-      <section class="section section-pad" id="demos">
-        <div class="section-heading reveal">
-          <span class="eyebrow">04 · Interactive Demos</span>
-          <h2>Placeholder samples for future audio/video demonstrations.</h2>
-          <p>Today these cards use generated placeholder tones and editable transcripts. Later, replace the audio files and transcript JSON without changing the layout.</p>
+      <!-- 03 Demo 展示区 -->
+      <section class="section demo-section" id="demo">
+        <div class="section-head reveal">
+          <p class="section-index">03 Demo 展示区</p>
+          <h2>视频化 Demo 展示</h2>
+          <p>每个 Demo case 都以视频卡片承载：先用统一播放器占位，后续只需在配置里接入真实素材。</p>
         </div>
-        <div class="demo-grid" id="demoGrid" aria-live="polite"></div>
+        <div class="demo-tabs reveal delay-1" id="demoTabs" role="tablist"></div>
+        <div class="demo-grid reveal delay-2" id="demoGrid"></div>
       </section>
 
-      <section class="section section-pad" id="results">
-        <div class="section-heading reveal">
-          <span class="eyebrow">05 · Results</span>
-          <h2>Key benchmark blocks prepared for final figures.</h2>
-          <p>Keep the numbers as research anchors, then later swap in official charts, tables, or animated counters.</p>
+      <!-- 04 性能结果展示 -->
+      <section class="section" id="results">
+        <div class="section-head reveal">
+          <p class="section-index">04 性能结果</p>
+          <h2>效果展示</h2>
+          <p>保留论文核心指标，但不把大表格直接搬到页面上；页面以战绩墙和真实图表卡片呈现。</p>
         </div>
-        <div class="result-grid">
-          <article class="result-card reveal">
-            <span>Spoken QA</span>
-            <strong>51.5 / 46.2</strong>
-            <p>Average S→T / S→S accuracy for Lychee-FD.</p>
-          </article>
-          <article class="result-card reveal delay-1">
-            <span>FullDuplexBench 1.5</span>
-            <strong>78 / 69</strong>
-            <p>Interruption response rate / backchannel resume rate.</p>
-          </article>
-          <article class="result-card reveal delay-2">
-            <span>Speech Quality</span>
-            <strong>4.50</strong>
-            <p>UTMOS score on the LlamaQ speech generation evaluation.</p>
-          </article>
-        </div>
-        <div class="table-wrap reveal">
-          <table>
-            <caption>Editable result table placeholder</caption>
-            <thead>
-              <tr><th>Model</th><th>Type</th><th>S→T Avg</th><th>S→S Avg</th><th>Interaction note</th></tr>
-            </thead>
-            <tbody>
-              <tr><td>Freeze-Omni</td><td>System-level</td><td>44.6</td><td>33.4</td><td>External VAD pipeline</td></tr>
-              <tr><td>VITA 1.5</td><td>System-level</td><td>50.8</td><td>35.4</td><td>Strong baseline</td></tr>
-              <tr><td>Moshi</td><td>Native</td><td>35.5</td><td>30.5</td><td>Efficient but knowledge drop</td></tr>
-              <tr><td>Lychee-FD</td><td>Native</td><td>51.5</td><td>46.2</td><td>Hierarchical acoustic-semantic design</td></tr>
-            </tbody>
-          </table>
-        </div>
+        <div class="metric-row result-metrics reveal delay-1" data-metrics></div>
+        <div class="asset-gallery result-gallery reveal delay-2" data-asset-list="results" data-asset-variant="chart"></div>
       </section>
 
-      <section class="section section-pad" id="pipeline">
-        <div class="section-heading reveal">
-          <span class="eyebrow">06 · Data Pipeline</span>
-          <h2>Training-data narrative prepared for visual expansion.</h2>
+      <!-- 05 数字人 / 机器人展示 -->
+      <section class="section embodied-section" id="embodied">
+        <div class="section-head reveal">
+          <p class="section-index">05 数字人 / 机器人展示</p>
+          <h2>从全双工语音，到具身类人交互</h2>
+          <p>当模型具备自然打断、附和反馈和实时响应能力后，它就不只是一个语音模型，而可以成为数字人和机器人背后的交互大脑。</p>
         </div>
-        <div class="timeline reveal">
-          <div class="timeline-item"><span>1</span><p>Multi-agent dialogue simulation</p></div>
-          <div class="timeline-item"><span>2</span><p>Inject interruptions and backchannels</p></div>
-          <div class="timeline-item"><span>3</span><p>CosyVoice 2 speech synthesis</p></div>
-          <div class="timeline-item"><span>4</span><p>Quality and logic filtering</p></div>
-          <div class="timeline-item"><span>5</span><p>~140K full-duplex dialogue instances</p></div>
+        <div class="embodied-layout reveal delay-1">
+          <div class="embodied-flow">
+            <div class="flow-node lychee">Lychee-FD 对话交互模块</div>
+            <div class="flow-arrow"></div>
+            <div class="flow-node face">Audio2Face 表情生成模块</div>
+            <div class="flow-arrow"></div>
+            <div class="flow-node robot">数字人 / 机器人渲染模块</div>
+          </div>
+          <div class="signal-card">
+            <h3>实时交互信号</h3>
+            <div class="micro-wave"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+            <p><b>输出文本：</b>“我在听，你可以慢慢说。”</p>
+            <p><b>控制状态：</b>继续倾听 / 短反馈 / 不抢话</p>
+          </div>
+          <div class="asset-gallery" data-asset-list="embodied" data-asset-variant="avatar"></div>
         </div>
+        <p class="architecture-copy reveal delay-2">Lychee-FD 负责听、说、理解和控制；数字人和机器人负责把这种交互能力可视化、具身化。</p>
       </section>
 
-      <section class="section section-pad" id="roadmap">
-        <div class="section-heading reveal">
-          <span class="eyebrow">07 · Next Iterations</span>
-          <h2>What to polish after this initial scaffold.</h2>
+      <!-- 06 Case 素材采集规范 -->
+      <section class="section" id="case-spec">
+        <div class="section-head reveal">
+          <p class="section-index">06 Case 素材采集规范</p>
+          <h2>Demo Case 素材规范</h2>
+          <p>每个 case 不是一个孤立录屏，而是一个可复用的展示素材包，服务官网、宣传视频、数字人展示和 web demo。</p>
         </div>
-        <div class="todo-board reveal">
-          <article>
-            <h3>Content</h3>
-            <p>Replace TODO copy with final paper-level story, author information, links, and Chinese/English versions.</p>
-          </article>
-          <article>
-            <h3>Visuals</h3>
-            <p>Swap placeholder SVGs for official Figure 1–5 assets, animated architecture, and real demo videos.</p>
-          </article>
-          <article>
-            <h3>Interaction</h3>
-            <p>Add waveform, transcript highlighting, before/after model comparison, and scroll-driven figure explanation.</p>
-          </article>
-          <article>
-            <h3>Deployment</h3>
-            <p>Place this folder at the GitHub Pages root or under <code>docs/</code>, then enable Pages in repository settings.</p>
-          </article>
+        <div class="package-panel reveal delay-1">
+          <div class="package-left">
+            <h3>文件夹命名</h3>
+            <code id="folderRule">日期_case编号_场景_采集人</code>
+            <ul class="sample-names" id="sampleNames"></ul>
+          </div>
+          <div class="package-tree" id="packageTree" aria-label="case package 结构"></div>
+        </div>
+        <div class="meta-grid reveal delay-2" id="metaGrid"></div>
+      </section>
+
+      <!-- 07 未来展望 -->
+      <section class="section outlook" id="outlook">
+        <div class="section-head reveal">
+          <p class="section-index">07 未来展望</p>
+          <h2>下一步：更真实的开放环境</h2>
+          <p>
+            当前 Lychee-FD 已经能够处理自然打断、附和反馈和实时响应。
+            但在开放麦、多说话人、旁聊干扰等复杂场景中，系统仍需要更强的意图识别能力。
+            下一阶段可以继续探索多说话人建模、旁聊识别、韵律线索理解和更复杂的具身交互。
+          </p>
+        </div>
+        <div class="outlook-tags reveal delay-1">
+          <span>多说话人建模</span><span>旁聊识别</span><span>韵律线索理解</span><span>复杂具身交互</span>
         </div>
       </section>
     </main>
 
     <footer class="site-footer">
-      <p>Lychee-FD static page draft · Replace placeholder assets before final release.</p>
-      <a href="#top">Back to top ↑</a>
+      <p>Lychee-FD · 全双工大模型驱动的具身类人交互</p>
+      <a class="back-to-top" href="#top" data-scroll-top>回到顶部 ↑</a>
     </footer>
   </div>
-  <script src="./script.js"></script>
+
+  <div class="lightbox" id="lightbox" aria-hidden="true">
+    <div class="lightbox-backdrop" data-close-lightbox></div>
+    <div class="lightbox-panel" role="dialog" aria-modal="true" aria-label="图片预览">
+      <button class="lightbox-close" type="button" data-close-lightbox>关闭</button>
+      <h3 id="lightboxTitle">素材预览</h3>
+      <img id="lightboxImage" alt="素材预览" />
+    </div>
+  </div>
+
+
+
+  <div class="demo-modal" id="demoModal" aria-hidden="true">
+    <div class="demo-modal-backdrop" data-close-demo></div>
+    <div class="demo-modal-panel" role="dialog" aria-modal="true" aria-labelledby="demoModalTitle">
+      <button class="demo-modal-close" type="button" data-close-demo aria-label="关闭 Demo 弹窗">关闭</button>
+      <div class="demo-modal-copy">
+        <span class="mini-label">Demo / Promo Video</span>
+        <h3 id="demoModalTitle">Lychee-FD 宣传视频展示位</h3>
+        <p>这里用于承接后续宣传视频：展示自然打断、短反馈、实时接话和具身交互效果。当前先保留轻量占位，不自动播放、不预加载大视频。</p>
+      </div>
+      <div class="promo-video-placeholder" role="img" aria-label="宣传视频占位">
+        <div class="promo-play-mark" aria-hidden="true"></div>
+        <strong>Promo Video Placeholder</strong>
+        <p>后续替换为真实视频素材；当前仅展示结构骨架。</p>
+      </div>
+    </div>
+  </div>
+  <script src="js/config.js"></script>
+  <script src="js/main.js"></script>
 </body>
 </html>
