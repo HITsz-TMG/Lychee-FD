@@ -1,12 +1,12 @@
 services:
   token2wav:
-    image: "${LYCHEE_FD_IMAGE:-ghcr.io/your-github-username/lychee-fd:latest}"
+    image: "${LYCHEE_FD_IMAGE:-ghcr.io/idealistxy/lychee-fd:latest}"
     runtime: nvidia
     entrypoint: ["/app/scripts/start_token2wav_server.sh"]
     ports:
       - "${STEPAUDIO_T2W_SERVER_PORT:-8091}:8091"
     volumes:
-      - "${HOST_MODEL_ROOT:-/data/zxy/model}:/data/zxy/model:ro"
+      - "${HOST_MODEL_ROOT:-./models}:${CONTAINER_MODEL_ROOT:-/models}:ro"
       - "./runtime_logs:/app/runtime_logs"
     environment:
       NVIDIA_VISIBLE_DEVICES: "${TOKEN2WAV_NVIDIA_VISIBLE_DEVICES:-all}"
@@ -16,10 +16,10 @@ services:
       STEPAUDIO2_SOURCE_DIR: "/app/third_party/Step-Audio2"
       STEPAUDIO_T2W_SERVER_HOST: "0.0.0.0"
       STEPAUDIO_T2W_SERVER_PORT: "8091"
-      STEPAUDIO_T2W_MODEL_PATH: "${STEPAUDIO_T2W_MODEL_PATH:-/data/zxy/model/token2wav}"
+      STEPAUDIO_T2W_MODEL_PATH: "${STEPAUDIO_T2W_MODEL_PATH:-/models/token2wav}"
 
   frontend:
-    image: "${LYCHEE_FD_IMAGE:-ghcr.io/your-github-username/lychee-fd:latest}"
+    image: "${LYCHEE_FD_IMAGE:-ghcr.io/idealistxy/lychee-fd:latest}"
     runtime: nvidia
     depends_on:
       - token2wav
@@ -29,14 +29,14 @@ services:
       - "${FRONTEND_PORT:-8084}:8084"
       - "${STEPAUDIO_SERVER_PORT:-7860}:7860"
     volumes:
-      - "${HOST_MODEL_ROOT:-/data/zxy/model}:/data/zxy/model:ro"
+      - "${HOST_MODEL_ROOT:-./models}:${CONTAINER_MODEL_ROOT:-/models}:ro"
       - "${PRESETS_FILE_HOST:-./model_presets_dev.json}:/app/model_presets_dev.json:ro"
       - "./runtime_logs:/app/runtime_logs"
       - "./realtime_aligned_audio:/app/realtime_aligned_audio"
     environment:
       NVIDIA_VISIBLE_DEVICES: "${BACKEND_NVIDIA_VISIBLE_DEVICES:-all}"
       CUDA_VISIBLE_DEVICES: "${BACKEND_CUDA_VISIBLE_DEVICES:-1}"
-      ALLOWED_MODEL_ROOT: "${ALLOWED_MODEL_ROOT:-/data/zxy/model}"
+      ALLOWED_MODEL_ROOT: "${ALLOWED_MODEL_ROOT:-/models}"
       AUTO_LOAD_DEFAULT: "${AUTO_LOAD_DEFAULT:-0}"
       BACKEND_HEALTH_URL: "http://127.0.0.1:7860"
       FRONTEND_HOST: "0.0.0.0"
@@ -45,7 +45,7 @@ services:
       STEPAUDIO2_SOURCE_DIR: "/app/third_party/Step-Audio2"
       STEPAUDIO_SERVER_NAME: "0.0.0.0"
       STEPAUDIO_SERVER_PORT: "7860"
-      STEPAUDIO_MODEL_PATH: "${STEPAUDIO_MODEL_PATH:-/data/zxy/model/stepaudio_full_duplex_v9_8_1/epoch-19960}"
+      STEPAUDIO_MODEL_PATH: "${STEPAUDIO_MODEL_PATH:-/models/your-lychee-fd-checkpoint}"
       STEPAUDIO_VLLM_SOURCE_DIR: "/app/third_party/vllm"
       STEPAUDIO_VLLM_SYNC_FLASH_ATTN: "1"
       STEPAUDIO_VLLM_FORCE_SYNC_FLASH_ATTN: "1"
@@ -70,7 +70,7 @@ services:
       VUE_APP_REALTIME_DEBUG: "${VUE_APP_REALTIME_DEBUG:-0}"
 
   backend:
-    image: "${LYCHEE_FD_IMAGE:-ghcr.io/your-github-username/lychee-fd:latest}"
+    image: "${LYCHEE_FD_IMAGE:-ghcr.io/idealistxy/lychee-fd:latest}"
     runtime: nvidia
     profiles: ["direct-backend"]
     depends_on:
@@ -80,7 +80,7 @@ services:
     ports:
       - "${STEPAUDIO_SERVER_PORT:-7860}:7860"
     volumes:
-      - "${HOST_MODEL_ROOT:-/data/zxy/model}:/data/zxy/model:ro"
+      - "${HOST_MODEL_ROOT:-./models}:${CONTAINER_MODEL_ROOT:-/models}:ro"
       - "./runtime_logs:/app/runtime_logs"
       - "./realtime_aligned_audio:/app/realtime_aligned_audio"
     environment:
@@ -90,7 +90,7 @@ services:
       STEPAUDIO2_SOURCE_DIR: "/app/third_party/Step-Audio2"
       STEPAUDIO_SERVER_NAME: "0.0.0.0"
       STEPAUDIO_SERVER_PORT: "7860"
-      STEPAUDIO_MODEL_PATH: "${STEPAUDIO_MODEL_PATH:-/data/zxy/model/stepaudio_full_duplex_v9_8_1/epoch-19960}"
+      STEPAUDIO_MODEL_PATH: "${STEPAUDIO_MODEL_PATH:-/models/your-lychee-fd-checkpoint}"
       STEPAUDIO_VLLM_SOURCE_DIR: "/app/third_party/vllm"
       STEPAUDIO_VLLM_SYNC_FLASH_ATTN: "1"
       STEPAUDIO_VLLM_FORCE_SYNC_FLASH_ATTN: "1"

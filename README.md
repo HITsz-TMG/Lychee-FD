@@ -15,13 +15,13 @@ cp .env.docker.example .env
 Edit `.env`:
 
 ```dotenv
-LYCHEE_FD_IMAGE=ghcr.io/your-github-username/lychee-fd:latest
+LYCHEE_FD_IMAGE=ghcr.io/idealistxy/lychee-fd:latest
 HOST_MODEL_ROOT=/path/to/model-root
-STEPAUDIO_MODEL_PATH=/data/zxy/model/path/to/lychee-fd/checkpoint
-STEPAUDIO_T2W_MODEL_PATH=/data/zxy/model/token2wav
+STEPAUDIO_MODEL_PATH=/models/path/to/lychee-fd/checkpoint
+STEPAUDIO_T2W_MODEL_PATH=/models/token2wav
 ```
 
-The host model root is mounted into the container as `/data/zxy/model`.
+The host model root is mounted into the container as `/models`.
 
 Start:
 
