@@ -1,0 +1,10 @@
+.env
+model_presets.local.json
+runtime_logs/
+realtime_aligned_audio/
+frontend/node_modules/
+frontend/dist/
+__pycache__/
+*.pyc
+*.log
+.DS_Store
