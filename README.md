@@ -1,29 +1,41 @@
 # Lychee-FD
 
-Lychee-FD full-duplex realtime speech demo.
+Full-duplex realtime speech interaction demo.
 
-This repository does not include model weights. Use the prebuilt Docker image for the fastest setup, then mount local model weights into the container.
+[![Hugging Face](https://img.shields.io/badge/Hugging%20Face-Model-yellow?logo=huggingface)](https://huggingface.co/PLACEHOLDER/Lychee-FD)
+[![Demo](https://img.shields.io/badge/Demo-Website-blue?logo=googlechrome)](https://PLACEHOLDER.demo)
+[![Paper](https://img.shields.io/badge/Paper-ACL%202026-red?logo=adobeacrobatreader)](https://aclanthology.org/2026.acl-long.419.pdf)
 
-## Quick Start With Docker
+This repository provides the Lychee-FD source code, frontend demo, and Docker Compose configuration. The Docker image contains the runtime environment and code, but does not include model weights.
 
-Prepare configuration:
+## Docker Quick Start
+
+Clone the repository:
+
+```bash
+git clone https://github.com/HITsz-TMG/Lychee-FD.git
+cd Lychee-FD
+```
+
+Create a local environment file:
 
 ```bash
 cp .env.docker.example .env
 ```
 
-Edit `.env`:
+Edit `.env` and set the model paths:
 
 ```dotenv
 LYCHEE_FD_IMAGE=ghcr.io/idealistxy/lychee-fd:latest
+
 HOST_MODEL_ROOT=/path/to/model-root
-STEPAUDIO_MODEL_PATH=/models/path/to/lychee-fd/checkpoint
+STEPAUDIO_MODEL_PATH=/models/path/to/your-lychee-fd-checkpoint
 STEPAUDIO_T2W_MODEL_PATH=/models/token2wav
 ```
 
-The host model root is mounted into the container as `/models`.
+`HOST_MODEL_ROOT` is the model directory on your host machine. It is mounted into the container as `/models`.
 
-Start:
+Pull the prebuilt image and start the demo:
 
 ```bash
 docker compose pull
@@ -36,20 +48,82 @@ Open:
 http://127.0.0.1:8084
 ```
 
-## Build From Source
+For a remote server, replace `127.0.0.1` with the server IP.
 
-The default `compose.yaml` uses a prebuilt image. To rebuild the app image locally:
+## Model Presets
+
+The frontend model list is loaded from:
+
+```text
+model_presets_dev.json
+```
+
+Update the preset path to the container-side model path:
+
+```json
+{
+  "name": "my-lychee-fd-checkpoint",
+  "model_path": "/models/path/to/your-lychee-fd-checkpoint",
+  "backend_type": "vllm",
+  "mode": "stable"
+}
+```
+
+After editing presets:
 
 ```bash
-docker compose -f compose.yaml -f compose.build.yaml build frontend
+docker compose restart frontend
 ```
 
-The local build expects the base runtime image in `.env`:
+## GPU Settings
+
+By default, token2wav and the main backend use separate GPUs:
 
 ```dotenv
-LYCHEE_FD_BASE_IMAGE=lychee-fd-early-exit-backend:dev
+TOKEN2WAV_CUDA_VISIBLE_DEVICES=0
+BACKEND_CUDA_VISIBLE_DEVICES=1
 ```
 
-## Publish Docker Image
+For a single-GPU machine:
 
-See [DOCKER_PUBLISH.md](DOCKER_PUBLISH.md).
+```dotenv
+TOKEN2WAV_CUDA_VISIBLE_DEVICES=0
+BACKEND_CUDA_VISIBLE_DEVICES=0
+```
+
+Check Docker GPU access:
+
+```bash
+docker run --rm --gpus all nvidia/cuda:12.4.1-base-ubuntu22.04 nvidia-smi
+```
+
+## Common Commands
+
+Run in background:
+
+```bash
+docker compose up -d
+```
+
+View logs:
+
+```bash
+docker compose logs -f
+```
+
+Stop:
+
+```bash
+docker compose down
+```
+
+Pull the latest image:
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+## Detailed Guide
+
+See [启动指南.md](启动指南.md) for more startup details and optional source-based launch commands.
