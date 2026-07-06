@@ -16,16 +16,12 @@
     return CONFIG.imageAssets?.[id] || null;
   }
 
-  function stars(score = 0) {
-    const full = Math.max(0, Math.min(5, Number(score) || 0));
-    return "★".repeat(full) + "☆".repeat(5 - full);
-  }
 
   function tagHTML(tags = []) {
     return tags.map((tag) => `<span>${escapeHTML(tag)}</span>`).join("");
   }
 
-  function placeholderHTML(title = "待替换真实素材", desc = "把图片、视频或音频放入 assets 对应目录后，在 js/config.js 中填写路径。") {
+  function placeholderHTML(title = "内容暂不可用", desc = "当前内容暂时无法显示，请稍后查看。") {
     return `
       <div class="media-placeholder" role="img" aria-label="${escapeHTML(title)}">
         <div class="placeholder-orbit"><span></span><span></span><span></span></div>
@@ -42,8 +38,8 @@
     card.className = `asset-card asset-${variant}`;
 
     if (!asset) {
-      card.innerHTML = placeholderHTML("未找到素材配置", "请检查 data-asset-id 或 js/config.js 中的 imageAssets。")
-        + `<div class="asset-caption"><h3>素材配置缺失</h3><p>当前挂载点没有匹配到图片配置。</p></div>`;
+      card.innerHTML = placeholderHTML("内容暂不可用", "当前内容暂时无法显示，请稍后查看。")
+        + `<div class="asset-caption"><h3>内容暂不可用</h3><p>当前图片暂时无法显示。</p></div>`;
       return card;
     }
 
@@ -60,8 +56,8 @@
 
     if (!enabled || !hasSrc) {
       card.innerHTML = placeholderHTML(
-        enabled ? "待替换真实素材" : "素材暂未启用",
-        enabled ? `建议路径：${asset.src || "请在 config.js 填写 src"}` : "如需显示，请在 js/config.js 中将 enabled 改为 true。"
+        enabled ? "内容暂不可用" : "内容暂不可用",
+        "当前内容暂时无法显示，请稍后查看。"
       ) + caption;
       return card;
     }
@@ -76,9 +72,13 @@
       return card;
     }
 
+    const dimensionAttrs = asset.width && asset.height
+      ? ` width="${escapeHTML(asset.width)}" height="${escapeHTML(asset.height)}"`
+      : "";
+
     card.innerHTML = `
       <div class="media-frame">
-        <img src="${escapeHTML(asset.src)}" alt="${escapeHTML(asset.title)}" loading="lazy" decoding="async" fetchpriority="low" data-lightbox-src="${escapeHTML(asset.src)}" data-lightbox-title="${escapeHTML(asset.title)}" />
+        <img src="${escapeHTML(asset.src)}" alt="${escapeHTML(asset.title)}"${dimensionAttrs} loading="lazy" decoding="async" fetchpriority="low" data-lightbox-src="${escapeHTML(asset.src)}" data-lightbox-title="${escapeHTML(asset.title)}" />
       </div>
       ${caption}
     `;
@@ -86,7 +86,7 @@
     const img = $("img", card);
     img.addEventListener("error", () => {
       const frame = $(".media-frame", card);
-      frame.innerHTML = placeholderHTML("待替换真实素材", `当前路径未找到：${asset.src}`);
+      frame.innerHTML = placeholderHTML("内容暂不可用", "当前图片暂时无法显示。");
     });
 
     return card;
@@ -144,51 +144,30 @@
     if (!mount) return;
 
     const promo = CONFIG.heroPromoVideo || {};
-    const title = promo.title || "宣传视频：从轮流说话到自然共话";
-    const description = promo.description || "展示 Lychee-FD 在自然打断、附和反馈、低延迟响应和数字人驱动中的核心能力。";
-    const eyebrow = promo.eyebrow || "宣传视频 / Lychee-FD 交互演示";
-    const tags = tagHTML(promo.tags || ["自然打断", "附和反馈", "数字人驱动"]);
+    const title = promo.title || "Lychee-FD 交互演示";
     const videoSrc = promo.video || promo.src || "";
     const poster = promo.poster || "";
-    const preload = promo.preload || "metadata";
-    const videoAttrs = videoSrc
-      ? ` src="${escapeHTML(videoSrc)}"${poster ? ` poster="${escapeHTML(poster)}"` : ""} autoplay muted loop playsinline preload="${escapeHTML(preload)}"`
+    const preload = promo.preload || "none";
+    const screenState = videoSrc ? "has-video-source is-poster-only" : "is-placeholder no-video-source";
+    const posterHTML = poster
+      ? `<img class="hero-promo-poster" src="${escapeHTML(poster)}" alt="${escapeHTML(title)} 封面" width="960" height="540" loading="eager" decoding="async" fetchpriority="high" />`
       : "";
-    const screenState = videoSrc ? "has-video-source" : "is-placeholder no-video-source";
 
     mount.innerHTML = `
-      <article class="hero-promo-card hero-promo-card-static" data-hero-promo-card aria-label="Lychee-FD 宣传视频">
-        <div class="hero-promo-topline">
-          <span class="hero-record-dot" aria-hidden="true"></span>
-          <span>${escapeHTML(eyebrow)}</span>
-          <em>Hero Video</em>
-        </div>
-        <div class="hero-promo-screen ${screenState}" data-hero-promo-player aria-label="Lychee-FD 宣传视频自动播放区域">
-          ${videoSrc ? `<video${videoAttrs} aria-label="${escapeHTML(title)}"></video>` : ""}
-          <div class="hero-promo-placeholder" aria-hidden="true">
-            <span class="hero-promo-gridmark"></span>
-            <strong>宣传视频占位</strong>
-            <p>将真实视频放入 assets/videos 后，会在这里静音自动播放。</p>
-          </div>
-          <button class="hero-promo-main-play" type="button" data-hero-promo-play aria-label="播放宣传视频"><span></span></button>
-          <button class="hero-promo-fullscreen" type="button" data-hero-fullscreen aria-label="全屏播放宣传视频">全屏</button>
-        </div>
-        <div class="hero-promo-copy">
-          <h3>${escapeHTML(title)}</h3>
-          <p>${escapeHTML(description)}</p>
-          <div class="hero-promo-tags">${tags}</div>
+      <article class="hero-promo-card hero-promo-card-static hero-promo-card-clean" data-hero-promo-card aria-label="Lychee-FD 交互演示">
+        <div class="hero-promo-screen ${screenState}" data-hero-promo-player data-src="${escapeHTML(videoSrc)}" data-poster="${escapeHTML(poster)}" data-title="${escapeHTML(title)}" data-preload="${escapeHTML(preload)}" aria-label="Lychee-FD 交互演示播放区域">
+          ${posterHTML}
+          <div class="hero-promo-placeholder" aria-hidden="true"></div>
+          <button class="hero-promo-main-play" type="button" data-hero-promo-play aria-label="播放交互演示"><span></span></button>
+          <button class="hero-promo-fullscreen" type="button" data-hero-fullscreen aria-label="全屏播放交互演示">全屏</button>
         </div>
       </article>
     `;
   }
 
-  function metricCard(metric, index = 0, interactive = false) {
-    const actionAttrs = interactive
-      ? ` role="button" tabindex="0" data-open-demo-panel="true" aria-label="打开 Demo 视频弹窗：${escapeHTML(metric.label || `指标 ${index + 1}`)}"`
-      : "";
-    const actionClass = interactive ? " metric-card-action" : "";
+  function metricCard(metric) {
     return `
-      <article class="metric-card${actionClass}"${actionAttrs}>
+      <article class="metric-card">
         <span class="metric-note">${escapeHTML(metric.note || "")}</span>
         <strong data-counter="${escapeHTML(metric.value)}">0</strong>
         <p>${escapeHTML(metric.label)}</p>
@@ -199,8 +178,7 @@
   function renderMetrics() {
     const metrics = CONFIG.metrics || [];
     $$("[data-metrics]").forEach((mount) => {
-      const interactive = mount.classList.contains("hero-metrics");
-      mount.innerHTML = metrics.map((metric, index) => metricCard(metric, index, interactive)).join("");
+      mount.innerHTML = metrics.map((metric) => metricCard(metric)).join("");
     });
   }
 
@@ -216,258 +194,286 @@
     `).join("");
   }
 
-  function demoTypeLabel(type = "standard") {
-    const labels = {
-      interrupt: "Interrupt Demo",
-      backchannel: "Backchannel Demo",
-      wait: "Wait Demo",
-      scene: "Scene Demo",
-      companion: "Companion Demo",
-      handsfree: "Hands-free Demo",
-      embodied: "Embodied Demo",
+  function getDemoVideoSources(item = {}) {
+    const sources = [];
+    const add = (value) => {
+      if (!value || typeof value !== "string") return;
+      const trimmed = value.trim();
+      if (trimmed && !sources.includes(trimmed)) sources.push(trimmed);
     };
-    return labels[type] || "Video Demo";
+
+    if (Array.isArray(item.videoSources)) item.videoSources.forEach(add);
+    add(item.videoSrc || item.video || item.videoPath || "");
+    return sources;
+  }
+
+  function getPositiveNumber(value) {
+    const number = Number(value);
+    return Number.isFinite(number) && number > 0 ? number : 0;
+  }
+
+  function getDemoMediaDimensions(item) {
+    const videoWidth = getPositiveNumber(item.videoWidth || item.width);
+    const videoHeight = getPositiveNumber(item.videoHeight || item.height);
+    const posterWidth = getPositiveNumber(item.posterWidth) || videoWidth || 960;
+    const posterHeight = getPositiveNumber(item.posterHeight) || videoHeight || 540;
+    return { videoWidth, videoHeight, posterWidth, posterHeight };
+  }
+
+  function getDemoMediaFit(width, height) {
+    const ratio = width && height ? width / height : 16 / 9;
+    if (!Number.isFinite(ratio) || ratio <= 0) return "cover";
+    return ratio < 1.2 || ratio > 2.05 ? "contain" : "cover";
+  }
+
+  function getDemoMediaStyle(dimensions) {
+    const width = dimensions.videoWidth || dimensions.posterWidth;
+    const height = dimensions.videoHeight || dimensions.posterHeight;
+    const fit = getDemoMediaFit(width, height);
+    if (!width || !height) return `style="--demo-video-fit: ${fit};"`;
+    return `style="--demo-video-ratio: ${width} / ${height}; --demo-video-fit: ${fit};"`;
+  }
+
+  function applyDemoVideoRatio(player, width, height) {
+    if (!player) return;
+    const ratioWidth = getPositiveNumber(width);
+    const ratioHeight = getPositiveNumber(height);
+    if (!ratioWidth || !ratioHeight) return;
+    player.style.setProperty("--demo-video-ratio", `${ratioWidth} / ${ratioHeight}`);
+    player.style.setProperty("--demo-video-fit", getDemoMediaFit(ratioWidth, ratioHeight));
+    player.dataset.videoWidth = String(ratioWidth);
+    player.dataset.videoHeight = String(ratioHeight);
   }
 
   function renderVideoPlayer(item) {
-    const videoSrc = item.videoSrc || item.video || item.videoPath || "";
-    const poster = item.poster || "";
+    const sources = getDemoVideoSources(item);
     const id = item.videoId || item.id || "demo-video-placeholder";
-    const scene = item.scene || item.category || "Demo";
-    const hasVideo = Boolean(videoSrc);
+    const hasVideo = sources.length > 0;
+    const sourceAttr = sources.join("|");
+    const poster = item.poster || "";
+    const fallbackText = hasVideo
+      ? "当前视频暂时无法播放，请稍后查看。"
+      : "当前视频暂时无法播放，请稍后查看。";
+
+    if (!hasVideo) {
+      return `
+        <div class="lychee-video-player is-placeholder" data-video-id="${escapeHTML(id)}">
+          <div class="video-fallback is-visible">
+            <strong>视频暂不可用</strong>
+            <p>当前视频暂时无法播放，请稍后查看。</p>
+          </div>
+        </div>
+      `;
+    }
+
+    const dimensions = getDemoMediaDimensions(item);
+    const styleAttr = getDemoMediaStyle(dimensions);
+    const posterHTML = poster
+      ? `<img class="video-poster" src="${escapeHTML(poster)}" alt="${escapeHTML(item.title)} 封面" width="${dimensions.posterWidth}" height="${dimensions.posterHeight}" loading="lazy" decoding="async" fetchpriority="low" />`
+      : "";
 
     return `
-      <div class="lychee-video-player ${hasVideo ? "has-video" : "is-placeholder"} type-${escapeHTML(item.type || "standard")}" data-video-id="${escapeHTML(id)}" aria-label="${escapeHTML(item.title)} 视频 Demo">
-        <div class="video-frame-surface">
-          ${hasVideo ? `<video data-demo-video data-src="${escapeHTML(videoSrc)}" preload="none" playsinline${poster ? ` poster="${escapeHTML(poster)}"` : ""}></video>` : ""}
-          ${poster && !hasVideo ? `<img class="video-poster" src="${escapeHTML(poster)}" alt="${escapeHTML(item.title)} 封面" loading="lazy" decoding="async" />` : ""}
-          <div class="video-glow" aria-hidden="true"></div>
-          <div class="video-topline">
-            <span class="video-status-dot"></span>
-            <span>${escapeHTML(item.status || (hasVideo ? "点击播放" : "视频占位"))}</span>
-            <em>${escapeHTML(scene)}</em>
-          </div>
-          <div class="video-center">
-            <button class="video-play-button" type="button" data-demo-play aria-label="播放或暂停 ${escapeHTML(item.title)}"></button>
-            <strong>${escapeHTML(id)}</strong>
-            <p>${hasVideo ? "点击后加载并播放当前 Demo" : "这里将接入真实宣传视频 / Web Demo 录屏"}</p>
-          </div>
+      <div class="lychee-video-player has-video is-poster-only" data-video-id="${escapeHTML(id)}" data-sources="${escapeHTML(sourceAttr)}" data-poster="${escapeHTML(poster)}" data-title="${escapeHTML(item.title)}" data-video-width="${dimensions.videoWidth || ""}" data-video-height="${dimensions.videoHeight || ""}" ${styleAttr}>
+        ${posterHTML}
+        <button class="video-play-button demo-video-load" type="button" data-demo-video-load aria-label="播放 ${escapeHTML(item.title)}">
+          <span class="video-play-icon" aria-hidden="true"></span>
+        </button>
+        <div class="video-fallback" data-video-fallback>
+          <strong>视频文件暂未接入或路径不可用</strong>
+          <p>${escapeHTML(fallbackText)}</p>
         </div>
       </div>
     `;
   }
 
-  function renderDemoCard(item) {
-    const tags = tagHTML(item.tags || item.ability || []);
+  function renderDemoCard(item, index = 0) {
+    const tags = tagHTML((item.tags || item.ability || []).slice(0, 3));
+    const displayIndex = item.displayIndex || String(index + 1).padStart(2, "0");
     return `
-      <article class="demo-card demo-video-card type-${escapeHTML(item.type || "standard")}" data-case-id="${escapeHTML(item.id)}" data-demo-video-card>
+      <article class="demo-video-card type-${escapeHTML(item.type || "standard")}" data-case-id="${escapeHTML(item.id)}" data-demo-video-card>
         <div class="demo-card-head">
-          <span class="demo-scene">${escapeHTML(item.category || "Demo")}</span>
-          <span class="demo-type">${escapeHTML(demoTypeLabel(item.type))}</span>
+          <span class="demo-index">Demo ${escapeHTML(displayIndex)}</span>
+          <span class="demo-scene">${escapeHTML(item.scene || item.category || "Demo")}</span>
         </div>
         <h3>${escapeHTML(item.title)}</h3>
         <p class="demo-subtitle">${escapeHTML(item.subtitle || item.description || item.summary || "")}</p>
-        <div class="demo-ability demo-tags">${tags}</div>
         <div class="demo-video-slot">
           ${renderVideoPlayer(item)}
         </div>
+        <div class="demo-ability demo-tags">${tags}</div>
         <p class="demo-highlight">${escapeHTML(item.highlight || item.description || "")}</p>
       </article>
     `;
   }
 
-  function renderDemoTabs() {
-    const tabMount = $("#demoTabs");
-    const grid = $("#demoGrid");
-    if (!tabMount || !grid) return;
-    const cases = CONFIG.demoCases || [];
-    const tabs = (CONFIG.demoTabs && CONFIG.demoTabs.length)
-      ? CONFIG.demoTabs
-      : Array.from(new Set(cases.map((item) => item.category).filter(Boolean)));
-    let currentPlaying = null;
-    let currentTab = tabs[0] || "";
-
-    tabMount.innerHTML = tabs.map((tab, index) => `
-      <button type="button" class="${index === 0 ? "active" : ""}" data-tab="${escapeHTML(tab)}" aria-selected="${index === 0 ? "true" : "false"}">${escapeHTML(tab)}</button>
-    `).join("");
-
-    const stopCurrentVideo = () => {
-      if (!currentPlaying) return;
-      const { card, video, player } = currentPlaying;
-      if (video) {
-        video.pause();
-        try { video.currentTime = 0; } catch (error) {}
-      }
-      if (card) card.classList.remove("is-playing");
-      if (player) player.classList.remove("is-playing", "is-loading", "is-paused-placeholder");
-      currentPlaying = null;
-    };
-
-    const prepareDemoVideo = (video) => {
-      const src = video.dataset.src;
-      if (!src) return false;
-      video.preload = "auto";
-      if (video.dataset.loadedSrc !== src || video.getAttribute("src") !== src) {
-        video.setAttribute("src", src);
-        video.dataset.loadedSrc = src;
-        video.load();
-      }
-      return true;
-    };
-
-    const render = (tab) => {
-      stopCurrentVideo();
-      currentTab = tab;
-      const items = cases.filter((item) => item.category === tab);
-      grid.innerHTML = items.length
-        ? `
-          <div class="demo-rail-shell" data-demo-rail-shell>
-            <button class="demo-rail-arrow rail-prev" type="button" data-rail-prev aria-label="向左浏览 Demo">‹</button>
-            <div class="demo-rail" data-demo-rail tabindex="0" aria-label="${escapeHTML(tab)} 视频 Demo 横向轨道">
-              ${items.map(renderDemoCard).join("")}
-            </div>
-            <button class="demo-rail-arrow rail-next" type="button" data-rail-next aria-label="向右浏览 Demo">›</button>
-          </div>
-        `
-        : placeholderHTML("当前分类暂未配置 Demo", "在 js/config.js 的 demoCases 中新增对应 category 的 case。");
-      initRailDrag(grid.querySelector("[data-demo-rail]"));
-    };
-
-    const startCard = (card) => {
-      if (!card) return;
-      const player = $(".lychee-video-player", card);
-      const video = $("[data-demo-video]", card);
-
-      if (currentPlaying && currentPlaying.card === card) {
-        stopCurrentVideo();
-        return;
-      }
-
-      stopCurrentVideo();
-      card.classList.add("is-playing");
-      if (player) player.classList.add("is-playing");
-
-      if (!video) {
-        if (player) player.classList.add("is-paused-placeholder");
-        currentPlaying = { card, video: null, player };
-        return;
-      }
-
-      if (!prepareDemoVideo(video)) {
-        if (player) player.classList.add("is-paused-placeholder");
-        currentPlaying = { card, video: null, player };
-        return;
-      }
-
-      currentPlaying = { card, video, player };
-      if (player) player.classList.add("is-loading");
-
-      video.addEventListener("playing", () => {
-        if (player) player.classList.remove("is-loading");
-      }, { once: true });
-
-      video.addEventListener("error", () => {
-        if (player) player.classList.remove("is-loading");
-      }, { once: true });
-
-      const attempt = video.play();
-      if (attempt && typeof attempt.catch === "function") {
-        attempt.catch(() => {
-          if (currentPlaying && currentPlaying.card === card) {
-            if (player) player.classList.remove("is-playing", "is-loading");
-            card.classList.remove("is-playing");
-            currentPlaying = null;
-          }
-        });
-      }
-    };
-
-    const initRailDrag = (rail) => {
-      if (!rail || rail.dataset.dragReady === "true") return;
-      rail.dataset.dragReady = "true";
-      let isDown = false;
-      let startX = 0;
-      let startLeft = 0;
-      let moved = false;
-
-      rail.addEventListener("pointerdown", (event) => {
-        if (event.button !== undefined && event.button !== 0) return;
-        if (event.target.closest("[data-demo-play], .lychee-video-player")) return;
-        isDown = true;
-        moved = false;
-        startX = event.clientX;
-        startLeft = rail.scrollLeft;
-        rail.classList.add("is-dragging");
-        rail.setPointerCapture?.(event.pointerId);
-      });
-
-      rail.addEventListener("pointermove", (event) => {
-        if (!isDown) return;
-        const dx = event.clientX - startX;
-        if (Math.abs(dx) > 3) moved = true;
-        rail.scrollLeft = startLeft - dx;
-      });
-
-      const stopDrag = (event) => {
-        if (!isDown) return;
-        isDown = false;
-        rail.classList.remove("is-dragging");
-        rail.dataset.justDragged = moved ? "true" : "false";
-        setTimeout(() => { rail.dataset.justDragged = "false"; }, 80);
-        try { rail.releasePointerCapture?.(event.pointerId); } catch (error) {}
-      };
-
-      rail.addEventListener("pointerup", stopDrag);
-      rail.addEventListener("pointercancel", stopDrag);
-      rail.addEventListener("mouseleave", stopDrag);
-    };
-
-    tabMount.addEventListener("click", (event) => {
-      const button = event.target.closest("button[data-tab]");
-      if (!button) return;
-      $$('button[data-tab]', tabMount).forEach((item) => {
-        item.classList.toggle("active", item === button);
-        item.setAttribute("aria-selected", item === button ? "true" : "false");
-      });
-      render(button.dataset.tab);
-    });
-
-    grid.addEventListener("click", (event) => {
-      const arrow = event.target.closest("[data-rail-prev], [data-rail-next]");
-      if (arrow) {
-        const rail = grid.querySelector("[data-demo-rail]");
-        if (rail) {
-          const direction = arrow.matches("[data-rail-prev]") ? -1 : 1;
-          rail.scrollBy({ left: direction * Math.round(rail.clientWidth * 0.82), behavior: "smooth" });
-        }
-        return;
-      }
-
-      const rail = event.target.closest("[data-demo-rail]");
-      if (rail && rail.dataset.justDragged === "true") return;
-      const trigger = event.target.closest("[data-demo-play], .lychee-video-player");
-      if (!trigger) return;
-      const card = event.target.closest("[data-demo-video-card]");
-      startCard(card);
-    });
-
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") stopCurrentVideo();
-    });
-
-    if (tabs.length) render(currentTab);
+  function getVideoSources(video) {
+    const raw = video?.dataset.sources || video?.dataset.src || "";
+    return raw.split("|").map((item) => item.trim()).filter(Boolean);
   }
 
-  function renderPackageSpec() {
-    const spec = CONFIG.packageSpec || {};
-    const folderRule = $("#folderRule");
-    const sampleNames = $("#sampleNames");
-    const packageTree = $("#packageTree");
-    const metaGrid = $("#metaGrid");
-    if (folderRule) folderRule.textContent = spec.folderRule || "";
-    if (sampleNames) sampleNames.innerHTML = (spec.examples || []).map((name) => `<li>${escapeHTML(name)}</li>`).join("");
-    if (packageTree) packageTree.innerHTML = `<div class="tree-root">case_package</div>` + (spec.files || []).map((file) => `<div class="tree-item">${escapeHTML(file)}</div>`).join("");
-    if (metaGrid) metaGrid.innerHTML = (spec.metaFields || []).map((field) => `<span>${escapeHTML(field)}</span>`).join("");
+  function hydrateVideo(video) {
+    if (!video) return false;
+    if (video.dataset.hydrated === "true") return true;
+    const sources = getVideoSources(video);
+    const firstSource = sources[0];
+    if (!firstSource) return false;
+    video.dataset.sourceIndex = "0";
+    video.src = firstSource;
+    video.preload = "metadata";
+    video.dataset.hydrated = "true";
+    video.load();
+    return true;
+  }
+
+  function playHydratedVideo(video) {
+    if (!hydrateVideo(video)) return;
+    const player = video.closest(".lychee-video-player");
+    player?.classList.add("is-loading");
+    const attempt = video.play();
+    if (attempt && typeof attempt.catch === "function") {
+      attempt.catch(() => {
+        player?.classList.remove("is-loading", "is-playing");
+        player?.classList.add("is-paused");
+      });
+    }
+  }
+
+  function showVideoFallback(video, player) {
+    player?.classList.add("is-unavailable");
+    player?.classList.remove("is-loading", "is-ready", "is-playing");
+    const fallback = $("[data-video-fallback]", player || document);
+    if (fallback) fallback.classList.add("is-visible");
+  }
+
+  function tryNextVideoSource(video, player) {
+    const sources = getVideoSources(video);
+    const currentIndex = Number(video.dataset.sourceIndex || "0");
+    const nextIndex = currentIndex + 1;
+
+    if (nextIndex < sources.length) {
+      video.dataset.sourceIndex = String(nextIndex);
+      video.src = sources[nextIndex];
+      video.load();
+      return;
+    }
+
+    showVideoFallback(video, player);
+  }
+
+  function createDemoVideo(player) {
+    const existing = $("video[data-demo-video]", player);
+    if (existing) return existing;
+
+    const sources = getVideoSources(player);
+    const firstSource = sources[0];
+    if (!firstSource) return null;
+
+    const video = document.createElement("video");
+    video.dataset.demoVideo = "true";
+    video.dataset.sources = sources.join("|");
+    video.dataset.sourceIndex = "0";
+    video.preload = "none";
+    video.controls = true;
+    video.playsInline = true;
+    video.setAttribute("aria-label", `${player.dataset.title || "Demo"} 视频 Demo`);
+    if (player.dataset.poster) video.poster = player.dataset.poster;
+
+    const fallback = $("[data-video-fallback]", player);
+    applyDemoVideoRatio(player, player.dataset.videoWidth, player.dataset.videoHeight);
+    player.insertBefore(video, fallback || null);
+    bindDemoVideoEvents(video, player);
+    return video;
+  }
+
+  function releaseDemoVideo(video) {
+    if (!video) return;
+    const player = video.closest(".lychee-video-player");
+    try { video.pause(); } catch (_) {}
+    video.removeAttribute("src");
+    video.load();
+    video.remove();
+    player?.classList.remove("is-loading", "is-ready", "is-playing", "is-paused");
+    player?.classList.add("is-poster-only");
+  }
+
+  function pauseOtherDemoVideos(activeVideo) {
+    $$("video[data-demo-video]").forEach((other) => {
+      if (other === activeVideo) return;
+      if (!other.paused) other.pause();
+      releaseDemoVideo(other);
+    });
+  }
+
+  function bindDemoVideoEvents(video, player) {
+    if (!video || video.dataset.bound === "true") return;
+    video.dataset.bound = "true";
+
+    video.addEventListener("play", () => {
+      hydrateVideo(video);
+      pauseOtherDemoVideos(video);
+      player?.classList.add("is-playing");
+      player?.classList.remove("is-paused", "is-poster-only");
+    });
+
+    video.addEventListener("pause", () => {
+      player?.classList.remove("is-playing");
+      player?.classList.add("is-paused");
+    });
+
+    video.addEventListener("loadedmetadata", () => {
+      applyDemoVideoRatio(player, video.videoWidth, video.videoHeight);
+      player?.classList.add("is-ready");
+      player?.classList.remove("is-loading", "is-poster-only");
+    });
+
+    video.addEventListener("error", () => {
+      tryNextVideoSource(video, player);
+    });
+  }
+
+  function initLazyDemoVideos(root) {
+    const players = $$(".lychee-video-player.has-video", root);
+    if (!players.length) return;
+
+    players.forEach((player) => {
+      const loadButton = $("[data-demo-video-load]", player);
+      if (!loadButton || loadButton.dataset.bound === "true") return;
+      loadButton.dataset.bound = "true";
+      loadButton.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const video = createDemoVideo(player);
+        if (video) playHydratedVideo(video);
+      });
+    });
+
+    if ("IntersectionObserver" in window) {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) return;
+          const video = $("video[data-demo-video]", entry.target);
+          if (video && !video.paused) video.pause();
+        });
+      }, { rootMargin: "0px", threshold: 0.01 });
+
+      players.forEach((player) => observer.observe(player));
+    }
+
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) return;
+      $$("video[data-demo-video]").forEach((video) => { if (!video.paused) video.pause(); });
+    });
+  }
+
+  function renderDemoList() {
+    const grid = $("#demoGrid");
+    if (!grid) return;
+    const cases = CONFIG.demoCases || [];
+    grid.innerHTML = cases.length
+      ? cases.map((item, index) => renderDemoCard(item, index)).join("")
+      : placeholderHTML("当前暂未配置 Demo", "在 js/config.js 的 demoCases 中新增 case 即可。新增视频时只需要改配置。"
+        );
+    initLazyDemoVideos(grid);
   }
 
   function attachImageErrorHandlers(root = document) {
@@ -476,7 +482,7 @@
       img.dataset.errorBound = "true";
       img.addEventListener("error", () => {
         const frame = img.closest(".media-frame");
-        if (frame) frame.innerHTML = placeholderHTML("待替换真实素材", `当前路径未找到：${img.getAttribute("src")}`);
+        if (frame) frame.innerHTML = placeholderHTML("内容暂不可用", "当前图片暂时无法显示。");
       }, { once: true });
     });
   }
@@ -536,56 +542,61 @@
   }
 
   function enableActiveNav() {
-    const links = $$("[data-nav-mount] a");
+    const links = $$('[data-nav-mount] a');
     if (!links.length) return;
 
     const items = links
       .map((link) => {
-        const href = link.getAttribute("href");
-        const section = href && href.startsWith("#") ? $(href) : null;
+        const href = link.getAttribute('href');
+        const section = href && href.startsWith('#') ? $(href) : null;
         return section ? { link, href, section } : null;
       })
       .filter(Boolean);
 
     if (!items.length) return;
 
-    let ticking = false;
-    let activeHref = "";
-
     const setActive = (href) => {
-      if (!href || href === activeHref) return;
-      activeHref = href;
       items.forEach(({ link, href: itemHref }) => {
-        link.classList.toggle("active", itemHref === href);
+        link.classList.toggle('active', itemHref === href);
       });
     };
 
-    const update = () => {
-      ticking = false;
-      const marker = window.innerHeight * 0.38;
-      let current = items[0];
+    if (!('IntersectionObserver' in window)) {
+      setActive(items[0].href);
+      return;
+    }
 
-      for (const item of items) {
-        const rect = item.section.getBoundingClientRect();
-        if (rect.top <= marker && rect.bottom > marker) {
-          current = item;
-          break;
+    const visibility = new Map();
+    const chooseActive = () => {
+      let active = items[0];
+      let bestScore = -Infinity;
+      items.forEach((item) => {
+        const score = visibility.get(item.href) || 0;
+        if (score > bestScore) {
+          bestScore = score;
+          active = item;
         }
-        if (rect.top <= marker) current = item;
-      }
-
-      setActive(current.href);
+      });
+      setActive(active.href);
     };
 
-    const requestUpdate = () => {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(update);
-    };
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        const href = `#${entry.target.id}`;
+        visibility.set(href, entry.isIntersecting ? entry.intersectionRatio : 0);
+      });
+      chooseActive();
+    }, {
+      root: null,
+      rootMargin: '-28% 0px -58% 0px',
+      threshold: [0, 0.1, 0.25, 0.5, 0.75, 1],
+    });
 
-    window.addEventListener("scroll", requestUpdate, { passive: true });
-    window.addEventListener("resize", requestUpdate);
-    update();
+    items.forEach((item) => {
+      visibility.set(item.href, item === items[0] ? 1 : 0);
+      observer.observe(item.section);
+    });
+    setActive(items[0].href);
   }
 
   function enableLightbox() {
@@ -621,109 +632,6 @@
     });
   }
 
-  function enableHeroScrollTransition() {
-    const hero = $("#hero");
-    const heroVideo = $("#heroPromoMount");
-    const heroIntro = hero ? $("[data-hero-intro]", hero) : null;
-    const heroContent = hero ? $("[data-hero-content]", hero) : null;
-    const reduceMotion = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
-    let ticking = false;
-
-    const clamp = (value, min = 0, max = 1) => Math.min(max, Math.max(min, value));
-    const smoothstep = (value) => {
-      const t = clamp(value);
-      return t * t * (3 - 2 * t);
-    };
-
-    const canAnimateHero = () => Boolean(
-      hero &&
-      heroVideo &&
-      heroIntro &&
-      heroContent &&
-      window.innerWidth > 980 &&
-      !(reduceMotion && reduceMotion.matches)
-    );
-
-    const resetHeroTransition = () => {
-      if (heroVideo) heroVideo.style.transform = "";
-      if (heroIntro) {
-        heroIntro.style.opacity = "";
-        heroIntro.style.transform = "";
-      }
-      if (heroContent) {
-        heroContent.style.opacity = "";
-        heroContent.style.transform = "";
-        heroContent.style.pointerEvents = "";
-      }
-    };
-
-    const updateHeroTransition = () => {
-      if (!canAnimateHero()) {
-        resetHeroTransition();
-        return;
-      }
-
-      const rect = hero.getBoundingClientRect();
-      const travel = Math.max(1, hero.offsetHeight - window.innerHeight);
-      const rawProgress = clamp(-rect.top / travel);
-
-      if (rawProgress <= 0.001) {
-        resetHeroTransition();
-        return;
-      }
-
-      const focusStart = 0.15;
-      const shrinkStart = 0.45;
-      const shrinkEnd = 0.90;
-
-      const focusProgress = smoothstep((rawProgress - focusStart) / (shrinkStart - focusStart));
-      const shrinkProgress = smoothstep((rawProgress - shrinkStart) / (shrinkEnd - shrinkStart));
-
-      /*
-        Stage 1: 0 ~ 0.15, keep the title and video in normal hero layout.
-        Stage 2: 0.15 ~ 0.45, gently move the video toward the visual center without shrinking.
-        Stage 3: 0.45 ~ 0.90, slowly shrink and move the video to the left-top area.
-        Only transform/opacity are touched during scroll.
-      */
-      const centerLiftY = -Math.round(focusProgress * Math.min(42, window.innerHeight * 0.052));
-      const maxShiftX = Math.min(135, window.innerWidth * 0.092);
-      const maxShiftY = Math.min(40, window.innerHeight * 0.046);
-      const scale = 1 - shrinkProgress * 0.14;
-      const shiftX = -Math.round(shrinkProgress * maxShiftX);
-      const shiftY = centerLiftY - Math.round(shrinkProgress * maxShiftY);
-
-      const introFade = smoothstep((rawProgress - 0.34) / 0.42);
-      const introOpacity = 1 - introFade * 0.42;
-      const introY = -Math.round((focusProgress * 12) + (shrinkProgress * 20));
-
-      const contentOpacity = smoothstep((rawProgress - 0.66) / 0.28);
-      const contentShift = Math.round((1 - contentOpacity) * 30);
-
-      heroVideo.style.transform = `translate3d(${shiftX}px, ${shiftY}px, 0) scale(${scale.toFixed(3)})`;
-      heroIntro.style.opacity = introOpacity.toFixed(3);
-      heroIntro.style.transform = `translate3d(0, ${introY}px, 0)`;
-      heroContent.style.opacity = contentOpacity.toFixed(3);
-      heroContent.style.transform = `translate3d(${contentShift}px, -50%, 0)`;
-      heroContent.style.pointerEvents = contentOpacity > 0.45 ? "auto" : "none";
-    };
-
-    const requestUpdate = () => {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(() => {
-        ticking = false;
-        updateHeroTransition();
-      });
-    };
-
-    window.addEventListener("scroll", requestUpdate, { passive: true });
-    window.addEventListener("resize", requestUpdate);
-    if (reduceMotion && typeof reduceMotion.addEventListener === "function") {
-      reduceMotion.addEventListener("change", requestUpdate);
-    }
-    updateHeroTransition();
-  }
-
   function enableSmoothAnchors() {
     document.addEventListener("click", (event) => {
       const link = event.target.closest('a[href^="#"]');
@@ -741,139 +649,120 @@
     });
   }
 
-  function enableDemoModal() {
-    const modal = $("#demoModal");
-    const pageShell = $("#pageShell");
-    const closeButton = $(".demo-modal-close", modal);
-    if (!modal) return;
-    let lastFocus = null;
-
-    const openModal = () => {
-      lastFocus = document.activeElement;
-      modal.classList.add("open");
-      modal.setAttribute("aria-hidden", "false");
-      document.body.classList.add("no-scroll");
-      if (pageShell) pageShell.classList.add("is-blurred");
-      if (closeButton) closeButton.focus({ preventScroll: true });
-    };
-
-    const closeModal = () => {
-      modal.classList.remove("open");
-      modal.setAttribute("aria-hidden", "true");
-      document.body.classList.remove("no-scroll");
-      if (pageShell) pageShell.classList.remove("is-blurred");
-      if (lastFocus && typeof lastFocus.focus === "function") lastFocus.focus({ preventScroll: true });
-      lastFocus = null;
-    };
-
-    document.addEventListener("click", (event) => {
-      if (event.target.closest("[data-open-demo-panel]")) {
-        openModal();
-        return;
-      }
-      if (event.target.matches("[data-close-demo], .demo-modal-backdrop")) {
-        closeModal();
-      }
-    });
-
-    document.addEventListener("keydown", (event) => {
-      const trigger = event.target.closest?.("[data-open-demo-panel]");
-      if (trigger && (event.key === "Enter" || event.key === " ")) {
-        event.preventDefault();
-        openModal();
-        return;
-      }
-      if (event.key === "Escape" && modal.classList.contains("open")) closeModal();
-    });
-  }
-
   function enableHeroPromoVideo() {
     const player = $("[data-hero-promo-player]");
     if (!player) return;
 
-    const video = $("video", player);
     const hero = $("#hero");
     const playButton = $('[data-hero-promo-play]', player);
     const fullscreenButton = $('[data-hero-fullscreen]', player);
-    let heroInView = true;
 
-    if (!video) {
+    const getHeroVideo = () => $("video[data-hero-video]", player);
+
+    const createHeroVideo = () => {
+      const existing = getHeroVideo();
+      if (existing) return existing;
+      const src = player.dataset.src || "";
+      if (!src) return null;
+
+      const video = document.createElement("video");
+      video.dataset.heroVideo = "true";
+      video.dataset.src = src;
+      video.preload = "none";
+      video.controls = true;
+      video.playsInline = true;
+      video.autoplay = false;
+      video.loop = false;
+      video.muted = false;
+      video.setAttribute("aria-label", player.dataset.title || "Lychee-FD 交互演示");
+      if (player.dataset.poster) video.poster = player.dataset.poster;
+
+      const firstButton = playButton || fullscreenButton;
+      player.insertBefore(video, firstButton || null);
+
+      video.addEventListener("loadedmetadata", () => {
+        player.classList.remove("is-placeholder", "is-unavailable", "is-loading", "is-poster-only");
+        player.classList.add("is-ready");
+        syncPlayingState();
+      }, { once: true });
+      video.addEventListener("playing", syncPlayingState);
+      video.addEventListener("pause", syncPlayingState);
+      video.addEventListener("ended", syncPlayingState);
+      video.addEventListener("error", () => {
+        player.classList.remove("is-ready", "is-playing", "is-loading");
+        player.classList.add("is-placeholder", "is-unavailable");
+        if (playButton) playButton.disabled = true;
+        if (fullscreenButton) fullscreenButton.disabled = true;
+      }, { once: true });
+      return video;
+    };
+
+    const hydrateHeroVideo = () => {
+      const video = createHeroVideo();
+      if (!video) return null;
+      if (video.dataset.hydrated !== "true") {
+        video.src = video.dataset.src || player.dataset.src || "";
+        video.preload = player.dataset.preload || "metadata";
+        video.dataset.hydrated = "true";
+        video.load();
+        player.classList.remove("is-poster-only");
+        player.classList.add("is-loading");
+      }
+      return video;
+    };
+
+    const syncPlayingState = () => {
+      const video = getHeroVideo();
+      const isPlaying = Boolean(video && !video.paused && !video.ended);
+      player.classList.toggle("is-playing", isPlaying);
+      player.classList.toggle("is-paused", Boolean(video && !isPlaying));
+      if (isPlaying) player.classList.remove("is-loading");
+    };
+
+    const safePlay = () => {
+      const video = hydrateHeroVideo();
+      if (!video) return;
+      const attempt = video.play();
+      if (attempt && typeof attempt.catch === "function") {
+        attempt.catch(() => {
+          player.classList.remove("is-loading");
+          syncPlayingState();
+        });
+      }
+    };
+
+    if (!player.dataset.src) {
       player.classList.add("is-placeholder", "is-unavailable");
       if (playButton) playButton.disabled = true;
       if (fullscreenButton) fullscreenButton.disabled = true;
       return;
     }
 
-    const syncPlayingState = () => {
-      player.classList.toggle("is-playing", !video.paused && !video.ended);
-      player.classList.toggle("is-paused", video.paused || video.ended);
-    };
-
-    const safePlay = () => {
-      if (!video || !heroInView || player.classList.contains("is-unavailable")) return;
-      const attempt = video.play();
-      if (attempt && typeof attempt.catch === "function") {
-        attempt.catch(() => {
-          player.classList.add("is-autoplay-blocked");
-          syncPlayingState();
-        });
-      }
-    };
-
-    const requestFullscreen = () => {
-      const target = player;
-      const request = target.requestFullscreen || target.webkitRequestFullscreen || target.msRequestFullscreen;
-      if (!request) return;
-      player.classList.add("is-fullscreen-requested");
-      request.call(target);
-      safePlay();
-    };
-
-    const syncFullscreenState = () => {
-      const isFull = document.fullscreenElement === player || document.webkitFullscreenElement === player;
-      player.classList.toggle("is-fullscreen", Boolean(isFull));
-      if (fullscreenButton) fullscreenButton.textContent = isFull ? "退出" : "全屏";
-    };
-
-    video.muted = true;
-    video.autoplay = true;
-    video.loop = true;
-    video.playsInline = true;
-
-    video.addEventListener("loadedmetadata", () => {
-      player.classList.remove("is-placeholder", "is-unavailable");
-      player.classList.add("is-ready");
-      safePlay();
-    }, { once: true });
-
-    video.addEventListener("playing", () => {
-      player.classList.remove("is-autoplay-blocked");
-      syncPlayingState();
-    });
-    video.addEventListener("pause", syncPlayingState);
-    video.addEventListener("error", () => {
-      player.classList.remove("is-ready", "is-playing", "is-autoplay-blocked");
-      player.classList.add("is-placeholder", "is-unavailable");
-      if (playButton) playButton.disabled = true;
-      if (fullscreenButton) fullscreenButton.disabled = true;
-    }, { once: true });
-
     if (playButton) {
       playButton.addEventListener("click", (event) => {
         event.stopPropagation();
-        player.classList.remove("is-autoplay-blocked");
-        safePlay();
+        const video = getHeroVideo();
+        if (!video || video.paused) safePlay();
+        else video.pause();
       });
     }
 
     if (fullscreenButton) {
+      const syncFullscreenState = () => {
+        const isFull = document.fullscreenElement === player || document.webkitFullscreenElement === player;
+        player.classList.toggle("is-fullscreen", Boolean(isFull));
+        fullscreenButton.textContent = isFull ? "退出" : "全屏";
+      };
       fullscreenButton.addEventListener("click", (event) => {
         event.stopPropagation();
+        const video = hydrateHeroVideo();
+        if (video && video.paused) safePlay();
         if (document.fullscreenElement || document.webkitFullscreenElement) {
           const exit = document.exitFullscreen || document.webkitExitFullscreen;
           if (exit) exit.call(document);
         } else {
-          requestFullscreen();
+          const request = player.requestFullscreen || player.webkitRequestFullscreen || player.msRequestFullscreen;
+          if (request) request.call(player);
         }
       });
       document.addEventListener("fullscreenchange", syncFullscreenState);
@@ -883,34 +772,20 @@
     if ("IntersectionObserver" in window && hero) {
       const observer = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
-          heroInView = entry.isIntersecting;
-          if (!heroInView) {
-            video.pause();
-            return;
-          }
-          safePlay();
+          const video = getHeroVideo();
+          if (!entry.isIntersecting && video && !video.paused) video.pause();
         });
-      }, { threshold: 0.12 });
+      }, { threshold: 0.08 });
       observer.observe(hero);
-    } else {
-      safePlay();
     }
-  }
 
-  function attachPlaceholderEvents() {
-    document.addEventListener("click", (event) => {
-      const button = event.target.closest('[data-placeholder="true"]');
-      if (!button) return;
-      const old = button.textContent;
-      button.textContent = "素材待接入";
-      button.disabled = true;
-      setTimeout(() => {
-        button.textContent = old;
-        button.disabled = false;
-      }, 900);
+    document.addEventListener("visibilitychange", () => {
+      const video = getHeroVideo();
+      if (document.hidden && video && !video.paused) video.pause();
     });
-  }
 
+    syncPlayingState();
+  }
   function init() {
     renderSiteText();
     renderNavigation();
@@ -919,16 +794,13 @@
     renderMetrics();
     renderHighlights();
     renderAssets();
-    renderDemoTabs();
-    renderPackageSpec();
+    renderDemoList();
     enableRevealAnimation();
     animateMetricCounters();
     enableActiveNav();
     enableSmoothAnchors();
     enableLightbox();
-    enableDemoModal();
     enableHeroPromoVideo();
-    attachPlaceholderEvents();
   }
 
   document.addEventListener("DOMContentLoaded", init);
