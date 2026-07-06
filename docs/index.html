@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Lychee-FD 全双工大模型驱动的具身类人交互中文技术展示页" />
+  <title>全双工大模型驱动的具身类人交互｜Lychee-FD</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div id="top" class="page-top-anchor" aria-hidden="true"></div>
+  <div class="page-shell" id="pageShell">
+
+    <aside class="side-nav-shell" aria-label="页面章节导航">
+      <div class="side-nav-card">
+        <span class="side-nav-kicker">目录</span>
+        <nav class="site-nav side-nav" data-nav-mount aria-label="页面导航"></nav>
+      </div>
+    </aside>
+
+    <header class="top-nav-shell" aria-label="页面顶部导航">
+      <nav class="site-nav top-nav" data-nav-mount aria-label="页面导航"></nav>
+    </header>
+
+    <main>
+      <!-- 01 首页首屏 -->
+      <section class="hero section hero-static" id="hero">
+        <div class="hero-layout">
+          <div class="hero-copy reveal">
+            <div class="eyebrow"><span></span><span data-config-text="subtitle">Lychee-FD</span></div>
+            <h1 data-config-text="title">全双工大模型驱动的具身类人交互</h1>
+            <p class="hero-slogan" data-config-text="slogan">从轮流说话，到自然共话。</p>
+            <p class="hero-desc" data-config-text="description">
+              让大模型在真实语音对话中同时倾听、理解、反馈与表达，并进一步驱动数字人和机器人形成自然交互闭环。
+            </p>
+            <div class="hero-actions">
+              <a class="primary-btn" href="#demo">查看真实对话 Demo</a>
+              <a class="ghost-btn" href="#technology">先理解全双工</a>
+            </div>
+            <div class="capability-pills" id="heroPills" aria-label="核心能力"></div>
+          </div>
+
+          <div class="hero-stage hero-video-stage reveal delay-1" id="heroPromoMount" data-hero-promo></div>
+
+          <div class="metric-row hero-metrics reveal delay-2" data-metrics></div>
+        </div>
+      </section>
+
+      <!-- 02 技术介绍 -->
+      <section class="section technology-intro-section" id="technology">
+        <div class="section-head reveal">
+          <p class="section-index">01 技术介绍</p>
+          <h2>从理解全双工，到解决实时共话</h2>
+          <p>
+            围绕全双工交互的项目背景、关键科学问题与技术方案，说明 Lychee-FD 如何让语音智能体从轮流应答走向自然共话。
+          </p>
+        </div>
+
+        <article class="tech-subsection concept-section" id="concept">
+          <div class="section-head reveal">
+            <p class="section-index">技术介绍 01 / 全双工是什么</p>
+            <h2>全双工是什么</h2>
+            <p>
+              现实中的人与人交流天然具备全双工特征：倾听、表达、打断、反馈往往并行发生。相比传统语音产品“用户说完、系统再说”的半双工交互，全双工语音交互希望让系统在连续对话中边听边理解、边判断边回应，从而更接近真实的人类交流方式。
+            </p>
+            <p>
+              因此，全双工不是简单地让双方同时发声，而是让模型理解什么时候该听、什么时候该说、什么时候该停、什么时候该反馈。
+            </p>
+          </div>
+          <div class="duplex-explain-grid reveal delay-1">
+            <article class="compare-card muted-card">
+              <div class="compare-icon">半</div>
+              <h3>半双工：轮流说话</h3>
+              <p>用户必须先说完，系统才能听完、理解、组织回复。系统说话时，用户插话通常会被延迟处理或被误判。</p>
+              <div class="case-tags"><span>等待明显</span><span>难以插话</span><span>链路串行</span></div>
+            </article>
+            <article class="compare-card active-card">
+              <div class="compare-icon">全</div>
+              <h3>全双工：自然共话</h3>
+              <p>系统边听边理解、边生成边调整，允许用户自然打断、附和、补充条件，也允许模型用短反馈表达“我在听”。</p>
+              <div class="case-tags"><span>边听边说</span><span>实时改口</span><span>反馈自然</span></div>
+            </article>
+            <article class="compare-card">
+              <div class="compare-icon">荔</div>
+              <h3>Lychee-FD：共话引擎</h3>
+              <p>目标不是把 ASR、LLM、TTS 简单串起来，而是在统一实时交互过程中同时建模语音、语义、对话状态和控制信号。</p>
+              <div class="case-tags"><span>原生端到端</span><span>低延迟</span><span>多通道</span></div>
+            </article>
+          </div>
+          <div class="before-after reveal delay-2">
+            <div class="before-box">
+              <span>普通语音助手</span>
+              <h3>“你说完，我再说。”</h3>
+              <p>交互节奏像按键通话，用户必须等待系统完成当前回答。</p>
+            </div>
+            <div class="switch-flow" aria-hidden="true"><span></span><span></span><span></span></div>
+            <div class="after-box">
+              <span>全双工语音 Agent</span>
+              <h3>“我边听边理解。”</h3>
+              <p>用户随时补充、附和或改变需求，系统能够及时调整回复方向。</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="tech-subsection science-section" id="science">
+          <div class="section-head reveal">
+            <p class="section-index">技术介绍 02 / 科学问题</p>
+            <h2>科学问题</h2>
+            <p>
+              语音与 NLP 领域长期面临一个核心问题：如何让模型在实时语音流中同时保持语义准确、打断响应和反馈触达。传统级联系统往往把 ASR、LLM、TTS 拆成多个独立模块，容易带来延迟累积、上下文断裂和交互时机错位，难以支撑自然流畅的全双工对话。
+            </p>
+          </div>
+          <div class="compare-grid reveal delay-1">
+            <article class="challenge-card">
+              <span class="challenge-num">旧</span>
+              <h3>语义准确保持</h3>
+              <p>在语音、文本与控制信号并行流动时，减少模态干扰，保持回复内容精准可信。</p>
+              <div class="case-tags"><span>语音流</span><span>文本流</span><span>控制信号</span></div>
+            </article>
+            <article class="challenge-card hot">
+              <span class="challenge-num">问</span>
+              <h3>打断精确响应</h3>
+              <p>实时识别用户插话和意图变化，及时终止当前回答，并切换到新的语义方向。</p>
+              <div class="case-tags"><span>插话识别</span><span>即时停止</span><span>语义切换</span></div>
+            </article>
+            <article class="challenge-card warm">
+              <span class="challenge-num">难</span>
+              <h3>反馈及时触达</h3>
+              <p>在用户等待、附和、犹豫或表达情绪时，给出低延迟、自然的语音反馈。</p>
+              <div class="case-tags"><span>低延迟</span><span>自然附和</span><span>情绪反馈</span></div>
+            </article>
+          </div>
+          <div class="root-grid reveal delay-2">
+            <article class="root-card">
+              <div class="root-header"><span>根本原因：模型深层语义和声学建模的冲突</span><strong>模态冲突</strong></div>
+              <div class="asset-mount root-asset-mount" data-asset-id="modalityConflict" data-asset-variant="technical"></div>
+              <p>语音生成需要声学细节，语言理解需要稳定语义，两者在同一深层表示中容易互相干扰。</p>
+            </article>
+            <article class="root-card">
+              <div class="root-header"><span>根本原因：连续音频流中的语义信号变弱</span><strong>语义稀释</strong></div>
+              <div class="asset-mount root-asset-mount" data-asset-id="semanticSparsity" data-asset-variant="technical"></div>
+              <p>连续音频流中语义信号容易被声学帧稀释，导致长程逻辑、上下文和回复意图不稳定。</p>
+            </article>
+          </div>
+          <div class="semantic-showcase semantic-lite reveal delay-3">
+            <div class="semantic-copy-card">
+              <span class="mini-label">本质问题</span>
+              <h3>如何让语音、语义与控制目标共存？</h3>
+              <p>模型既要听懂内容，又要知道什么时候停、什么时候接、什么时候只给短反馈，还要保持声音表达自然。</p>
+            </div>
+            <div class="flow-visual">
+              <div class="flow-row semantic-flow"><b>语义</b><span>理解</span><span>逻辑</span><span>上下文</span><span>一致性</span><span>补充</span><span>修正</span><span>意图</span><span>……</span></div>
+              <div class="flow-row acoustic-flow"><b>声学</b><span>音频帧</span><span>音色</span><span>韵律</span><span>停顿</span><span>自然度</span><span>节奏</span><span>表达</span><span>……</span></div>
+              <div class="flow-row control-flow"><b>控制</b><span>开始</span><span>监听</span><span>打断</span><span>停止</span><span>附和</span><span>恢复</span><span>接话</span><span>……</span></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="tech-subsection solution-section" id="solution">
+          <div class="section-head reveal">
+            <p class="section-index">技术介绍 03 / 解决办法</p>
+            <h2>解决办法</h2>
+            <p>
+              Lychee-FD 面向全双工交互重新组织语音、语义与控制通道，在保证实时性的同时，提升语义稳定性、打断响应能力和反馈自然度。
+            </p>
+          </div>
+          <div class="highlight-grid reveal delay-1" id="highlightGrid"></div>
+          <div class="asset-stack reveal delay-2" data-asset-list="architecture" data-asset-variant="architecture"></div>
+          <div class="architecture-panel reveal delay-2">
+            <div class="arch-left">
+              <div class="arch-node input-node">实时语音输入</div>
+              <div class="arch-arrow"></div>
+              <div class="arch-node shared-node">共享 Transformer 主干</div>
+              <div class="arch-arrow"></div>
+              <div class="arch-node">多通道流式输出</div>
+            </div>
+            <div class="channel-group">
+              <article class="channel-card semantic"><span>语义通道</span><h3>逻辑与上下文</h3><p>增强文本语义监督，保持回复准确、连贯和可信。</p></article>
+              <article class="channel-card acoustic"><span>声学通道</span><h3>自然语音表达</h3><p>保持音色、韵律和语音自然度，避免只追求语义而牺牲表达。</p></article>
+              <article class="channel-card control"><span>控制通道</span><h3>打断、附和与接续</h3><p>建模开始、停止、恢复、短反馈和对话时机。</p></article>
+            </div>
+          </div>
+          <p class="root-summary reveal delay-3">结合 vLLM、KV Cache 复用和上下文压缩等机制，系统进一步降低全双工交互延迟，并把能力延展到数字人驱动。</p>
+        </article>
+      </section>
+
+      <!-- 03 评测效果 -->
+      <section class="section results-section" id="results">
+        <div class="section-head reveal">
+          <p class="section-index">02 评测效果</p>
+          <h2>评测效果：语义更稳，打断更准，反馈更快</h2>
+          <p>Lychee-FD 在语义保持、打断响应和反馈触达等关键交互指标上取得提升，进一步支撑真实场景中的连续语音对话体验。</p>
+        </div>
+        <div class="metric-row result-metrics reveal delay-1" data-metrics></div>
+        <div class="asset-gallery result-gallery reveal delay-2" data-asset-list="results" data-asset-variant="chart"></div>
+      </section>
+
+      <!-- 04 Demo 演示 -->
+      <section class="section demo-section" id="demo">
+        <div class="section-head reveal">
+          <p class="section-index">03 Demo 演示</p>
+          <h2>真实场景里的全双工对话</h2>
+          <p>通过自然打断、用户附和和模型反馈等典型场景，展示 Lychee-FD 在连续语音交互中的实时理解、响应切换与自然反馈能力。</p>
+        </div>
+        <div class="demo-list" id="demoGrid"></div>
+      </section>
+
+      <!-- 05 全双工驱动的数字人 -->
+      <section class="section embodied-section" id="embodied">
+        <div class="section-head reveal">
+          <p class="section-index">04 全双工驱动数字人</p>
+          <h2>从语音全双工，到具身类人交互</h2>
+          <p>Lychee-FD 可以作为数字人或机器人背后的对话交互核心，把实时双向语音、情感反馈、表情和动作连接起来，推动语音交互从“听得懂”走向“反应自然、表达自然”。</p>
+        </div>
+        <div class="embodied-layout reveal delay-1">
+          <div class="embodied-flow">
+            <div class="flow-node lychee">Lychee-FD 对话交互模块</div>
+            <div class="flow-arrow"></div>
+            <div class="flow-node face">Audio2Face 表情生成模块</div>
+            <div class="flow-arrow"></div>
+            <div class="flow-node robot">数字人 / 机器人表情渲染模块</div>
+          </div>
+          <div class="signal-card">
+            <h3>具身交互能力</h3>
+            <p><b>全双工自然交互：</b>支持用户随时打断、插话和补充条件。</p>
+            <p><b>实时情感响应：</b>基于声学与语义双通道识别用户状态，给出低延迟反馈。</p>
+            <p><b>多模态同步生成：</b>让声音、语义、表情和动作形成统一表达。</p>
+            <p><b>仿生结构设计：</b>推动语音交互从“听得懂”走向“反应自然、表达自然”。</p>
+          </div>
+          <div class="asset-gallery" data-asset-list="embodied" data-asset-variant="avatar"></div>
+        </div>
+        <p class="architecture-copy reveal delay-2">Lychee-FD 负责实时双向语音、语义理解和交互控制；数字人和机器人负责把这种能力转化为表情、动作和具身表达。</p>
+      </section>
+
+    </main>
+
+    <footer class="site-footer">
+      <p>Lychee-FD · 全双工大模型驱动的具身类人交互</p>
+      <a class="back-to-top" href="#top" data-scroll-top>回到顶部 ↑</a>
+    </footer>
+  </div>
+
+  <div class="lightbox" id="lightbox" aria-hidden="true">
+    <div class="lightbox-backdrop" data-close-lightbox></div>
+    <div class="lightbox-panel" role="dialog" aria-modal="true" aria-label="图片预览">
+      <button class="lightbox-close" type="button" data-close-lightbox>关闭</button>
+      <h3 id="lightboxTitle">图片预览</h3>
+      <img id="lightboxImage" alt="图片预览" />
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
