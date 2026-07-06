@@ -1,0 +1,17 @@
+{
+  "presets": [
+    {
+      "name": "lychee_fd_v9_example",
+      "model_path": "/path/to/lychee-fd/checkpoint",
+      "backend_type": "vllm",
+      "mode": "stable",
+      "extra_env": {
+        "STEPAUDIO_WINDOW_SECOND": "0.4",
+        "STEPAUDIO_REALTIME_INFER_WINDOW_MS": "400",
+        "STEPAUDIO_REALTIME_INFER_WINDOW_MIN_MS": "200",
+        "STEPAUDIO_STOKEN_DELAY_NUM": "10"
+      },
+      "note": "Replace this path with a local Lychee-FD checkpoint before starting the backend."
+    }
+  ]
+}
