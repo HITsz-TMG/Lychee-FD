@@ -21,7 +21,7 @@ ASR_MODEL_DIR = Path(os.environ.get("USER_VOICE_ASR_MODEL_DIR", DEFAULT_ASR_MODE
 CLONE_PROMPT_DIR = Path(
     os.environ.get(
         "STEPAUDIO_CLONE_PROMPT_DIR",
-        str(PROJECT_DIR / "unimoe_demo" / "public" / "clone_24k_mono"),
+        str(PROJECT_DIR / "frontend" / "public" / "clone_24k_mono"),
     )
 ).resolve()
 TMP_DIR = Path(os.environ.get("USER_VOICE_TMP_DIR", "/tmp/lychee_user_voice_uploads")).resolve()

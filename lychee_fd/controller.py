@@ -12,7 +12,7 @@ lychee_fd.controller
 
 或直接:
     python -m lychee_fd.controller \
-        --static-dir /path/to/unimoe_demo/dist \
+        --static-dir /path/to/frontend/dist \
         --host 0.0.0.0 --port 8084 \
         --backend-script /abs/path/scripts/start_backend.sh \
         --presets-file /abs/path/model_presets_dev.json

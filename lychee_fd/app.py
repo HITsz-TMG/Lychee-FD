@@ -123,7 +123,7 @@ ASSETS_DIR = os.environ.get("STEPAUDIO_ASSETS_DIR", os.path.join(PROJECT_DIR, "a
 # 克隆参考音色目录（含 clone_24k_mono/*.wav 及对应 *.txt）
 CLONE_PROMPT_DIR = os.environ.get(
     "STEPAUDIO_CLONE_PROMPT_DIR",
-    os.path.join(PROJECT_DIR, "unimoe_demo", "public", "clone_24k_mono"),
+    os.path.join(PROJECT_DIR, "frontend", "public", "clone_24k_mono"),
 )
 
 REALTIME_PROMPT_VOICE_OPTIONS = [

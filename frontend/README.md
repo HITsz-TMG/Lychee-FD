@@ -1,4 +1,4 @@
-# unimoe_demo
+# frontend
 
 ## Project setup
 ```

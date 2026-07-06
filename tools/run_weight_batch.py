@@ -2,7 +2,7 @@
 """
 Batch runner for the weight-test realtime route.
 
-It mirrors unimoe_demo/src/App_weight_test.vue:
+It mirrors frontend/src/App_weight_test.vue:
   input.wav -> mono 16 kHz -> fixed chunks -> realtime session/chunk/events.
 
 The runner writes per-case logs after each case finishes, avoiding per-event
