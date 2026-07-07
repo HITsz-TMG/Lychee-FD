@@ -22,14 +22,7 @@ The speaking-round result is the most relevant realtime serving signal: it inclu
 
 Listening rounds are input-gated: once the backend reliably consumes each 400 ms audio window before the next window arrives, additional compute-time reduction does not directly reduce user-perceived latency. Both backends satisfy this condition for listening rounds, so they are effectively equivalent in the listening state despite different raw compute times.
 
-| Stage | HF mean latency | vLLM mean latency | Speedup |
-| --- | ---: | ---: | ---: |
-| Stream infer | 277.90 ms | 237.49 ms | 1.17x |
-| Transformer | 241.05 ms | 219.36 ms | 1.10x |
-| Audio encoder | 15.73 ms | 11.75 ms | 1.34x |
-| Token2wav | 155.69 ms | 160.33 ms | 0.97x |
-
-`window RTF = round_compute_ms / 400 ms`; values below 1.0 indicate that the backend finishes processing the current audio window before the next window arrives. Token2wav is not the primary vLLM optimization target, so its latency is roughly unchanged.
+`window RTF = round_compute_ms / 400 ms`; values below 1.0 indicate that the backend finishes processing the current audio window before the next window arrives.
 
 ## Docker Quick Start
 
