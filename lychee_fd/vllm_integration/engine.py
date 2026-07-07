@@ -697,9 +697,7 @@ class _PatchedLycheeVLLMEngine:
         self._text_after_eos_seen = False
         self._text_after_eos_token_id: Optional[int] = None
         self._text_after_eos_pad_token_id: Optional[int] = None
-        self._tail_truncate_enabled = str(
-            os.getenv("STEPAUDIO_VLLM_TAIL_TRUNCATE_ENABLED", "1")
-        ).strip().lower() not in {"0", "false", "no", "off"}
+        self._tail_truncate_enabled = True
         self._last_tail_truncate_result: Optional[Dict[str, Any]] = None
         self._unsafe_prefix_caching = str(
             os.getenv("STEPAUDIO_VLLM_UNSAFE_PREFIX_CACHING", "0")

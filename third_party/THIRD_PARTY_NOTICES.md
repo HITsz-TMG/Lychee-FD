@@ -26,20 +26,8 @@ MIT license notice is included at
 vendored, retain both the attribution and the license notice when refreshing or
 replacing the Step-Audio2 subtree.
 
-## SoulX-Duplug
-
-- Local path: `third_party/SoulX-Duplug`
-- Upstream project: `https://github.com/Soul-AILab/SoulX-Duplug`
-- License: Apache License 2.0
-- Local license copy: `third_party/SoulX-Duplug/LICENSE`
-
-The local copy includes Lychee-FD integration changes for sidecar serving. In
-particular, `third_party/SoulX-Duplug/run_sidecar.sh` is a Lychee-FD integration
-wrapper added/modified to launch the vendored SoulX-Duplug service with
-project-local configuration and environment variables.
-
 ## Model Weights
 
 This repository and Docker image do not vendor model weights. Users who download
-Step-Audio2, SoulX-Duplug, or other model checkpoints must comply with the
-license terms published by the corresponding model providers.
+Step-Audio2 or other model checkpoints must comply with the license terms
+published by the corresponding model providers.

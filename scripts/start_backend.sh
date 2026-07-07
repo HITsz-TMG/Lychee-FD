@@ -273,16 +273,6 @@ echo "[backend] http_proxy=${http_proxy:-<unset>} https_proxy=${https_proxy:-<un
 echo "[backend] realtime_infer_window_ms=${STEPAUDIO_REALTIME_INFER_WINDOW_MS:-400} (min=${STEPAUDIO_REALTIME_INFER_WINDOW_MIN_MS:-160})"
 echo "[backend] window_second=${STEPAUDIO_WINDOW_SECOND:-0.4}"
 echo "[backend] stoken_delay_num=${STEPAUDIO_STOKEN_DELAY_NUM:-10}"
-echo "[backend] vllm_tail_truncate_enabled=${STEPAUDIO_VLLM_TAIL_TRUNCATE_ENABLED:-1}"
-echo "[backend] soulx_enabled=${STEPAUDIO_SOULX_ENABLED:-0}"
-echo "[backend] soulx_ws_url=${STEPAUDIO_SOULX_WS_URL:-ws://127.0.0.1:18080/turn}"
-echo "[backend] soulx_idle_compact_enabled=${STEPAUDIO_SOULX_IDLE_COMPACT_ENABLED:-0}"
-echo "[backend] soulx_active_states=${STEPAUDIO_SOULX_ACTIVE_STATES:-nonidle,speak}"
-echo "[backend] soulx_idle_confirm_ms=${STEPAUDIO_SOULX_IDLE_CONFIRM_MS:-2400}"
-echo "[backend] soulx_idle_max_age_ms=${STEPAUDIO_SOULX_IDLE_MAX_AGE_MS:-800}"
-echo "[backend] soulx_post_active_cooldown_ms=${STEPAUDIO_SOULX_POST_ACTIVE_COOLDOWN_MS:-1200}"
-echo "[backend] soulx_idle_anchor_max_pending_ms=${STEPAUDIO_SOULX_IDLE_ANCHOR_MAX_PENDING_MS:-400}"
-echo "[backend] soulx_idle_compact_min_drop_tokens=${STEPAUDIO_SOULX_IDLE_COMPACT_MIN_DROP_TOKENS:-1}"
 
 {
   echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S %z')"
@@ -304,19 +294,9 @@ echo "[backend] soulx_idle_compact_min_drop_tokens=${STEPAUDIO_SOULX_IDLE_COMPAC
   echo "vllm_token_trace=${VLLM_TOKEN_TRACE_EFFECTIVE}"
   echo "vllm_token_trace_path=${VLLM_TOKEN_TRACE_PATH_EFFECTIVE}"
   echo "vllm_ignore_text_eos=${STEPAUDIO_VLLM_IGNORE_TEXT_EOS:-1}"
-  echo "vllm_tail_truncate_enabled=${STEPAUDIO_VLLM_TAIL_TRUNCATE_ENABLED:-1}"
   echo "vllm_gpu_memory_utilization=${GPU_MEM_UTIL}"
   echo "vllm_side_parallel_branch=${SIDE_PARALLEL_BRANCH}"
   echo "force_disable_proxy=${FORCE_DISABLE_PROXY}"
-  echo "soulx_enabled=${STEPAUDIO_SOULX_ENABLED:-0}"
-  echo "soulx_ws_url=${STEPAUDIO_SOULX_WS_URL:-ws://127.0.0.1:18080/turn}"
-  echo "soulx_idle_compact_enabled=${STEPAUDIO_SOULX_IDLE_COMPACT_ENABLED:-0}"
-  echo "soulx_active_states=${STEPAUDIO_SOULX_ACTIVE_STATES:-nonidle,speak}"
-  echo "soulx_idle_confirm_ms=${STEPAUDIO_SOULX_IDLE_CONFIRM_MS:-2400}"
-  echo "soulx_idle_max_age_ms=${STEPAUDIO_SOULX_IDLE_MAX_AGE_MS:-800}"
-  echo "soulx_post_active_cooldown_ms=${STEPAUDIO_SOULX_POST_ACTIVE_COOLDOWN_MS:-1200}"
-  echo "soulx_idle_anchor_max_pending_ms=${STEPAUDIO_SOULX_IDLE_ANCHOR_MAX_PENDING_MS:-400}"
-  echo "soulx_idle_compact_min_drop_tokens=${STEPAUDIO_SOULX_IDLE_COMPACT_MIN_DROP_TOKENS:-1}"
 } > "${STARTUP_CONFIG_LOG_PATH}"
 echo "[backend] startup_config_log=${STARTUP_CONFIG_LOG_PATH}"
 
@@ -347,20 +327,6 @@ exec env \
   STEPAUDIO_REALTIME_CONTROL_PROB_TRACE_LOG_DIR="${REALTIME_CONTROL_PROB_TRACE_LOG_DIR_EFFECTIVE}" \
   STEPAUDIO_VLLM_TOKEN_TRACE="${VLLM_TOKEN_TRACE_EFFECTIVE}" \
   STEPAUDIO_VLLM_TOKEN_TRACE_PATH="${VLLM_TOKEN_TRACE_PATH_EFFECTIVE}" \
-  STEPAUDIO_VLLM_TAIL_TRUNCATE_ENABLED="${STEPAUDIO_VLLM_TAIL_TRUNCATE_ENABLED:-1}" \
-  STEPAUDIO_SOULX_ENABLED="${STEPAUDIO_SOULX_ENABLED:-0}" \
-  STEPAUDIO_SOULX_WS_URL="${STEPAUDIO_SOULX_WS_URL:-ws://127.0.0.1:18080/turn}" \
-  STEPAUDIO_SOULX_CLIENT_QUEUE_MAX="${STEPAUDIO_SOULX_CLIENT_QUEUE_MAX:-8}" \
-  STEPAUDIO_SOULX_CONNECT_TIMEOUT_SEC="${STEPAUDIO_SOULX_CONNECT_TIMEOUT_SEC:-3.0}" \
-  STEPAUDIO_SOULX_RECV_TIMEOUT_SEC="${STEPAUDIO_SOULX_RECV_TIMEOUT_SEC:-3.0}" \
-  STEPAUDIO_SOULX_IDLE_COMPACT_ENABLED="${STEPAUDIO_SOULX_IDLE_COMPACT_ENABLED:-0}" \
-  STEPAUDIO_SOULX_IDLE_STATES="${STEPAUDIO_SOULX_IDLE_STATES:-idle,blank}" \
-  STEPAUDIO_SOULX_ACTIVE_STATES="${STEPAUDIO_SOULX_ACTIVE_STATES:-nonidle,speak}" \
-  STEPAUDIO_SOULX_IDLE_CONFIRM_MS="${STEPAUDIO_SOULX_IDLE_CONFIRM_MS:-2400}" \
-  STEPAUDIO_SOULX_IDLE_MAX_AGE_MS="${STEPAUDIO_SOULX_IDLE_MAX_AGE_MS:-800}" \
-  STEPAUDIO_SOULX_POST_ACTIVE_COOLDOWN_MS="${STEPAUDIO_SOULX_POST_ACTIVE_COOLDOWN_MS:-1200}" \
-  STEPAUDIO_SOULX_IDLE_ANCHOR_MAX_PENDING_MS="${STEPAUDIO_SOULX_IDLE_ANCHOR_MAX_PENDING_MS:-400}" \
-  STEPAUDIO_SOULX_IDLE_COMPACT_MIN_DROP_TOKENS="${STEPAUDIO_SOULX_IDLE_COMPACT_MIN_DROP_TOKENS:-1}" \
   STEPAUDIO_REALTIME_INFER_WINDOW_MS="${STEPAUDIO_REALTIME_INFER_WINDOW_MS:-400}" \
   STEPAUDIO_REALTIME_INFER_WINDOW_MIN_MS="${STEPAUDIO_REALTIME_INFER_WINDOW_MIN_MS:-160}" \
   STEPAUDIO_WINDOW_SECOND="${STEPAUDIO_WINDOW_SECOND:-0.4}" \
