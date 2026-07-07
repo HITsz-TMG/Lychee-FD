@@ -116,6 +116,8 @@ CLONE_PROMPT_DIR = os.environ.get(
 )
 
 REALTIME_PROMPT_VOICE_OPTIONS = [
+    {"id": "default_female", "label": "默认女声", "wav": "default_female.wav", "text": "text.txt"},
+    {"id": "default_male", "label": "默认男声", "wav": "default_male.wav", "text": "text.txt"},
     {"id": "leijun", "label": "雷军", "wav": "leijun_voice.wav", "text": "text.txt"},
     {"id": "guodegang", "label": "郭德纲", "wav": "gudegang_voice.wav", "text": "guodegang.txt"},
     {"id": "jay", "label": "周杰伦", "wav": "jay.wav", "text": "jay.txt"},
@@ -126,18 +128,12 @@ REALTIME_PROMPT_VOICE_OPTIONS = [
     {"id": "haimian", "label": "海绵宝宝", "wav": "haimian.wav", "text": "haimian.txt"},
     {"id": "dengziqi", "label": "邓紫棋", "wav": "dengziqi.wav", "text": "dengziqi.txt"},
     {"id": "liyunlong", "label": "李云龙", "wav": "liyunlong.wav", "text": "liyunlong.txt"},
-    {
-        "id": "snow",
-        "label": "Snow",
-        "wav": "snow_F0013_snow1_train_000004.wav",
-        "text": "snow_F0013_snow1_train_000004.txt",
-    },
     {"id": "new_female", "label": "清纯女声", "wav": "new_female_voice.wav", "text": "text.txt"},
     {"id": "female", "label": "阳光女声", "wav": "female_voice.wav", "text": "text.txt"},
     {"id": "news_male", "label": "播音男声", "wav": "news_male_voice.wav", "text": "text.txt"},
     {"id": "user_voice", "label": "用户音色", "wav": "user_voice.wav", "text": "user_voice.txt"},
 ]
-DEFAULT_REALTIME_PROMPT_VOICE = os.environ.get("STEPAUDIO_DEFAULT_PROMPT_VOICE", "guodegang")
+DEFAULT_REALTIME_PROMPT_VOICE = os.environ.get("STEPAUDIO_DEFAULT_PROMPT_VOICE", "default_female")
 
 ALLOWING_BACKCHANNEL = False
 
@@ -381,10 +377,6 @@ def _resolve_prompt_wav_path(prompt_voice: str) -> str:
     voice_lower = voice.lower()
     if not voice_lower:
         voice_lower = DEFAULT_REALTIME_PROMPT_VOICE.lower()
-    if voice_lower in {"男声", "male", "man", "m"}:
-        return os.path.join(ASSETS_DIR, "default_male.wav")
-    if voice_lower in {"女声", "female", "woman", "f"}:
-        return os.path.join(ASSETS_DIR, "default_female.wav")
 
     for item in _available_realtime_prompt_voices():
         item_id = str(item.get("id", "")).strip()
@@ -397,6 +389,11 @@ def _resolve_prompt_wav_path(prompt_voice: str) -> str:
         }
         if voice_lower in accepted:
             return os.path.abspath(os.path.join(CLONE_PROMPT_DIR, wav_name))
+
+    if voice_lower in {"男声", "male", "man", "m", "default_male"}:
+        return os.path.join(ASSETS_DIR, "default_male.wav")
+    if voice_lower in {"女声", "woman", "f", "default_female"}:
+        return os.path.join(ASSETS_DIR, "default_female.wav")
 
     available_ids = ", ".join(item["id"] for item in _available_realtime_prompt_voices())
     raise ValueError(f"Unknown prompt voice: {prompt_voice!r}. Available clone voices: {available_ids}")

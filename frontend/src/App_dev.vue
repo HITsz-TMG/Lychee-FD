@@ -444,6 +444,8 @@ const voiceInitial = (label) => {
 // 或在后端 /api/realtime/voices 的返回项中提供 preview_url / sample 字段（优先生效）。
 const VOICE_PREVIEW_BASE = '/clone_24k_mono/';
 const VOICE_PREVIEW_MAP = {
+  default_female: 'default_female.wav',
+  default_male: 'default_male.wav',
   leijun: 'leijun_voice.wav',
   guodegang: 'gudegang_voice.wav',
   jay: 'jay.wav',
@@ -454,7 +456,6 @@ const VOICE_PREVIEW_MAP = {
   haimian: 'haimian.wav',
   dengziqi: 'dengziqi.wav',
   liyunlong: 'liyunlong.wav',
-  snow: 'snow_F0013_snow1_train_000004.wav',
   new_female: 'new_female_voice.wav',
   female: 'female_voice.wav',
   news_male: 'news_male_voice.wav',
@@ -3140,8 +3141,10 @@ const openUserVoiceUpload = () => {
 };
 
 // ---- 参考音色选择 ----
-const DEFAULT_VOICE = 'snow';
+const DEFAULT_VOICE = 'default_female';
 const fallbackVoiceOptions = [
+  { id: 'default_female', label: '默认女声' },
+  { id: 'default_male', label: '默认男声' },
   { id: 'leijun', label: '雷军' },
   { id: 'guodegang', label: '郭德纲' },
   { id: 'jay', label: '周杰伦' },
@@ -3152,7 +3155,6 @@ const fallbackVoiceOptions = [
   { id: 'haimian', label: '海绵宝宝' },
   { id: 'dengziqi', label: '邓紫棋' },
   { id: 'liyunlong', label: '李云龙' },
-  { id: 'snow', label: 'Snow' },
   { id: 'new_female', label: '清纯女声' },
   { id: 'female', label: '阳光女声' },
   { id: 'news_male', label: '播音男声' },

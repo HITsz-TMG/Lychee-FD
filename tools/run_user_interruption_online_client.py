@@ -552,7 +552,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--start-speak-factor", type=float, default=1.2)
     parser.add_argument("--start-listen-factor", type=float, default=1.2)
     parser.add_argument("--end-speak-factor", type=float, default=1.0)
-    parser.add_argument("--prompt-voice", default="snow")
+    parser.add_argument("--prompt-voice", default="default_female")
     parser.add_argument("--tts-chunk-size", type=int, default=1)
     parser.add_argument("--strict-infer-window", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--stage-timing-log", action=argparse.BooleanOptionalAction, default=False)

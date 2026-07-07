@@ -274,9 +274,11 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 const TARGET_SAMPLE_RATE = 16000;
 const TTS_SAMPLE_RATE = 24000;
 const MIN_SEGMENT_SAMPLES = 800;
-const DEFAULT_VOICE = 'guodegang';
+const DEFAULT_VOICE = 'default_female';
 
 const fallbackVoiceOptions = [
+  { id: 'default_female', label: '默认女声' },
+  { id: 'default_male', label: '默认男声' },
   { id: 'leijun', label: '雷军' },
   { id: 'guodegang', label: '郭德纲' },
   { id: 'jay', label: '周杰伦' },
@@ -287,7 +289,6 @@ const fallbackVoiceOptions = [
   { id: 'haimian', label: '海绵宝宝' },
   { id: 'dengziqi', label: '邓紫棋' },
   { id: 'liyunlong', label: '李云龙' },
-  { id: 'snow', label: 'Snow' },
   { id: 'new_female', label: '清纯女声' },
   { id: 'female', label: '阳光女声' },
   { id: 'news_male', label: '播音男声' }
