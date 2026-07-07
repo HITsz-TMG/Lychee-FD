@@ -2,7 +2,9 @@ x-app-build: &app-build
   context: .
   dockerfile: docker/Dockerfile
   args:
-    BASE_IMAGE: "${LYCHEE_FD_BASE_IMAGE:-lychee-fd-early-exit-backend:dev}"
+    # Use an environment-only base. Do not use an app image here: app-image
+    # lower layers may contain old source/assets even after later cleanup.
+    BASE_IMAGE: "${LYCHEE_FD_BASE_IMAGE:-lychee-fd-early-exit-flash-attn:dev}"
 
 services:
   token2wav:
