@@ -8,6 +8,27 @@ Full-duplex realtime speech interaction demo.
 
 This repository provides the Lychee-FD source code, frontend demo, and Docker Compose configuration. The Docker image contains the runtime environment and code, but does not include model weights.
 
+## Online Serving Performance
+
+We compare the Hugging Face online backend with the vLLM online backend on an evaluation subset. The main gain is not just lower average latency: vLLM substantially improves the probability that response-generation rounds finish within the realtime inference window.
+
+| Scope | HF rounds | vLLM rounds | HF mean latency | vLLM mean latency | Speedup | HF window RTF | vLLM window RTF | HF within window | vLLM within window |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| All rounds | 15,191 | 15,191 | 288.49 ms | 249.30 ms | 1.16x | 0.721 | 0.623 | 70.8% | 99.5% |
+| Speaking rounds | 4,470 | 4,183 | 777.50 ms | 261.50 ms | 2.97x | 1.944 | 0.654 | 0.6% | 98.5% |
+| Listening rounds | 10,701 | 11,003 | 84.70 ms | 244.77 ms | 0.35x | 0.212 | 0.612 | 100.0% | 99.9% |
+
+The speaking-round result is the most relevant realtime serving signal: it includes response generation work, where the HF backend frequently exceeds the online window, while the vLLM backend keeps 98.5% of speaking rounds within the realtime budget.
+
+| Stage | HF mean latency | vLLM mean latency | Speedup |
+| --- | ---: | ---: | ---: |
+| Stream infer | 277.90 ms | 237.49 ms | 1.17x |
+| Transformer | 241.05 ms | 219.36 ms | 1.10x |
+| Audio encoder | 15.73 ms | 11.75 ms | 1.34x |
+| Token2wav | 155.69 ms | 160.33 ms | 0.97x |
+
+`window RTF = total_round_ms / infer_window_ms`; values below 1.0 indicate that the backend finishes within the realtime inference window. Token2wav is not the primary vLLM optimization target, so its latency is roughly unchanged.
+
 ## Docker Quick Start
 
 Clone the repository:
