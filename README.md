@@ -148,6 +148,18 @@ docker compose pull
 docker compose up -d
 ```
 
+## Third-Party Code
+
+This repository vendors selected third-party components for the demo and online
+serving pipeline. See [third_party/THIRD_PARTY_NOTICES.md](third_party/THIRD_PARTY_NOTICES.md)
+for upstream sources, license notices, and local integration notes.
+
+## License
+
+Lychee-FD is released under the [Apache License 2.0](LICENSE).
+
+Copyright 2026 HITsz-TMG and Lychee-FD authors.
+
 ## Detailed Guide
 
 See [启动指南.md](启动指南.md) for more startup details and optional source-based launch commands.

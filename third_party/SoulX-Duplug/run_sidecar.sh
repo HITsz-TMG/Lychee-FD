@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Lychee-FD integration wrapper for launching the vendored SoulX-Duplug
+# sidecar service. This wrapper was added/modified by the Lychee-FD authors;
+# the upstream SoulX-Duplug project remains licensed under Apache-2.0.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
