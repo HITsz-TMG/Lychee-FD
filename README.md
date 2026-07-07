@@ -10,15 +10,17 @@ This repository provides the Lychee-FD source code, frontend demo, and Docker Co
 
 ## Online Serving Performance
 
-We compare the Hugging Face online backend with the vLLM online backend on an evaluation subset. The main gain is not just lower average latency: vLLM substantially improves the probability that response-generation rounds finish within the realtime inference window.
+We compare the Hugging Face online backend with the vLLM online backend on an evaluation subset. Each online round consumes a fixed 400 ms audio window, so the key metric is whether backend computation finishes before the next window arrives. The main gain is in response-generation rounds: vLLM substantially improves the probability that speaking rounds finish within the realtime budget.
 
-| Scope | HF rounds | vLLM rounds | HF mean latency | vLLM mean latency | Speedup | HF window RTF | vLLM window RTF | HF within window | vLLM within window |
+| Scope | HF rounds | vLLM rounds | HF mean compute / window | vLLM mean compute / window | Speedup | HF window RTF | vLLM window RTF | HF within window | vLLM within window |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | All rounds | 15,191 | 15,191 | 288.49 ms | 249.30 ms | 1.16x | 0.721 | 0.623 | 70.8% | 99.5% |
 | Speaking rounds | 4,470 | 4,183 | 777.50 ms | 261.50 ms | 2.97x | 1.944 | 0.654 | 0.6% | 98.5% |
 | Listening rounds | 10,701 | 11,003 | 84.70 ms | 244.77 ms | 0.35x | 0.212 | 0.612 | 100.0% | 99.9% |
 
 The speaking-round result is the most relevant realtime serving signal: it includes response generation work, where the HF backend frequently exceeds the online window, while the vLLM backend keeps 98.5% of speaking rounds within the realtime budget.
+
+Listening rounds are input-gated: once the backend reliably consumes each 400 ms audio window before the next window arrives, additional compute-time reduction does not directly reduce user-perceived latency. Both backends satisfy this condition for listening rounds, so they are effectively equivalent in the listening state despite different raw compute times.
 
 | Stage | HF mean latency | vLLM mean latency | Speedup |
 | --- | ---: | ---: | ---: |
@@ -27,7 +29,7 @@ The speaking-round result is the most relevant realtime serving signal: it inclu
 | Audio encoder | 15.73 ms | 11.75 ms | 1.34x |
 | Token2wav | 155.69 ms | 160.33 ms | 0.97x |
 
-`window RTF = total_round_ms / infer_window_ms`; values below 1.0 indicate that the backend finishes within the realtime inference window. Token2wav is not the primary vLLM optimization target, so its latency is roughly unchanged.
+`window RTF = round_compute_ms / 400 ms`; values below 1.0 indicate that the backend finishes processing the current audio window before the next window arrives. Token2wav is not the primary vLLM optimization target, so its latency is roughly unchanged.
 
 ## Docker Quick Start
 
