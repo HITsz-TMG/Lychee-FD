@@ -8,6 +8,14 @@ Full-duplex realtime speech interaction demo.
 
 This repository provides the Lychee-FD source code, frontend demo, and Docker Compose configuration. The Docker image contains the runtime environment and code, but does not include model weights.
 
+## System Architecture
+
+<p align="center">
+  <img src="docs/assets/vllm_optimized_online_pipeline_detail.svg" alt="vLLM-optimized online full-duplex inference pipeline" width="100%">
+</p>
+
+The online pipeline separates realtime audio ingestion, state-aware full-duplex inference, vLLM-optimized response generation, and streaming token-to-waveform synthesis.
+
 ## Online Serving Performance
 
 We compare the Hugging Face online backend with the vLLM online backend on an evaluation subset. Each online round consumes a fixed 400 ms audio window, so the key metric is whether backend computation finishes before the next window arrives. The main gain is in response-generation rounds: vLLM substantially improves the probability that speaking rounds finish within the realtime budget.
