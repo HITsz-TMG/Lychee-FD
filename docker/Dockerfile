@@ -2,6 +2,10 @@ ARG BASE_IMAGE=lychee-fd-early-exit-backend:dev
 
 FROM ${BASE_IMAGE}
 
+# The base image provides the environment but may contain an older /app tree.
+# Clear it first so deleted files from older releases do not survive COPY.
+RUN if [ -d /app ]; then find /app -mindepth 1 -maxdepth 1 -exec rm -rf {} +; fi
+
 WORKDIR /app
 
 COPY frontend/package.json frontend/package-lock.json /app/frontend/
