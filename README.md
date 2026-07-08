@@ -89,7 +89,7 @@ We compare the Hugging Face online backend with the vLLM online backend on an ev
 
 - **Speaking rounds are the critical online workload:** vLLM reduces mean compute from 777.50 ms to 261.50 ms and raises within-window completion from 0.6% to 98.5%.
 - **Overall realtime stability improves:** across all rounds, vLLM finishes 99.5% of windows within the 400 ms budget.
-- **Long-context memory growth is reduced:** in a controlled long-session run, vLLM showed about 23% lower incremental GPU memory growth than the HF backend over a comparable 5 minutes audio stream.
+- **Long-context memory growth is reduced:** in controlled long-session runs, vLLM showed about 23% lower incremental GPU memory growth than the HF backend over a comparable 5 minutes audio stream.
 
 `window RTF = round_compute_ms / 400 ms`; values below 1.0 indicate that the backend finishes processing the current audio window before the next window arrives.
 
