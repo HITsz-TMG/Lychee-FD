@@ -4,7 +4,7 @@ Full-duplex realtime speech interaction demo.
 
 [![Hugging Face](https://img.shields.io/badge/Hugging%20Face-Model-yellow?logo=huggingface)](https://huggingface.co/PLACEHOLDER/Lychee-FD)
 [![Demo](https://img.shields.io/badge/Demo-Website-blue?logo=googlechrome)](https://PLACEHOLDER.demo)
-[![Paper](https://img.shields.io/badge/Paper-ACL%202026-red?logo=adobeacrobatreader)](https://aclanthology.org/2026.acl-long.419.pdf)
+[![Paper](https://img.shields.io/badge/Paper-ACL%202026-red?logo=adobeacrobatreader)](https://arxiv.org/pdf/2607.06540)
 [![License](https://img.shields.io/badge/License-Apache--2.0-green)](LICENSE)
 
 This repository provides the Lychee-FD source code, frontend demo, and Docker Compose configuration. The Docker image contains the runtime environment and code, but does not include model weights.

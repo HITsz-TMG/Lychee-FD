@@ -397,7 +397,7 @@ import { ElNotification } from 'element-plus'  // 引入 Element Plus 的通知�
 // External resource links.
 const EXTERNAL_LINKS = {
   github: 'https://github.com/HITsz-TMG/Lychee-FD',
-  paper: 'https://aclanthology.org/2026.acl-long.419.pdf',
+  paper: 'https://arxiv.org/pdf/2607.06540',
   docs: 'https://hitsz-tmg.github.io/Lychee-FD/',
 };
 
@@ -905,20 +905,20 @@ const REALTIME_FILLER_WORD_AUDIO_MANIFEST_PATH = `${REALTIME_FILLER_WORD_AUDIO_B
 const SHOWCASE_CASE_BASE_PATH = '/input_cases/showcase/';
 const SHOWCASE_TAIL_SILENCE_SEC = 15;
 const showcaseCases = [
-  { id: 'spoken', label: 'Casual Chat', filename: 'spoken.m4a' },
-  { id: 'schedule', label: 'Scheduling', filename: 'schedule.m4a' },
-  { id: 'flight', label: 'Flight Info', filename: 'flight.m4a' },
-  { id: 'shandong_food', label: 'Shandong Cuisine', filename: 'shandong_food.m4a' },
-  { id: 'family_blessing', label: 'Family Greeting', filename: 'family_blessing.m4a' },
-  { id: 'weekend_relax', label: 'Weekend Plan', filename: 'weekend_relax.m4a' },
-  { id: 'info_entropy', label: 'Information Entropy', filename: '信息论熵的解释.wav' },
-  { id: 'make_cake', label: 'Baking a Cake', filename: '做蛋糕.wav' },
-  { id: 'write_email', label: 'Write an Email', filename: '写邮件.wav' },
-  { id: 'history_qa', label: 'History Q&A', filename: '历史问答.wav' },
-  { id: 'travel_plan', label: 'Travel Planning', filename: '旅游规划.wav' },
-  { id: 'shenzhen_travel', label: 'Shenzhen Trip', filename: '深圳旅游.wav' },
-  { id: 'continuous_interrupt', label: 'Interruptions', filename: '连续打断输入.wav' },
-  { id: 'hotel_recommendation', label: 'Hotel Recommendation', filename: '酒店推荐.wav' }
+  { id: 'spoken', label: '口语', filename: 'spoken.m4a' },
+  { id: 'schedule', label: '安排时间', filename: 'schedule.m4a' },
+  { id: 'flight', label: '航班', filename: 'flight.m4a' },
+  { id: 'shandong_food', label: '山东菜推荐', filename: 'shandong_food.m4a' },
+  { id: 'family_blessing', label: '亲戚祝福', filename: 'family_blessing.m4a' },
+  { id: 'weekend_relax', label: '周末放松', filename: 'weekend_relax.m4a' },
+  { id: 'info_entropy', label: '信息论熵的解释', filename: '信息论熵的解释.wav' },
+  { id: 'make_cake', label: '做蛋糕', filename: '做蛋糕.wav' },
+  { id: 'write_email', label: '写邮件', filename: '写邮件.wav' },
+  { id: 'history_qa', label: '历史问答', filename: '历史问答.wav' },
+  { id: 'travel_plan', label: '旅游规划', filename: '旅游规划.wav' },
+  { id: 'shenzhen_travel', label: '深圳旅游', filename: '深圳旅游.wav' },
+  { id: 'continuous_interrupt', label: '连续打断输入', filename: '连续打断输入.wav' },
+  { id: 'hotel_recommendation', label: '酒店推荐', filename: '酒店推荐.wav' }
 ];
 
 // 欢迎页随机展示 3 个样例（点击直接开始；通话开始后整块自然隐藏）
