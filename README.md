@@ -48,21 +48,21 @@ This repository provides:
 
 ## 🌟 Model Structure
 
-Lychee-FD is a native end-to-end full-duplex speech language model for realtime spoken interaction. Instead of cascading ASR, LLM, TTS, and turn-taking modules, it unifies listening, understanding, speaking, and interaction control within an end-to-end multi-stream architecture.
+Lychee-FD is a native end-to-end full-duplex speech language model designed for realtime spoken interaction. Instead of relying on cascaded ASR, LLM, TTS, and turn-taking modules, it jointly models listening, understanding, speaking, and interaction control within an end-to-end multi-stream architecture.
 
-Its design is motivated by the optimization dynamics of native full-duplex speech modeling. As the model goes deeper, acoustic generation and semantic reasoning are increasingly pulled toward different objectives under shared parameters; at the same time, high-frequency speech tokens can dilute sparse textual supervision, weakening semantic consistency during speech generation.
+The architecture is motivated by the optimization dynamics observed in native full-duplex speech modeling. In deeper layers, acoustic generation and semantic reasoning tend to impose increasingly divergent optimization objectives on shared parameters. Meanwhile, high-frequency speech tokens can dilute sparse textual supervision, weakening semantic consistency during speech generation.
 
 <p align="center">
   <img src="docs/assets/images/paper/acoustic_semantic_optimization.png" alt="Optimization dynamics of acoustic-semantic modeling in Lychee-FD" width="80%">
 </p>
 
-Lychee-FD addresses this conflict with hierarchical acoustic-semantic modeling rather than adding external scheduling modules. The lower layers remain shared to learn common speech-language representations from continuous audio streams, while the upper layers are decoupled into semantic, acoustic, and dialogue-control streams. This lets semantic reasoning preserve language understanding and knowledge, acoustic modeling focus on natural speech token generation, and dialogue control decide when to speak, stop, listen, or respond to interruptions.
+Lychee-FD addresses this conflict through hierarchical acoustic-semantic modeling instead of external scheduling. The lower layers are shared to learn common speech-language representations from continuous audio streams, whereas the upper layers are decoupled into semantic, acoustic, and dialogue-control streams. This design enables semantic reasoning to preserve language understanding and knowledge, acoustic modeling to focus on natural speech token generation, and dialogue control to determine when to speak, stop, listen, or respond to interruptions.
 
 <p align="center">
   <img src="docs/assets/images/paper/lychee_fd_model_structure.png" alt="Lychee-FD hierarchical acoustic-semantic model architecture" width="100%">
 </p>
 
-This architecture also changes the serving problem. Standard LLM inference engines are optimized for a single forward path and a single output stream; executing Lychee-FD's specialized streams sequentially would introduce unnecessary latency. Our vLLM-optimized online pipeline reuses the shared-backbone computation, dispatches intermediate states to stream-specific branches, and manages KV cache for the multi-stream generation process. The control stream further supports early-exit decisions, so interruption and turn-taking signals can be emitted before full speech generation finishes.
+This architecture also introduces distinct serving requirements. Standard LLM inference engines are optimized for a single forward path and a single output stream, while sequentially executing Lychee-FD's specialized streams would introduce avoidable latency. Our vLLM-optimized online pipeline reuses shared-backbone computation, dispatches intermediate states to stream-specific branches, and manages KV cache for multi-stream generation. The control stream further supports early-exit decisions, enabling interruption and turn-taking signals to be emitted before full speech generation is completed.
 
 > **TODO:** Replace the following vLLM pipeline figure with the final version.
 
