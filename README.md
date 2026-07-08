@@ -1,13 +1,46 @@
 # Lychee-FD
 
-Full-duplex realtime speech interaction demo.
+<p align="center">
+  <img src="docs/assets/images/logo/Lychee-FD-logo.png" width="260"/>
+</p>
 
-[![Hugging Face](https://img.shields.io/badge/Hugging%20Face-Model-yellow?logo=huggingface)](https://huggingface.co/PLACEHOLDER/Lychee-FD)
-[![Demo](https://img.shields.io/badge/Demo-Website-blue?logo=googlechrome)](https://hitsz-tmg.github.io/Lychee-FD/)
-[![Paper](https://img.shields.io/badge/Paper-ACL%202026-red?logo=adobeacrobatreader)](https://arxiv.org/pdf/2607.06540)
-[![License](https://img.shields.io/badge/License-Apache--2.0-green)](LICENSE)
+<h4 align="center">
+Lychee-FD is a full-duplex realtime speech interaction system designed for low-latency spoken dialogue.
+</h4>
 
-This repository provides the Lychee-FD source code, frontend demo, and Docker Compose configuration. The Docker image contains the runtime environment and code, but does not include model weights.
+<p align="center">
+  <a href="https://huggingface.co/PLACEHOLDER/Lychee-FD">
+    <img src="https://img.shields.io/badge/🤗%20Hugging%20Face-Model-yellow" alt="Hugging Face">
+  </a>
+  <a href="https://hitsz-tmg.github.io/Lychee-FD/">
+    <img src="https://img.shields.io/badge/Demo-Website-blue?logo=googlechrome" alt="Demo">
+  </a>
+  <a href="https://arxiv.org/pdf/2607.06540">
+    <img src="https://img.shields.io/badge/arXiv-2607.06540-b31b1b?logo=arxiv&logoColor=white" alt="arXiv">
+  </a>
+</p>
+
+<h4 align="center">
+If you appreciate our project, please consider giving us a star ⭐ on GitHub to stay updated with the latest developments.
+</h4>
+
+## 🔥 News
+
+- [2026/07/10] 🎉 We release the Lychee-FD codebase, paper, and web demo.
+- [2026/07/07] 🏆 Our paper has been selected as an [**Outstanding Paper**](https://aclanthology.org/2026.acl-long.419) at **ACL 2026**!
+
+
+## 📌 Introduction
+
+**Lychee-FD** is a full-duplex realtime speech interaction system designed for low-latency spoken dialogue. Unlike conventional turn-based speech systems, Lychee-FD supports simultaneous listening and speaking, enabling more natural interactive behaviors such as realtime response generation, interruption handling, and streaming speech output.
+
+This repository provides:
+
+- Source code for the Lychee-FD online serving pipeline.
+- A browser-based realtime speech interaction frontend.
+- Docker Compose configuration for quick deployment.
+- vLLM-optimized backend support for low-latency online inference.
+- Runtime integration notes and third-party license notices.
 
 ## System Architecture
 
