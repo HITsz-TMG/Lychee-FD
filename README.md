@@ -56,13 +56,13 @@ Its design is motivated by the optimization dynamics of native full-duplex speec
   <img src="docs/assets/images/paper/acoustic_semantic_optimization.png" alt="Optimization dynamics of acoustic-semantic modeling in Lychee-FD" width="80%">
 </p>
 
-Lychee-FD addresses this with hierarchical acoustic-semantic modeling. Lower layers share common speech-language representations, while upper layers are separated into semantic, acoustic, and dialogue-control streams for reasoning, speech generation, and realtime interaction decisions.
+Lychee-FD addresses this conflict with hierarchical acoustic-semantic modeling rather than adding external scheduling modules. The lower layers remain shared to learn common speech-language representations from continuous audio streams, while the upper layers are decoupled into semantic, acoustic, and dialogue-control streams. This lets semantic reasoning preserve language understanding and knowledge, acoustic modeling focus on natural speech token generation, and dialogue control decide when to speak, stop, listen, or respond to interruptions.
 
 <p align="center">
   <img src="docs/assets/images/paper/lychee_fd_model_structure.png" alt="Lychee-FD hierarchical acoustic-semantic model architecture" width="100%">
 </p>
 
-For deployment, Lychee-FD uses a vLLM-optimized multi-stream inference pipeline with branch-specific KV-cache management. The control stream supports early-exit decisions, allowing interruption and turn-taking signals to be emitted before full speech generation finishes.
+This architecture also changes the serving problem. Standard LLM inference engines are optimized for a single forward path and a single output stream; executing Lychee-FD's specialized streams sequentially would introduce unnecessary latency. Our vLLM-optimized online pipeline reuses the shared-backbone computation, dispatches intermediate states to stream-specific branches, and manages KV cache for the multi-stream generation process. The control stream further supports early-exit decisions, so interruption and turn-taking signals can be emitted before full speech generation finishes.
 
 > **TODO:** Replace the following vLLM pipeline figure with the final version.
 
