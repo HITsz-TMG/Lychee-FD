@@ -3,7 +3,7 @@
 Full-duplex realtime speech interaction demo.
 
 [![Hugging Face](https://img.shields.io/badge/Hugging%20Face-Model-yellow?logo=huggingface)](https://huggingface.co/PLACEHOLDER/Lychee-FD)
-[![Demo](https://img.shields.io/badge/Demo-Website-blue?logo=googlechrome)](https://PLACEHOLDER.demo)
+[![Demo](https://img.shields.io/badge/Demo-Website-blue?logo=googlechrome)](https://hitsz-tmg.github.io/Lychee-FD/)
 [![Paper](https://img.shields.io/badge/Paper-ACL%202026-red?logo=adobeacrobatreader)](https://arxiv.org/pdf/2607.06540)
 [![License](https://img.shields.io/badge/License-Apache--2.0-green)](LICENSE)
 
@@ -19,17 +19,19 @@ The online pipeline separates realtime audio ingestion, state-aware full-duplex 
 
 ## Online Serving Performance
 
-We compare the Hugging Face online backend with the vLLM online backend on an evaluation subset. Each online round consumes a fixed 400 ms audio window, so the key metric is whether backend computation finishes before the next window arrives. The main gain is in response-generation rounds: vLLM substantially improves the probability that speaking rounds finish within the realtime budget.
+We compare the Hugging Face online backend with the vLLM online backend on an evaluation subset. Each online round consumes a fixed 400 ms audio window, so the key metric is whether backend computation finishes before the next window arrives.
 
 | Scope | HF rounds | vLLM rounds | HF mean compute / window | vLLM mean compute / window | Speedup | HF window RTF | vLLM window RTF | HF within window | vLLM within window |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| All rounds | 15,191 | 15,191 | 288.49 ms | 249.30 ms | 1.16x | 0.721 | 0.623 | 70.8% | 99.5% |
-| Speaking rounds | 4,470 | 4,183 | 777.50 ms | 261.50 ms | 2.97x | 1.944 | 0.654 | 0.6% | 98.5% |
-| Listening rounds | 10,701 | 11,003 | 84.70 ms | 244.77 ms | 0.35x | 0.212 | 0.612 | 100.0% | 99.9% |
+| All rounds | 15,191 | 15,191 | 288.49 ms | 249.30 ms | 1.16x | 0.721 | 0.623 | 70.8% | **99.5%** |
+| Speaking rounds | 4,470 | 4,183 | 777.50 ms | **261.50 ms** | **2.97x** | 1.944 | **0.654** | 0.6% | **98.5%** |
+| Listening rounds | 10,701 | 11,003 | 84.70 ms | 244.77 ms | 0.35x | 0.212 | 0.612 | **100.0%** | **99.9%** |
 
-The speaking-round result is the most relevant realtime serving signal: it includes response generation work, where the HF backend frequently exceeds the online window, while the vLLM backend keeps 98.5% of speaking rounds within the realtime budget.
+**Key points:**
 
-Listening rounds are input-gated: once the backend reliably consumes each 400 ms audio window before the next window arrives, additional compute-time reduction does not directly reduce user-perceived latency. Both backends satisfy this condition for listening rounds, so they are effectively equivalent in the listening state despite different raw compute times.
+- **Speaking rounds are the critical online workload:** vLLM reduces mean compute from 777.50 ms to 261.50 ms and raises within-window completion from 0.6% to 98.5%.
+- **Overall realtime stability improves:** across all rounds, vLLM finishes 99.5% of windows within the 400 ms budget.
+- **Listening-round raw speed is not the bottleneck:** HF is faster in listening-only compute, but this does not reduce user latency because the system must wait for the next 400 ms input window; both backends already finish listening rounds in time.
 
 `window RTF = round_compute_ms / 400 ms`; values below 1.0 indicate that the backend finishes processing the current audio window before the next window arrives.
 
