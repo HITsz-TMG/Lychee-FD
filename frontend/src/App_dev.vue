@@ -8,19 +8,19 @@
       </div>
       <nav class="rt-header-links">
         <a class="rt-header-link" :href="EXTERNAL_LINKS.github" target="_blank" rel="noopener noreferrer">GitHub</a>
-        <a class="rt-header-link" :href="EXTERNAL_LINKS.paper" target="_blank" rel="noopener noreferrer">论文</a>
-        <a class="rt-header-link" :href="EXTERNAL_LINKS.docs" target="_blank" rel="noopener noreferrer">项目网站</a>
+        <a class="rt-header-link" :href="EXTERNAL_LINKS.paper" target="_blank" rel="noopener noreferrer">Paper</a>
+        <a class="rt-header-link" :href="EXTERNAL_LINKS.docs" target="_blank" rel="noopener noreferrer">Project</a>
       </nav>
     </header>
     <!-- ===== 模型加载栏 ===== -->
     <section class="rt-model-bar">
       <div class="rt-model-row">
-        <span class="rt-model-label">模型</span>
+        <span class="rt-model-label">Model</span>
         <select class="rt-model-select" v-model="devSelectedPresetIdx" :disabled="devLoading">
           <option v-for="(p, idx) in devPresets" :key="idx" :value="idx">
             {{ p.name }}
           </option>
-          <option :value="-1">— 自定义路径 —</option>
+          <option :value="-1">Custom path</option>
         </select>
         <input
           v-if="devSelectedPresetIdx === -1"
@@ -38,32 +38,32 @@
           <option value="aggressive">aggressive</option>
         </select>
         <button class="rt-model-btn rt-model-btn-primary" :disabled="devLoading" @click="devLoadSelectedModel">
-          {{ devLoading ? '加载中…' : '加载 / 切换' }}
+          {{ devLoading ? 'Loading...' : 'Load / Switch' }}
         </button>
         <button class="rt-model-btn rt-model-btn-ghost" :disabled="devLoading" @click="devRefreshStatus">
-          刷新状态
+          Refresh
         </button>
         <span class="rt-model-state" :class="'rt-model-state-' + (devStatus.state || 'idle')">
           {{ devStatus.state || 'idle' }}
         </span>
         <button class="rt-model-meta-toggle" @click="modelMetaExpanded = !modelMetaExpanded">
-          {{ modelMetaExpanded ? '收起详情' : '详情' }}
+          {{ modelMetaExpanded ? 'Hide details' : 'Details' }}
         </button>
       </div>
       <div v-if="modelMetaExpanded" class="rt-model-meta">
         <span v-if="devStatus.alive">pid={{ devStatus.pid }} · backend={{ devStatus.backend_type }} · model={{ devStatus.model_path || '-' }}</span>
-        <span v-else>后端未运行</span>
+        <span v-else>Backend offline</span>
         <span v-if="devStatus.last_error" class="rt-model-meta-error">⚠ {{ devStatus.last_error }}</span>
       </div>
     </section>
     <!-- ===== /模型加载栏 ===== -->
     <div v-if="startTalkErrorSummary" class="rt-global-error-strip">
       <div class="rt-global-error-content">
-        <div class="rt-global-error-title">最近一次失败</div>
+        <div class="rt-global-error-title">Latest failure</div>
         <div class="rt-global-error-text">{{ startTalkErrorSummary }}</div>
         <div v-if="startTalkErrorHint" class="rt-global-error-hint">{{ startTalkErrorHint }}</div>
       </div>
-      <button class="rt-global-error-dismiss" @click="dismissStartTalkError">清除</button>
+      <button class="rt-global-error-dismiss" @click="dismissStartTalkError">Dismiss</button>
     </div>
 
     <main class="rt-main-workspace">
@@ -71,7 +71,7 @@
         <!-- 左侧：智能体响应区 -->
         <section class="rt-panel rt-agent-panel">
           <div class="rt-panel-header">
-            <span class="rt-panel-title">智能体响应</span>
+            <span class="rt-panel-title">Agent Response</span>
           </div>
           <div class="rt-orb-stage">
             <span class="rt-call-timer">{{ callTimerDisplay }}</span>
@@ -90,16 +90,16 @@
                 v-html="renderMarkdown(aiReplyText)"
               ></div>
               <div v-else-if="realtimeTextAudioGatePlaceholderVisible" class="rt-subtitle-thinking">
-                <span class="rt-typing-indicator">处理中<span>.</span><span>.</span><span>.</span></span>
+                <span class="rt-typing-indicator">Processing<span>.</span><span>.</span><span>.</span></span>
               </div>
             </template>
             <div v-else class="rt-subtitle-idle">
               <template v-if="isTalking">
-                <span class="rt-typing-indicator">等待处理与响应<span>.</span><span>.</span><span>.</span></span>
+                <span class="rt-typing-indicator">Waiting for response<span>.</span><span>.</span><span>.</span></span>
               </template>
               <template v-else>
-                <p class="rt-welcome-title">👋 欢迎使用 Lychee-FD 实时全双工语音助手</p>
-                <p class="rt-welcome-desc">点击底部「开始通话」，即可像和真人聊天一样自然交流，支持实时对话与随时打断。</p>
+                <p class="rt-welcome-title">👋 Welcome to Lychee-FD</p>
+                <p class="rt-welcome-desc">Start a realtime full-duplex voice conversation with natural turn-taking and interruption support.</p>
                 <div v-if="randomShowcaseCases.length > 0" class="rt-welcome-suggestions">
                   <div class="rt-welcome-suggestions-row">
                     <button
@@ -121,7 +121,7 @@
                     @click="refreshRandomShowcase"
                   >
                     <span class="rt-suggestion-refresh-icon">↻</span>
-                    <span>换一换</span>
+                    <span>Shuffle</span>
                   </button>
                 </div>
               </template>
@@ -132,7 +132,7 @@
         <!-- 右侧：交互历史区 -->
         <aside class="rt-panel rt-history-panel">
           <div class="rt-panel-header">
-            <span class="rt-panel-title">交互历史</span>
+            <span class="rt-panel-title">Interaction History</span>
           </div>
           <div class="rt-history-content">
             <template v-if="alignedSessionHistory.length > 0">
@@ -144,37 +144,37 @@
               >
                 <div class="rt-history-head">
                   <span class="rt-history-round">#{{ alignedSessionHistory.length - idx }}</span>
-                  <span v-if="idx === 0" class="rt-history-latest-tag">最新</span>
+                  <span v-if="idx === 0" class="rt-history-latest-tag">Latest</span>
                   <span class="rt-history-time">{{ item.startedAt }}</span>
                 </div>
                 <div class="rt-history-meta">
-                  <span>会话 {{ item.sessionId || 'unknown' }}</span>
+                  <span>Session {{ item.sessionId || 'unknown' }}</span>
                   <span>{{ item.sampleRate }} Hz</span>
                 </div>
                 <div class="rt-history-audio-block">
-                  <div class="rt-history-label">输入对齐音频<span class="rt-history-dur">{{ item.inputSec }}s</span></div>
+                  <div class="rt-history-label">Aligned input audio<span class="rt-history-dur">{{ item.inputSec }}s</span></div>
                   <audio :src="item.inputUrl" controls preload="metadata"></audio>
                 </div>
                 <div class="rt-history-audio-block">
-                  <div class="rt-history-label">输出对齐音频<span class="rt-history-dur">{{ item.outputSec }}s</span></div>
+                  <div class="rt-history-label">Aligned output audio<span class="rt-history-dur">{{ item.outputSec }}s</span></div>
                   <audio :src="item.outputUrl" controls preload="metadata"></audio>
                 </div>
                 <div v-if="item.rawOutputUrl" class="rt-history-audio-block">
-                  <div class="rt-history-label">输出原始块音频<span class="rt-history-dur">{{ item.rawOutputSec }}s</span></div>
+                  <div class="rt-history-label">Raw output chunks<span class="rt-history-dur">{{ item.rawOutputSec }}s</span></div>
                   <audio :src="item.rawOutputUrl" controls preload="metadata"></audio>
                 </div>
               </div>
             </template>
             <div v-else class="rt-history-empty">
               <span class="rt-history-empty-icon">🗂️</span>
-              <span>暂无交互历史</span>
-              <span class="rt-history-empty-hint">通话结束后，每轮的输入 / 输出音频会出现在这里</span>
+              <span>No interaction history yet</span>
+              <span class="rt-history-empty-hint">Input and output audio for each turn will appear here after a call.</span>
             </div>
           </div>
         </aside>
 
         <!-- 最右：Debug 抽屉 -->
-        <aside class="rt-debug-drawer" :class="{ 'is-open': debugDrawerOpen }">
+        <aside v-if="DEBUG_DRAWER_VISIBLE" class="rt-debug-drawer" :class="{ 'is-open': debugDrawerOpen }">
           <button
             class="rt-debug-rail"
             :class="{ 'has-error': startTalkErrorSummary || devStatus.last_error }"
@@ -283,11 +283,11 @@
       <div class="rt-tool-slot">
         <transition name="rt-pop">
           <div v-if="voicePopoverOpen" class="rt-popover rt-voice-popover">
-            <div class="rt-popover-title">音色设置</div>
-            <div v-if="isTalking" class="rt-popover-hint">通话中切换音色将在下一轮生效</div>
+            <div class="rt-popover-title">Voice Settings</div>
+            <div v-if="isTalking" class="rt-popover-hint">Voice changes take effect on the next turn.</div>
             <div class="rt-voice-upload-row">
-              <span class="rt-voice-upload-text">上传自定义音色文件</span>
-              <button type="button" class="rt-voice-upload-btn" @click="openUserVoiceUpload">选择文件</button>
+              <span class="rt-voice-upload-text">Upload custom voice</span>
+              <button type="button" class="rt-voice-upload-btn" @click="openUserVoiceUpload">Select file</button>
             </div>
             <div class="rt-voice-list">
               <div
@@ -312,7 +312,7 @@
                   :class="{ 'is-playing': voicePreviewId === v.id }"
                   @click="previewVoice(v)"
                 >
-                  {{ voicePreviewId === v.id ? '停止' : '试听' }}
+                  {{ voicePreviewId === v.id ? 'Stop' : 'Preview' }}
                 </button>
               </div>
             </div>
@@ -324,7 +324,7 @@
           :class="{ 'is-active': voicePopoverOpen }"
           @click="toggleVoicePopover"
         >
-          ＋ 音色设置
+          + Voice
         </button>
       </div>
 
@@ -336,14 +336,14 @@
         :disabled="showcaseStarting"
         @click="isTalking ? endTalk() : startTalk()"
       >
-        {{ isTalking ? '挂断通话' : (showcaseStarting ? '连接中…' : '开始通话') }}
+        {{ isTalking ? 'End Call' : (showcaseStarting ? 'Connecting...' : 'Start Call') }}
       </button>
 
       <!-- 对话设置 -->
       <div class="rt-tool-slot">
         <transition name="rt-pop">
           <div v-if="settingsPopoverOpen" class="rt-popover rt-settings-popover">
-            <div class="rt-popover-title">对话设置</div>
+            <div class="rt-popover-title">Conversation Settings</div>
             <label class="rt-setting-row">
               <span>Start factor</span>
               <input type="number" min="0.1" max="5" step="0.05" v-model.number="startSpeakFactor" :disabled="isTalking" />
@@ -357,7 +357,7 @@
               <input type="number" min="0.1" max="5" step="0.05" v-model.number="endSpeakFactor" :disabled="isTalking" />
             </label>
             <label class="rt-setting-row">
-              <span>播放速度</span>
+              <span>Playback speed</span>
               <span class="rt-setting-range">
                 <input type="range" min="0.5" max="1.8" step="0.1" v-model.number="playbackRate" />
                 <span class="rt-setting-range-val">{{ playbackRate.toFixed(1) }}x</span>
@@ -371,7 +371,7 @@
           :class="{ 'is-active': settingsPopoverOpen }"
           @click="toggleSettingsPopover"
         >
-          对话设置
+          Settings
         </button>
       </div>
     </footer>
@@ -394,17 +394,18 @@ import { ElNotification } from 'element-plus'  // 引入 Element Plus 的通知�
 // =========================================================================
 // REDESIGN: 单页实时通话工作台 —— 新增的 UI 状态/常量（不改动实时引擎逻辑）
 // =========================================================================
-// 外部资源链接（占位，后续替换为真实地址）。
+// External resource links.
 const EXTERNAL_LINKS = {
-  github: 'https://github.com/your-org/lychee-fd',   // TODO: 替换为真实 GitHub 仓库地址
-  paper: 'https://arxiv.org/abs/0000.00000',          // TODO: 替换为真实论文地址
-  docs: 'https://your-project-site.example.com',      // TODO: 替换为真实项目网站地址
+  github: 'https://github.com/HITsz-TMG/Lychee-FD',
+  paper: 'https://aclanthology.org/2026.acl-long.419.pdf',
+  docs: 'https://hitsz-tmg.github.io/Lychee-FD/',
 };
 
 // 底部弹层 / Debug 抽屉 / 模型详情 显隐状态
 const voicePopoverOpen = ref(false);
 const settingsPopoverOpen = ref(false);
 const debugDrawerOpen = ref(false);
+const DEBUG_DRAWER_VISIBLE = false;
 const modelMetaExpanded = ref(false);
 
 const toggleVoicePopover = () => {
@@ -486,7 +487,7 @@ const previewVoice = (voice) => {
   const url = resolveVoicePreviewUrl(voice);
   if (!url) {
     if (typeof ElNotification === 'function') {
-      ElNotification({ type: 'info', title: '暂无试听样本', message: `音色「${voice.label}」未配置试听样本`, duration: 2500 });
+      ElNotification({ type: 'info', title: 'No preview sample', message: `Voice "${voice.label}" has no preview sample.`, duration: 2500 });
     }
     return;
   }
@@ -496,11 +497,11 @@ const previewVoice = (voice) => {
   audio.onended = () => { if (voicePreviewId.value === voice.id) stopVoicePreview(); };
   audio.onerror = () => {
     if (typeof ElNotification === 'function') {
-      ElNotification({ type: 'warning', title: '试听失败', message: `无法加载样本: ${url}`, duration: 3000 });
+      ElNotification({ type: 'warning', title: 'Preview failed', message: `Unable to load sample: ${url}`, duration: 3000 });
     }
     stopVoicePreview();
   };
-  audio.play().catch((err) => { console.warn('试听播放失败:', err); stopVoicePreview(); });
+  audio.play().catch((err) => { console.warn('Voice preview playback failed:', err); stopVoicePreview(); });
 };
 
 // 通话计时器（实际启停在 startTalk/endTalk 中接入，见后续任务）
@@ -546,14 +547,14 @@ const callState = computed(() => {
   return 'listening';
 });
 const CALL_STATE_TEXT = {
-  idle: '静默中',
-  connecting: '连接中…',
-  listening: '我在听',
-  user_speaking: '正在识别你的语音',
-  thinking: '正在处理',
-  ai_speaking: '正在回应',
-  ended: '通话已结束',
-  error: '连接异常，请重试',
+  idle: 'Idle',
+  connecting: 'Connecting...',
+  listening: 'Listening',
+  user_speaking: 'Processing speech',
+  thinking: 'Processing',
+  ai_speaking: 'Responding',
+  ended: 'Call ended',
+  error: 'Connection error. Please retry.',
 };
 const callStateText = computed(() => CALL_STATE_TEXT[callState.value] || '');
 
@@ -731,7 +732,7 @@ const devLoadPresets = async () => {
     }
   } catch (e) {
     if (typeof ElNotification === 'function') {
-      ElNotification({ type: 'warning', title: '预设加载失败', message: String(e.message || e) });
+      ElNotification({ type: 'warning', title: 'Failed to load presets', message: String(e.message || e) });
     }
   }
 };
@@ -742,7 +743,7 @@ const devLoadSelectedModel = async () => {
   if (devSelectedPresetIdx.value === -1) {
     if (!devCustomModelPath.value) {
       if (typeof ElNotification === 'function') {
-        ElNotification({ type: 'warning', title: '请输入模型路径' });
+        ElNotification({ type: 'warning', title: 'Enter a model path' });
       }
       return;
     }
@@ -780,19 +781,19 @@ const devLoadSelectedModel = async () => {
     });
     if (resp && resp.ok) {
       if (typeof ElNotification === 'function') {
-        ElNotification({ type: 'success', title: '加载成功', message: payload.model_path });
+        ElNotification({ type: 'success', title: 'Model loaded', message: payload.model_path });
       }
     } else {
       if (typeof ElNotification === 'function') {
         ElNotification({
-          type: 'error', title: '加载失败',
-          message: (resp && resp.error) || '未知错误',
+          type: 'error', title: 'Model load failed',
+          message: (resp && resp.error) || 'Unknown error',
         });
       }
     }
   } catch (e) {
     if (typeof ElNotification === 'function') {
-      ElNotification({ type: 'error', title: '加载失败', message: String(e.message || e) });
+      ElNotification({ type: 'error', title: 'Model load failed', message: String(e.message || e) });
     }
   } finally {
     devLoading.value = false;
@@ -904,20 +905,20 @@ const REALTIME_FILLER_WORD_AUDIO_MANIFEST_PATH = `${REALTIME_FILLER_WORD_AUDIO_B
 const SHOWCASE_CASE_BASE_PATH = '/input_cases/showcase/';
 const SHOWCASE_TAIL_SILENCE_SEC = 15;
 const showcaseCases = [
-  { id: 'spoken', label: '口语', filename: 'spoken.m4a' },
-  { id: 'schedule', label: '安排时间', filename: 'schedule.m4a' },
-  { id: 'flight', label: '航班', filename: 'flight.m4a' },
-  { id: 'shandong_food', label: '山东菜推荐', filename: 'shandong_food.m4a' },
-  { id: 'family_blessing', label: '亲戚祝福', filename: 'family_blessing.m4a' },
-  { id: 'weekend_relax', label: '周末放松', filename: 'weekend_relax.m4a' },
-  { id: 'info_entropy', label: '信息论熵的解释', filename: '信息论熵的解释.wav' },
-  { id: 'make_cake', label: '做蛋糕', filename: '做蛋糕.wav' },
-  { id: 'write_email', label: '写邮件', filename: '写邮件.wav' },
-  { id: 'history_qa', label: '历史问答', filename: '历史问答.wav' },
-  { id: 'travel_plan', label: '旅游规划', filename: '旅游规划.wav' },
-  { id: 'shenzhen_travel', label: '深圳旅游', filename: '深圳旅游.wav' },
-  { id: 'continuous_interrupt', label: '连续打断输入', filename: '连续打断输入.wav' },
-  { id: 'hotel_recommendation', label: '酒店推荐', filename: '酒店推荐.wav' }
+  { id: 'spoken', label: 'Casual Chat', filename: 'spoken.m4a' },
+  { id: 'schedule', label: 'Scheduling', filename: 'schedule.m4a' },
+  { id: 'flight', label: 'Flight Info', filename: 'flight.m4a' },
+  { id: 'shandong_food', label: 'Shandong Cuisine', filename: 'shandong_food.m4a' },
+  { id: 'family_blessing', label: 'Family Greeting', filename: 'family_blessing.m4a' },
+  { id: 'weekend_relax', label: 'Weekend Plan', filename: 'weekend_relax.m4a' },
+  { id: 'info_entropy', label: 'Information Entropy', filename: '信息论熵的解释.wav' },
+  { id: 'make_cake', label: 'Baking a Cake', filename: '做蛋糕.wav' },
+  { id: 'write_email', label: 'Write an Email', filename: '写邮件.wav' },
+  { id: 'history_qa', label: 'History Q&A', filename: '历史问答.wav' },
+  { id: 'travel_plan', label: 'Travel Planning', filename: '旅游规划.wav' },
+  { id: 'shenzhen_travel', label: 'Shenzhen Trip', filename: '深圳旅游.wav' },
+  { id: 'continuous_interrupt', label: 'Interruptions', filename: '连续打断输入.wav' },
+  { id: 'hotel_recommendation', label: 'Hotel Recommendation', filename: '酒店推荐.wav' }
 ];
 
 // 欢迎页随机展示 3 个样例（点击直接开始；通话开始后整块自然隐藏）
@@ -1489,7 +1490,7 @@ const extractReadableErrorMessage = (err) => {
   try {
     return JSON.stringify(err);
   } catch (_err) {
-    return '未知错误';
+    return 'Unknown error';
   }
 };
 
@@ -1511,17 +1512,17 @@ const classifyStartTalkError = (err) => {
   const name = typeof err?.name === 'string' ? err.name.trim() : '';
   const message = extractReadableErrorMessage(err);
   const raw = `${name} ${message}`.toLowerCase();
-  let hint = '请打开浏览器控制台查看详细报错。';
+  let hint = 'Open the browser console for detailed error output.';
   if (name === 'NotAllowedError' || /permission|denied|notallowed/.test(raw)) {
-    hint = '麦克风权限被拒绝，请在浏览器站点权限中允许麦克风后重试。';
+    hint = 'Microphone permission was denied. Allow microphone access in site permissions and retry.';
   } else if (name === 'NotFoundError' || /notfound|device.*not found|no input device/.test(raw)) {
-    hint = '未检测到可用麦克风设备，请检查系统录音设备。';
+    hint = 'No microphone device was detected. Check the system recording device.';
   } else if (name === 'NotReadableError' || /notreadable|device in use|hardware|could not start audio source/.test(raw)) {
-    hint = '麦克风可能被其他程序占用，请关闭占用后重试。';
+    hint = 'The microphone may be used by another application. Close it and retry.';
   } else if (name === 'SecurityError' || /insecure|secure context/.test(raw)) {
-    hint = '当前页面不在安全上下文，请优先使用 localhost 或 https 访问。';
+    hint = 'The page is not running in a secure context. Use localhost or HTTPS.';
   } else if (/failed to fetch|networkerror|load failed|err_connection|cors|502|504/.test(raw)) {
-    hint = '前后端请求失败，常见原因是代理劫持、跨域或端口未通。';
+    hint = 'Frontend-backend request failed. Common causes are proxy interception, CORS, or an unreachable port.';
   }
   const summary = name && !message.toLowerCase().startsWith(`${name.toLowerCase()}:`)
     ? `${name}: ${message}`
@@ -3056,14 +3057,14 @@ const buildRealtimeAudioFileSegments = async (file, options = {}) => {
   const decoded = await decodeAudioFileToMonoFloat32(file);
   const inputSamples = decoded.samples;
   if (!inputSamples || inputSamples.length === 0) {
-    throw new Error('音频文件为空或解码失败');
+    throw new Error('Audio file is empty or failed to decode.');
   }
   const srcRate = decoded.sampleRate || TARGET_SAMPLE_RATE;
   let samples16k = resampleLinear(inputSamples, srcRate, TARGET_SAMPLE_RATE);
   samples16k = appendTailSilence(samples16k, TARGET_SAMPLE_RATE, options.tailSilenceSec || 0);
   const segments = splitSamplesToRealtimeSegments(samples16k, TARGET_SAMPLE_RATE, streamChunkMs.value);
   if (segments.length === 0) {
-    throw new Error('音频过短，无法切分为可发送分片');
+    throw new Error('Audio is too short to split into realtime chunks.');
   }
   const paceMs = options.paced
     ? Math.max(1, Number(streamChunkMs.value) || 200)
@@ -3078,24 +3079,24 @@ const buildRealtimeAudioFileSegments = async (file, options = {}) => {
 
 const enqueueRealtimeAudioSegments = (segments, displayName = '') => {
   if (!Array.isArray(segments) || segments.length === 0) {
-    throw new Error('没有可发送的音频分片');
+    throw new Error('No audio chunks are available to send.');
   }
   if (!isTalking.value || !realtimeSessionId.value) {
-    throw new Error('请先开始通话后再发送测试音频');
+    throw new Error('Start a call before sending test audio.');
   }
   priorityUploadQueue = priorityUploadQueue.concat(segments);
   priorityUploadInProgress.value = true;
   priorityUploadSourceName.value = displayName || '';
   syncQueueDepth();
   processUploadQueue().catch((err) => {
-    console.error('处理优先音频队列失败:', err);
+    console.error('Priority audio queue failed:', err);
   });
   return segments.length;
 };
 
 const enqueuePriorityAudioFile = async (file, options = {}) => {
   if (!isTalking.value || !realtimeSessionId.value) {
-    throw new Error('请先开始通话后再发送测试音频');
+    throw new Error('Start a call before sending test audio.');
   }
   const fileSegments = await buildRealtimeAudioFileSegments(file, options);
   return enqueueRealtimeAudioSegments(fileSegments, options.displayName || file.name || '');
@@ -3142,9 +3143,45 @@ const openUserVoiceUpload = () => {
 
 // ---- 参考音色选择 ----
 const DEFAULT_VOICE = 'default_female';
+const VOICE_LABEL_EN = {
+  default_female: 'Default Female',
+  default_male: 'Default Male',
+  leijun: '雷军',
+  guodegang: '郭德纲',
+  jay: '周杰伦',
+  huge: '胡歌',
+  hanhong: '韩红',
+  nailong: '奶龙',
+  kenan: '柯南',
+  haimian: '海绵宝宝',
+  dengziqi: '邓紫棋',
+  liyunlong: '李云龙',
+  new_female: 'Clear Female',
+  female: 'Bright Female',
+  news_male: 'News Male',
+  默认女声: 'Default Female',
+  默认男声: 'Default Male',
+  雷军: '雷军',
+  郭德纲: '郭德纲',
+  周杰伦: '周杰伦',
+  胡歌: '胡歌',
+  韩红: '韩红',
+  奶龙: '奶龙',
+  柯南: '柯南',
+  海绵宝宝: '海绵宝宝',
+  邓紫棋: '邓紫棋',
+  李云龙: '李云龙',
+  清纯女声: 'Clear Female',
+  阳光女声: 'Bright Female',
+  播音男声: 'News Male',
+};
+const normalizeVoiceLabel = (voice) => ({
+  ...voice,
+  label: VOICE_LABEL_EN[voice.id] || VOICE_LABEL_EN[voice.label] || voice.label,
+});
 const fallbackVoiceOptions = [
-  { id: 'default_female', label: '默认女声' },
-  { id: 'default_male', label: '默认男声' },
+  { id: 'default_female', label: 'Default Female' },
+  { id: 'default_male', label: 'Default Male' },
   { id: 'leijun', label: '雷军' },
   { id: 'guodegang', label: '郭德纲' },
   { id: 'jay', label: '周杰伦' },
@@ -3155,10 +3192,10 @@ const fallbackVoiceOptions = [
   { id: 'haimian', label: '海绵宝宝' },
   { id: 'dengziqi', label: '邓紫棋' },
   { id: 'liyunlong', label: '李云龙' },
-  { id: 'new_female', label: '清纯女声' },
-  { id: 'female', label: '阳光女声' },
-  { id: 'news_male', label: '播音男声' },
-];
+  { id: 'new_female', label: 'Clear Female' },
+  { id: 'female', label: 'Bright Female' },
+  { id: 'news_male', label: 'News Male' },
+].map(normalizeVoiceLabel);
 const voiceOptions = ref([...fallbackVoiceOptions]);
 const selectedVoice = ref(DEFAULT_VOICE);
 
@@ -3168,7 +3205,7 @@ const loadVoices = async () => {
     if (!resp.ok) return;
     const payload = await resp.json();
     const voices = Array.isArray(payload.voices)
-      ? payload.voices.filter((v) => v && v.id && v.label).map((v) => ({ id: v.id, label: v.label }))
+      ? payload.voices.filter((v) => v && v.id && v.label).map(normalizeVoiceLabel)
       : [];
     if (voices.length) {
       voiceOptions.value = voices;
@@ -3178,11 +3215,11 @@ const loadVoices = async () => {
       }
     }
   } catch (e) {
-    console.warn('加载参考音色失败，使用本地列表:', e);
+    console.warn('Failed to load voice presets, using local fallback:', e);
   }
 };
 
-const fetchWithRuntimeContext = async (url, options = {}, stage = '请求') => {
+const fetchWithRuntimeContext = async (url, options = {}, stage = 'request') => {
   try {
     return await fetch(url, options);
   } catch (err) {
@@ -3197,12 +3234,12 @@ const fetchWithRuntimeContext = async (url, options = {}, stage = '请求') => {
       pageProtocol = '';
     }
     const apiBase = buildGradioApiBase() || pageOrigin || '';
-    let extraHint = '请检查端口可达性、浏览器代理绕过、以及 CORS/同源策略。';
+    let extraHint = 'Check port reachability, browser proxy bypass rules, and CORS/same-origin policy.';
     if (pageProtocol === 'https:' && String(url).startsWith('http://')) {
-      extraHint = '当前页面是 HTTPS，但请求是 HTTP，浏览器可能拦截混合内容。';
+      extraHint = 'The current page uses HTTPS but the request uses HTTP. The browser may block mixed content.';
     }
     throw new Error(
-      `${stage}网络请求失败: ${message}; url=${url}; page_origin=${pageOrigin}; api_base=${apiBase}; hint=${extraHint}`
+      `${stage} network request failed: ${message}; url=${url}; page_origin=${pageOrigin}; api_base=${apiBase}; hint=${extraHint}`
     );
   }
 };
@@ -3862,14 +3899,14 @@ const createRealtimeSession = async () => {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(startPayload)
-  }, '创建实时会话');
+  }, 'create realtime session');
   if (!resp.ok) {
     const text = await resp.text();
-    throw new Error(`创建实时会话失败 ${resp.status}: ${text}`);
+    throw new Error(`Failed to create realtime session ${resp.status}: ${text}`);
   }
   const result = await resp.json();
   if (!result || typeof result.session_id !== 'string' || !result.session_id) {
-    throw new Error('创建实时会话返回格式异常');
+    throw new Error('Realtime session response has an invalid format.');
   }
   return result.session_id;
 };
@@ -3883,13 +3920,13 @@ const consumeRealtimeSessionSse = async (sessionId) => {
     const resp = await fetchWithRuntimeContext(eventsUrl, {
       method: 'GET',
       signal: controller.signal
-    }, '连接实时事件流');
+    }, 'connect realtime event stream');
     if (!resp.ok) {
       const text = await resp.text();
-      throw new Error(`实时事件流 HTTP ${resp.status}: ${text}`);
+      throw new Error(`Realtime event stream HTTP ${resp.status}: ${text}`);
     }
     if (!resp.body) {
-      throw new Error('实时事件流响应缺少 body');
+      throw new Error('Realtime event stream response has no body.');
     }
 
     const reader = resp.body.getReader();
@@ -4084,7 +4121,7 @@ const consumeRealtimeSessionSse = async (sessionId) => {
         openRealtimeTextAudioGate();
         commitRealtimeLiveReply();
         renderRealtimeReply();
-        connectionStatus.value = '实时会话结束';
+        connectionStatus.value = 'Realtime session ended';
         connectionStatusClass.value = 'disconnected';
       }
     };
@@ -4206,11 +4243,11 @@ const sendOneSegment = async (segment) => {
       },
       body: wavBlob,
       signal: controller.signal
-    }, '发送实时分片');
+    }, 'send realtime chunk');
 
     if (!resp.ok) {
       const text = await resp.text();
-      throw new Error(`上传分片失败 ${resp.status}: ${text}`);
+      throw new Error(`Chunk upload failed ${resp.status}: ${text}`);
     }
     if (segment && segment.samples && segment.samples.length > 0) {
       recordRealtimeInputSamples(segment.samples);
@@ -4257,18 +4294,18 @@ const processUploadQueue = async () => {
     }
   } catch (err) {
     if (isTalking.value) {
-      console.error('实时分片发送失败:', err);
+      console.error('Realtime chunk upload failed:', err);
       const failure = classifyStartTalkError(err);
       setStartTalkError(
-        `发送失败: ${failure.summary}`,
+        `Send failed: ${failure.summary}`,
         failure.hint,
         {
           toast: true,
-          title: '实时分片发送失败',
+          title: 'Realtime chunk upload failed',
           duration: 7000
         }
       );
-      connectionStatus.value = `发送失败: ${failure.summary}`;
+      connectionStatus.value = `Send failed: ${failure.summary}`;
       connectionStatusClass.value = 'disconnected';
     }
   } finally {
@@ -4286,7 +4323,7 @@ const fetchShowcaseCaseFile = async (caseItem) => {
   const resp = await fetch(url);
   if (!resp.ok) {
     const text = await resp.text().catch(() => '');
-    throw new Error(`加载案例音频失败 ${resp.status}: ${text || resp.statusText}`);
+    throw new Error(`Failed to load sample audio ${resp.status}: ${text || resp.statusText}`);
   }
   const blob = await resp.blob();
   const file = new File([blob], caseItem.filename, {
@@ -4393,7 +4430,7 @@ const releaseRealtimeResources = () => {
 
 const resetRealtimeStartState = () => {
   realtimeStoppingExpected.value = false;
-  connectionStatus.value = '连接中...';
+  connectionStatus.value = 'Connecting...';
   connectionStatusClass.value = 'waiting';
   resetRealtimeReplyState();
   resetRealtimeProbabilities();
@@ -4417,18 +4454,18 @@ const attachRealtimeSessionEventStream = (sessionId) => {
     if (isAbortLikeError(err) || realtimeStoppingExpected.value) {
       return;
     }
-    console.error('实时事件流失败:', err);
+    console.error('Realtime event stream failed:', err);
     const failure = classifyStartTalkError(err);
     setStartTalkError(
-      `实时事件流异常: ${failure.summary}`,
+      `Realtime event stream error: ${failure.summary}`,
       failure.hint,
       {
         toast: true,
-        title: '实时事件流失败',
+        title: 'Realtime event stream failed',
         duration: 7000
       }
     );
-    connectionStatus.value = `实时事件流异常: ${failure.summary}`;
+    connectionStatus.value = `Realtime event stream error: ${failure.summary}`;
     connectionStatusClass.value = 'disconnected';
   });
 };
@@ -4446,7 +4483,7 @@ const startShowcaseCase = async (caseItem) => {
     try {
       await ensureRealtimePlaybackContext();
     } catch (err) {
-      console.warn('初始化实时播放上下文失败:', err);
+      console.warn('Failed to initialize realtime playback context:', err);
     }
 
     const { file, url } = await fetchShowcaseCaseFile(caseItem);
@@ -4463,27 +4500,27 @@ const startShowcaseCase = async (caseItem) => {
     attachRealtimeSessionEventStream(sessionId);
 
     isTalking.value = true;
-    captureSampleRateDisplay.value = `${TARGET_SAMPLE_RATE} Hz（案例文件）`;
+    captureSampleRateDisplay.value = `${TARGET_SAMPLE_RATE} Hz (sample file)`;
     primeRealtimeProbabilitiesIfEmpty();
     clearStartTalkError({ clearStorage: true });
-    connectionStatus.value = `案例播放中：${caseItem.label}（麦克风关闭，尾部静音 ${SHOWCASE_TAIL_SILENCE_SEC}s）`;
+    connectionStatus.value = `Playing sample: ${caseItem.label} (mic off, ${SHOWCASE_TAIL_SILENCE_SEC}s tail silence)`;
     connectionStatusClass.value = 'connected';
 
     playShowcaseInputAudio(url).catch((err) => {
-      console.warn('播放案例输入音频失败:', err);
+      console.warn('Sample input playback failed:', err);
       ElNotification({
-        title: '案例音频播放失败',
-        message: '浏览器可能阻止了自动播放，但音频仍会发送给模型。',
+        title: 'Sample playback failed',
+        message: 'The browser may have blocked autoplay, but the audio will still be sent to the model.',
         type: 'warning',
         duration: 5000
       });
     });
     enqueueRealtimeAudioSegments(
       fileSegments,
-      `${caseItem.label}（含 ${SHOWCASE_TAIL_SILENCE_SEC}s 静音）`
+      `${caseItem.label} (${SHOWCASE_TAIL_SILENCE_SEC}s tail silence)`
     );
   } catch (err) {
-    console.error('无法启动案例展示:', err);
+    console.error('Failed to start sample case:', err);
     const sessionId = realtimeSessionId.value;
     realtimeSessionId.value = '';
     if (sessionId) {
@@ -4499,11 +4536,11 @@ const startShowcaseCase = async (caseItem) => {
       failure.hint,
       {
         toast: true,
-        title: '案例展示启动失败',
+        title: 'Sample start failed',
         duration: 9000
       }
     );
-    connectionStatus.value = `案例启动失败: ${failure.summary}`;
+    connectionStatus.value = `Sample start failed: ${failure.summary}`;
     connectionStatusClass.value = 'disconnected';
   } finally {
     showcaseStarting.value = false;
@@ -4573,10 +4610,10 @@ const startTalk = async () => {
     }, streamChunkMs.value);
 
     clearStartTalkError({ clearStorage: true });
-    connectionStatus.value = '已连接（实时会话），持续发送麦克风分片中...';
+    connectionStatus.value = 'Connected. Streaming microphone chunks...';
     connectionStatusClass.value = 'connected';
   } catch (err) {
-    console.error('无法启动实时通话:', err);
+    console.error('Failed to start realtime call:', err);
     const sessionId = realtimeSessionId.value;
     realtimeSessionId.value = '';
     if (sessionId) {
@@ -4592,11 +4629,11 @@ const startTalk = async () => {
       failure.hint,
       {
         toast: true,
-        title: '实时通话启动失败',
+        title: 'Realtime call start failed',
         duration: 9000
       }
     );
-    connectionStatus.value = `启动失败: ${failure.summary}`;
+    connectionStatus.value = `Start failed: ${failure.summary}`;
     connectionStatusClass.value = 'disconnected';
   }
 };
@@ -4615,7 +4652,7 @@ const endTalk = () => {
   openRealtimeTextAudioGate();
   releaseRealtimeResources();
   finalizeCurrentAlignedArchive();
-  connectionStatus.value = '已挂断';
+  connectionStatus.value = 'Call ended';
   connectionStatusClass.value = 'disconnected';
   resetRealtimeProbabilities();
   stopCallTimer();
