@@ -90,12 +90,12 @@
                 v-html="renderMarkdown(aiReplyText)"
               ></div>
               <div v-else-if="realtimeTextAudioGatePlaceholderVisible" class="rt-subtitle-thinking">
-                <span class="rt-typing-indicator">思考中<span>.</span><span>.</span><span>.</span></span>
+                <span class="rt-typing-indicator">处理中<span>.</span><span>.</span><span>.</span></span>
               </div>
             </template>
             <div v-else class="rt-subtitle-idle">
               <template v-if="isTalking">
-                <span class="rt-typing-indicator">等待 AI 思考与响应<span>.</span><span>.</span><span>.</span></span>
+                <span class="rt-typing-indicator">等待处理与响应<span>.</span><span>.</span><span>.</span></span>
               </template>
               <template v-else>
                 <p class="rt-welcome-title">👋 欢迎使用 Lychee-FD 实时全双工语音助手</p>
@@ -550,7 +550,7 @@ const CALL_STATE_TEXT = {
   connecting: '连接中…',
   listening: '我在听',
   user_speaking: '正在识别你的语音',
-  thinking: '正在思考',
+  thinking: '正在处理',
   ai_speaking: '正在回应',
   ended: '通话已结束',
   error: '连接异常，请重试',

@@ -102,7 +102,7 @@
             <div class="rt-text-content" ref="chatMessagesRef">
               <div v-if="aiReplyText" class="markdown-body" v-html="renderMarkdown(aiReplyText)"></div>
               <div v-else class="rt-waiting-text">
-                <span class="rt-typing-indicator">等待 AI 思考与响应<span>.</span><span>.</span><span>.</span></span>
+                <span class="rt-typing-indicator">等待处理与响应<span>.</span><span>.</span><span>.</span></span>
               </div>
             </div>
           </div>
