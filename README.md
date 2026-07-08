@@ -48,20 +48,23 @@ This repository provides:
 
 ## 🌟 Model Structure
 
-[**todo**] 按照推文的来改:
+Lychee-FD is a native end-to-end full-duplex speech language model for realtime spoken interaction. Instead of cascading ASR, LLM, TTS, and turn-taking modules, it unifies listening, understanding, speaking, and interaction control within an end-to-end multi-stream architecture.
 
-这种设计与前面的科学洞察一一对应：既然冲突主要发生在深层，就不再强迫语义和声学在深层共享同一套参数；既然文本语义容易被高频语音信号稀释，就引入密集语义对齐通道，让模型在生成语音的同时保留清晰、连续的“内部语义线索”。
+Its design is motivated by the optimization dynamics of native full-duplex speech modeling. As the model goes deeper, acoustic generation and semantic reasoning are increasingly pulled toward different objectives under shared parameters; at the same time, high-frequency speech tokens can dilute sparse textual supervision, weakening semantic consistency during speech generation.
 
-因此，Lychee-FD 的全双工能力不是外挂的打断模块，也不是级联系统里的流程调度，而是被内化到模型架构中的原生交互能力。
-它让模型能够在连续语音流中协同处理语义理解、语音生成和节奏控制，从而在保持推理效率的同时，兼顾语音智能与交互流畅度。
-实验结果也验证了这一点：Lychee-FD 在 Spoken QA 任务上平均提升 7.4%，在 FullDuplexBench 1.5 上提升 28.5%，在多个全双工语音交互基准上达到当前领先水平。
+<p align="center">
+  <img src="docs/assets/images/paper/acoustic_semantic_optimization.png" alt="Optimization dynamics of acoustic-semantic modeling in Lychee-FD" width="80%">
+</p>
 
-3. 工程实现：从论文模型到可在线交互系统
-真正的全双工交互，最终必须落到实时系统里。
-Lychee-FD 的架构同时生成语义、声学和控制信号，这对推理引擎提出了新的挑战。传统大语言模型推理框架通常面向单一路径、单一输出流设计，如果直接套用到多通道全双工模型上，多个专门通道会被顺序执行，带来额外延迟，影响实时对话的流畅度。
-为此，团队围绕 Lychee-FD 的架构特点，开发了实时并行多流 vLLM 推理框架：在共享主干完成计算后，将中间表示分发到语义、声学和控制通道，让多个通道并行执行、独立管理KV cache，从而显著减少多流生成带来的推理延迟。
-同时，团队进一步提出控制头早退策略。由于打断、停说、转入倾听等行为首先依赖控制信号，系统不必等待完整语音和文本生成结束，而是让控制 Token 更早产出，为打断响应提供一条“快速通道”。
-并行多流推理解决了“跑得慢”的问题，控制头早退解决了“反应慢”的问题。 两者共同把 Lychee-FD 从论文中的模型框架，推进到可以真实交互的数字人与机器人系统。
+Lychee-FD addresses this with hierarchical acoustic-semantic modeling. Lower layers share common speech-language representations, while upper layers are separated into semantic, acoustic, and dialogue-control streams for reasoning, speech generation, and realtime interaction decisions.
+
+<p align="center">
+  <img src="docs/assets/images/paper/lychee_fd_model_structure.png" alt="Lychee-FD hierarchical acoustic-semantic model architecture" width="100%">
+</p>
+
+For deployment, Lychee-FD uses a vLLM-optimized multi-stream inference pipeline with branch-specific KV-cache management. The control stream supports early-exit decisions, allowing interruption and turn-taking signals to be emitted before full speech generation finishes.
+
+> **TODO:** Replace the following vLLM pipeline figure with the final version.
 
 <p align="center">
   <img src="docs/assets/vllm_optimized_online_pipeline_detail.svg" alt="vLLM-optimized online full-duplex inference pipeline" width="100%">
