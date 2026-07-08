@@ -1,14 +1,15 @@
 """
-用于 StepAudio2 全双工三路输出模型的多头采样器。
+Multi-head sampler for the Lychee-FD full-duplex model.
 
-vLLM 默认采样器只处理单个 logits 张量。该模块提供自定义采样器，功能如下:
-  1. 接收模型 forward() 输出的 3 组 logits（text、stoken、control）
-  2. 对每个头分别应用 LogitsProcessor
-  3. 按头独立采样，策略如下:
-       - text:    贪心采样（argmax）
-       - stoken:  nucleus 采样（top-p / top-k / temperature）
-       - control: 贪心采样（argmax）
-  4. 返回包含三路采样结果的 MultiHeadSamplerOutput
+The default vLLM sampler consumes a single logits tensor. This module keeps
+sampling explicit for the model's three output heads:
+  1. Accept text, stoken, and control logits from model forward.
+  2. Apply per-head LogitsProcessor lists.
+  3. Sample each head independently:
+       - text:    greedy argmax by default
+       - stoken:  nucleus/top-k/temperature sampling by default
+       - control: greedy argmax by default
+  4. Return all three sampled tokens in MultiHeadSamplerOutput.
 """
 
 from dataclasses import dataclass

@@ -1,13 +1,8 @@
-"""StepAudio full-duplex realtime demo and HTTP API.
+"""Lychee-FD full-duplex realtime service and HTTP API.
 
-中文:
-    这是唯一的实时服务入口，负责加载 StepAudio 全双工模型、管理在线
-    session、接收音频 chunk、输出 SSE 事件，并对接本地或远端 Token2Wav。
-
-English:
-    This is the single realtime service entrypoint. It loads the StepAudio
-    full-duplex model, manages online sessions, accepts audio chunks, emits
-    Server-Sent Events, and bridges to local or remote Token2Wav synthesis.
+This is the single realtime backend entrypoint. It loads the Lychee-FD
+full-duplex model, manages online sessions, accepts audio chunks, emits
+Server-Sent Events, and bridges to local or remote Token2Wav synthesis.
 """
 
 import argparse
@@ -28,7 +23,6 @@ import traceback
 import urllib.error
 import urllib.request
 import uuid
-import wave
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional
 
@@ -43,14 +37,14 @@ from fastapi.responses import JSONResponse, StreamingResponse
 PACKAGE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(PACKAGE_DIR)
 
-# 添加运行时依赖路径。/ Add runtime dependency paths before lazy imports.
+# Add runtime dependency paths before lazy imports.
 STEPAUDIO2_SOURCE_DIR = os.environ.get(
     "STEPAUDIO2_SOURCE_DIR",
     os.path.join(PROJECT_DIR, "third_party", "Step-Audio2"),
 )
 sys.path.append(STEPAUDIO2_SOURCE_DIR)
 
-# ==================== 日志配置 ====================
+# ==================== Logging ====================
 _log_level_name = os.environ.get("STEPAUDIO_LOG_LEVEL", "INFO").strip().upper()
 _log_level = getattr(logging, _log_level_name, logging.INFO)
 logging.basicConfig(
@@ -63,45 +57,33 @@ logger.info("Using Step-Audio2 source dir: %s", STEPAUDIO2_SOURCE_DIR)
 
 
 def _import_token2wav_class():
-    """按需导入 Token2Wav，避免 API-only 启动时提前加载声码器。
-
-    Import Token2Wav lazily so API-only startup does not load the vocoder early.
-    """
+    """Import Token2Wav lazily so API-only startup does not load the vocoder early."""
     from token2wav import Token2wav
 
     return Token2wav
 
 
 def _import_vllm_generation_framework():
-    """按需导入 vLLM 实时推理框架。
-
-    Import the vLLM realtime generation framework lazily.
-    """
+    """Import the vLLM realtime generation framework lazily."""
     from lychee_fd.runtime.vllm_generation import VLLMGenerationFramework
 
     return VLLMGenerationFramework
 
 
 def _import_hf_v9_generation_framework():
-    """按需导入 V9 HF 实时推理框架。
-
-    Import the V9 HuggingFace realtime generation framework lazily.
-    """
+    """Import the V9 HuggingFace realtime generation framework lazily."""
     from lychee_fd.runtime.hf_v9_realtime import HFRealtimeV9GenerationFramework
 
     return HFRealtimeV9GenerationFramework
 
 
 def _import_streaming_decoder():
-    """按需导入离线/在线共用的 StreamingDecoder。
-
-    Import the shared StreamingDecoder lazily.
-    """
+    """Import the shared StreamingDecoder lazily."""
     from lychee_fd.runtime.vllm_generation import StreamingDecoder
 
     return StreamingDecoder
 
-# ==================== 全局配置 ====================
+# ==================== Global Configuration ====================
 DEFAULT_MODEL_PATH = os.environ.get("STEPAUDIO_MODEL_PATH", "")
 DEFAULT_TOKEN2WAV_PATH = os.environ.get(
     "STEPAUDIO_TOKEN2WAV_PATH",
@@ -109,7 +91,7 @@ DEFAULT_TOKEN2WAV_PATH = os.environ.get(
 )
 ASSETS_DIR = os.environ.get("STEPAUDIO_ASSETS_DIR", os.path.join(PROJECT_DIR, "assets"))
 
-# 克隆参考音色目录（含 clone_24k_mono/*.wav 及对应 *.txt）
+# Clone prompt voice directory containing WAV files and matching prompt text.
 CLONE_PROMPT_DIR = os.environ.get(
     "STEPAUDIO_CLONE_PROMPT_DIR",
     os.path.join(PROJECT_DIR, "frontend", "public", "clone_24k_mono"),
@@ -137,7 +119,7 @@ DEFAULT_REALTIME_PROMPT_VOICE = os.environ.get("STEPAUDIO_DEFAULT_PROMPT_VOICE",
 
 ALLOWING_BACKCHANNEL = False
 
-# 临时文件目录
+# Temporary audio file directory.
 TEMP_DIR = "/tmp/lychee_fd_realtime_audio"
 os.makedirs(TEMP_DIR, exist_ok=True)
 REALTIME_ALIGNED_SAVE_DIR = os.getenv(
@@ -146,7 +128,7 @@ REALTIME_ALIGNED_SAVE_DIR = os.getenv(
 )
 os.makedirs(REALTIME_ALIGNED_SAVE_DIR, exist_ok=True)
 
-# Token2Wav 流式参数
+# Token2Wav streaming parameters.
 TTS_CHUNK_SIZE = 25
 try:
     # Downstream token2wav hop size.
@@ -163,7 +145,7 @@ try:
 except ValueError:
     REALTIME_TTS_CHUNK_SIZE_DEFAULT = 10
 
-# 全局模型对象
+# Process-wide model objects.
 generator = None
 token2wav_model = None
 
@@ -209,7 +191,7 @@ try:
 except ValueError:
     REMOTE_TOKEN2WAV_PRE_LOOKAHEAD_LEN = 3
 
-# 实时会话配置
+# Realtime session configuration.
 REALTIME_INFER_WINDOW_MS = int(os.environ.get("STEPAUDIO_REALTIME_INFER_WINDOW_MS", "400"))
 REALTIME_INFER_WINDOW_MIN_MS = int(os.environ.get("STEPAUDIO_REALTIME_INFER_WINDOW_MIN_MS", "160"))
 REALTIME_SESSION_POLL_SEC = 0.05
@@ -449,10 +431,7 @@ def warmup_token2wav(prompt_voice: str = STARTUP_WARMUP_PROMPT_VOICE) -> str:
 
 
 class RemoteToken2WavClient:
-    """远端 Token2Wav HTTP 客户端。
-
-    HTTP client for the remote Token2Wav streaming service.
-    """
+    """HTTP client for the remote Token2Wav streaming service."""
 
     def __init__(self, base_url: str, timeout_sec: float):
         self.base_url = str(base_url or "").rstrip("/")
@@ -486,17 +465,11 @@ class RemoteToken2WavClient:
         return obj
 
     def health(self) -> dict:
-        """检查远端 Token2Wav 服务健康状态。
-
-        Check remote Token2Wav service health.
-        """
+        """Check remote Token2Wav service health."""
         return self._post_json("/v1/token2wav/health", {})
 
     def start(self, *, stream_id: str, prompt_wav: str) -> dict:
-        """创建一个远端流式合成会话。
-
-        Start one remote streaming synthesis session.
-        """
+        """Start one remote streaming synthesis session."""
         return self._post_json(
             "/v1/token2wav/start",
             {"stream_id": str(stream_id), "prompt_wav": str(prompt_wav)},
@@ -511,10 +484,7 @@ class RemoteToken2WavClient:
         last_chunk: bool,
         advance_tokens: int,
     ) -> dict:
-        """提交一段 stoken 并返回可播放 PCM。
-
-        Submit one stoken chunk and return playable PCM bytes.
-        """
+        """Submit one stoken chunk and return playable PCM bytes."""
         obj = self._post_json(
             "/v1/token2wav/stream",
             {
@@ -533,10 +503,7 @@ class RemoteToken2WavClient:
         return obj
 
     def close(self, *, stream_id: str) -> dict:
-        """关闭远端流式合成会话。
-
-        Close a remote streaming synthesis session.
-        """
+        """Close a remote streaming synthesis session."""
         return self._post_json("/v1/token2wav/close", {"stream_id": str(stream_id)})
 
 
@@ -545,10 +512,7 @@ _token2wav_load_lock = threading.Lock()
 
 
 def get_remote_token2wav_client() -> RemoteToken2WavClient:
-    """获取进程级远端 Token2Wav 客户端单例。
-
-    Return the process-wide remote Token2Wav client singleton.
-    """
+    """Return the process-wide remote Token2Wav client singleton."""
     global _remote_token2wav_client
     if _remote_token2wav_client is None:
         _remote_token2wav_client = RemoteToken2WavClient(
@@ -559,10 +523,7 @@ def get_remote_token2wav_client() -> RemoteToken2WavClient:
 
 
 def ensure_local_token2wav_loaded(token2wav_path: Optional[str] = None) -> None:
-    """确保本地 Token2Wav 已加载，作为远端失败时的 fallback。
-
-    Ensure local Token2Wav is loaded as the fallback path for remote failures.
-    """
+    """Ensure local Token2Wav is loaded as the fallback path for remote failures."""
     global token2wav_model
     if token2wav_model is not None:
         return
@@ -578,10 +539,7 @@ def ensure_local_token2wav_loaded(token2wav_path: Optional[str] = None) -> None:
 
 
 def get_token2wav_pre_lookahead_len() -> int:
-    """读取 Token2Wav 预看窗口长度。
-
-    Return the Token2Wav pre-lookahead length.
-    """
+    """Return the Token2Wav pre-lookahead length."""
     if token2wav_model is not None:
         try:
             return int(getattr(token2wav_model.flow, "pre_lookahead_len", 0))
@@ -591,24 +549,15 @@ def get_token2wav_pre_lookahead_len() -> int:
 
 
 def is_token2wav_available() -> bool:
-    """判断当前是否有可用的本地或远端 Token2Wav。
-
-    Return whether local or remote Token2Wav is available.
-    """
+    """Return whether local or remote Token2Wav is available."""
     return token2wav_model is not None or bool(REMOTE_TOKEN2WAV_ENABLED)
 
 
 class RealtimeTTSPool:
-    """会话级 Token2Wav 桥接器。
+    """Session-level Token2Wav bridge.
 
-    中文:
-        异步接收 stoken chunk，在满足 hop+lookahead 阈值后输出 PCM，
-        并在 event_end/session_stop 时刷新尾部音频。
-
-    English:
-        Session-level Token2Wav bridge. It accepts stoken chunks asynchronously,
-        emits PCM after the hop+lookahead threshold, and flushes tail audio on
-        event_end/session_stop.
+    It accepts stoken chunks asynchronously, emits PCM after the hop+lookahead
+    threshold, and flushes tail audio on event_end/session_stop.
     """
 
     def __init__(
@@ -647,10 +596,7 @@ class RealtimeTTSPool:
 
     @property
     def event_active(self) -> bool:
-        """返回当前是否处于一次 TTS 事件内。
-
-        Return whether a TTS event is currently active.
-        """
+        """Return whether a TTS event is currently active."""
         with self._state_lock:
             return bool(self._event_active)
 
@@ -681,27 +627,18 @@ class RealtimeTTSPool:
 
     @property
     def pcm_callback_enabled(self) -> bool:
-        """返回是否启用即时 PCM 回调。
-
-        Return whether immediate PCM callback emission is enabled.
-        """
+        """Return whether immediate PCM callback emission is enabled."""
         return self._pcm_emit_callback is not None
 
     def submit_event_start(self) -> None:
-        """通知 TTS worker 开始一个新的语音事件。
-
-        Notify the TTS worker that a new speech event starts.
-        """
+        """Notify the TTS worker that a new speech event starts."""
         generation_id = self._advance_generation()
         self._task_queue.put(
             {"type": "event_start", "generation_id": int(generation_id)}
         )
 
     def submit_audio_chunk(self, stoken_ids_raw: List[int]) -> None:
-        """提交一段音频 token 给 TTS worker。
-
-        Submit one audio-token chunk to the TTS worker.
-        """
+        """Submit one audio-token chunk to the TTS worker."""
         generation_id = self._current_generation_id()
         self._task_queue.put(
             {
@@ -712,10 +649,7 @@ class RealtimeTTSPool:
         )
 
     def submit_event_end(self, *, force_flush: bool = True) -> None:
-        """通知 TTS worker 结束当前语音事件并按需 flush。
-
-        Notify the TTS worker to finish the current event and optionally flush.
-        """
+        """Notify the TTS worker to finish the current event and optionally flush."""
         generation_id = self._current_generation_id()
         self._task_queue.put(
             {
@@ -726,10 +660,7 @@ class RealtimeTTSPool:
         )
 
     def submit_event_abort(self, *, reason: str = "interrupt") -> dict:
-        """中断当前 TTS 事件并轮换 stream id。
-
-        Abort the current TTS event and rotate the stream id.
-        """
+        """Abort the current TTS event and rotate the stream id."""
         old_stream_id, new_stream_id, generation_id = self._rotate_stream_id_for_abort()
         task = {
             "type": "event_abort",
@@ -742,10 +673,7 @@ class RealtimeTTSPool:
         return dict(task)
 
     def submit_session_stop(self, *, force_flush: bool = True) -> None:
-        """通知 TTS worker 当前实时 session 停止。
-
-        Notify the TTS worker that the realtime session is stopping.
-        """
+        """Notify the TTS worker that the realtime session is stopping."""
         generation_id = self._current_generation_id()
         self._task_queue.put(
             {
@@ -762,10 +690,7 @@ class RealtimeTTSPool:
         timeout: float = 0.0,
         until_event_stats: bool = False,
     ) -> tuple[List[dict], Optional[dict]]:
-        """取出 worker 已生成的 PCM/统计消息。
-
-        Drain generated PCM/stat messages from the worker.
-        """
+        """Drain generated PCM/stat messages from the worker."""
         messages: List[dict] = []
         event_stats: Optional[dict] = None
         first_block = bool(block)
@@ -787,10 +712,7 @@ class RealtimeTTSPool:
         return messages, event_stats
 
     def wait_event_stats(self, max_wait_sec: float = 30.0) -> tuple[List[dict], Optional[dict]]:
-        """等待当前事件统计消息返回。
-
-        Wait for the current event stats message.
-        """
+        """Wait for the current event stats message."""
         collected: List[dict] = []
         deadline = time.perf_counter() + max(0.0, float(max_wait_sec))
         while time.perf_counter() < deadline:
@@ -802,10 +724,7 @@ class RealtimeTTSPool:
         return collected, None
 
     def stop(self, *, force_flush: bool = False, flush_wait_sec: float = 5.0) -> List[dict]:
-        """停止 TTS worker，并返回停止前收集到的消息。
-
-        Stop the TTS worker and return messages collected before shutdown.
-        """
+        """Stop the TTS worker and return messages collected before shutdown."""
         collected: List[dict] = []
         if force_flush:
             try:
@@ -1105,7 +1024,7 @@ class RealtimeTTSPool:
                 except Exception:
                     logger.debug("Remote Token2Wav close failed", exc_info=True)
 
-# ==================== 模型加载 ====================
+# ==================== Model Loading ====================
 USE_VLLM_BACKEND = os.environ.get("STEPAUDIO_USE_VLLM", "0") == "1"
 
 
@@ -1144,9 +1063,7 @@ def _env_optional_float(name, default=None):
         return default
 
 def _infer_model_type(model_path: str) -> str:
-    """
-    推断 model_type。优先读 config/路径里的 V{n} 标记，否则回退到 FD。
-    """
+    """Infer model_type from config metadata or path markers, then fallback to FD."""
     cfg = _load_model_config_dict(model_path)
     if _config_has_v9_merge(cfg):
         return "V9"
@@ -1169,10 +1086,7 @@ def _infer_model_type(model_path: str) -> str:
 
 
 def _infer_model_type_legacy(model_path: str) -> str:
-    """
-    原始 vLLM 分支使用的路径命名推断逻辑。
-    保持 vLLM 入口和 2026-07-02 原始版本一致，避免 HF V9 路由改动影响 vLLM。
-    """
+    """Legacy path-based model_type inference used by the original vLLM branch."""
     parent_dir = os.path.basename(os.path.dirname(os.path.normpath(model_path)))
     parts = [p for p in parent_dir.split("_") if p]
     if len(parts) >= 3:
@@ -1216,10 +1130,7 @@ def _should_use_hf_v9(model_path: str, model_type: str) -> bool:
 
 
 def load_models(model_path, token2wav_path, attn_impl="eager"):
-    """加载实时推理框架和 Token2Wav 声码器。
-
-    Load the realtime inference framework and the Token2Wav vocoder.
-    """
+    """Load the realtime inference framework and the Token2Wav vocoder."""
     global generator, token2wav_model
 
     status_msgs = []
@@ -1344,263 +1255,20 @@ def load_models(model_path, token2wav_path, attn_impl="eager"):
     return "\n".join(status_msgs)
 
 
-# ==================== 工具函数 ====================
-def _pcm_to_wav(pcm_bytes, output_path, sample_rate):
-    """将 16-bit little-endian PCM bytes 写成标准 WAV 文件。
-
-    Write 16-bit little-endian PCM bytes to a standard WAV file.
-    """
-    with wave.open(output_path, 'wb') as wf:
-        wf.setnchannels(1)
-        wf.setsampwidth(2)
-        wf.setframerate(sample_rate)
-        wf.writeframes(bytes(pcm_bytes))
-
+# ==================== Utilities ====================
 def pcm_to_numpy(pcm_bytes):
-    """把声码器生成的 PCM bytes 转成 Gradio 可播放的 numpy 数组。
-
-    Convert vocoder PCM bytes into a numpy array that Gradio can play.
-    """
+    """Convert vocoder PCM bytes into a numpy array that Gradio can play."""
     audio_data = np.frombuffer(pcm_bytes, dtype=np.int16).astype(np.float32) / 32768.0
     return audio_data
 
 
-def _synthesize_event_audio(event, prompt_wav_path, run_id, event_idx):
-    """
-    对单个事件的 audio tokens 进行流式语音合成, 返回 wav 文件路径。
-    如果没有有效 audio tokens, 返回 None。
-    """
-    global token2wav_model
-
-    audio_tokens = event.get("audio", [])
-    clean_tokens = [x for x in audio_tokens if x < 6561]
-
-    if len(clean_tokens) <= 10:
-        logger.debug(f"  事件 {event_idx}: clean_tokens={len(clean_tokens)} 太少, 跳过合成")
-        return None
-
-    logger.info(f"  事件 {event_idx}: 开始合成, clean_tokens={len(clean_tokens)}")
-    t0 = time.time()
-
-    if token2wav_model is None:
-        ensure_local_token2wav_loaded()
-    pre_lookahead_len = get_token2wav_pre_lookahead_len()
-    token2wav_model.set_stream_cache(prompt_wav_path)
-
-    all_pcm = bytearray()
-    buf = list(clean_tokens)
-    first_size = TTS_CHUNK_SIZE + pre_lookahead_len
-    cidx = 0
-
-    while len(buf) > 0:
-        if cidx == 0:
-            if len(buf) >= first_size:
-                chunk = buf[:first_size]
-                buf = buf[TTS_CHUNK_SIZE:]
-                pcm = token2wav_model.stream(chunk, prompt_wav=prompt_wav_path)
-            else:
-                pcm = token2wav_model.stream(buf, prompt_wav=prompt_wav_path, last_chunk=True)
-                buf = []
-                all_pcm.extend(pcm)
-                break
-            all_pcm.extend(pcm)
-        else:
-            if len(buf) >= first_size:
-                chunk = buf[:first_size]
-                buf = buf[TTS_CHUNK_SIZE:]
-                pcm = token2wav_model.stream(chunk, prompt_wav=prompt_wav_path)
-            else:
-                pcm = token2wav_model.stream(buf, prompt_wav=prompt_wav_path, last_chunk=True)
-                buf = []
-            all_pcm.extend(pcm)
-        cidx += 1
-
-    if len(all_pcm) == 0:
-        return None
-
-    out_path = os.path.join(TEMP_DIR, f"event_{run_id}_{event_idx}.wav")
-    _pcm_to_wav(all_pcm, out_path, TTS_SAMPLE_RATE)
-    dur = len(all_pcm) / (TTS_SAMPLE_RATE * 2)
-    logger.info(f"  事件 {event_idx}: 合成完成, 时长={dur:.2f}s, 耗时={time.time()-t0:.2f}s, 路径={out_path}")
-    return out_path
-
-
-def _merge_event_wavs(wav_paths, run_id):
-    """
-    将多个事件的 wav 文件合并为一个完整的输出 wav (事件间插入 0.3s 静音)。
-    返回合并后的 wav 文件路径。
-    """
-    all_samples = []
-    silence = np.zeros(int(TTS_SAMPLE_RATE * 0.3), dtype=np.float32)
-
-    for i, path in enumerate(wav_paths):
-        if path is None:
-            continue
-        audio, sr = sf.read(path)
-        if sr != TTS_SAMPLE_RATE:
-            audio = librosa.resample(audio, orig_sr=sr, target_sr=TTS_SAMPLE_RATE)
-        all_samples.append(audio.astype(np.float32))
-        if i < len(wav_paths) - 1:
-            all_samples.append(silence)
-
-    if len(all_samples) == 0:
-        return None
-
-    merged = np.concatenate(all_samples)
-    out_path = os.path.join(TEMP_DIR, f"merged_{run_id}.wav")
-    sf.write(out_path, merged, TTS_SAMPLE_RATE)
-    logger.info(f"合并音频: {len(wav_paths)} 段, 总时长={len(merged)/TTS_SAMPLE_RATE:.2f}s, 路径={out_path}")
-    return out_path
-
-
-# ==================== 控制信号名称映射 ====================
-CONTROL_NAMES = {
-    "KL": "🟢 继续听 (Keep-Listening)",
-    "SS": "🔴 开始说 (Start-Speaking)",
-    "SL": "🟡 开始听 (Start-Listening)",
-    "KS": "🔵 继续说 (Keep-Speaking)",
-    "BC": "🟣 插话 (Backchannel)",
-    "SLEEP": "⚪ 静默 (Sleep)",
-    "DETECT": "🔍 检测 (Detect)",
-}
-
-
 def _get_state_label(state_char):
-    """将状态字符转为可读标签"""
-    labels = {"l": "👂 监听中", "s": "🗣️ 说话中", "b": "💬 插话中"}
-    return labels.get(state_char, f"❓ 未知({state_char})")
+    """Return a display label for an internal listening-state code."""
+    labels = {"l": "listening", "s": "speaking", "b": "backchannel"}
+    return labels.get(state_char, f"unknown({state_char})")
 
 
-# ==================== Decoder Wrapper: 拦截原始三通道序列 ====================
-
-def _install_decoder_wrapper(gen):
-    """
-    对 generator 的 decoder 方法做 monkey-patch，
-    在返回 events 的同时将原始三通道序列保存到 gen._last_raw_sequences。
-    这样不需要修改推理框架代码，只在 demo 中获取额外信息。
-    """
-    if hasattr(gen, '_original_decoder'):
-        return  # 已安装过
-
-    gen._original_decoder = gen.decoder
-    gen._last_raw_sequences = None
-
-    def _wrapper_decoder(text, stoken, control):
-        # 保存原始序列
-        gen._last_raw_sequences = {
-            "text_ids": list(text),
-            "stoken_ids": list(stoken),
-            "control_ids": list(control),
-            "text_pad_token_id": gen.text_pad_token_id,
-            "tts_pad_id": gen.tts_pad_id,
-            "stoken_pad_token_id": gen.stoken_pad_token_id,
-            "stoken_delay_token_id": gen.stoken_delay_token_id,
-        }
-        # 调用原始 decoder
-        return gen._original_decoder(text, stoken, control)
-
-    gen.decoder = _wrapper_decoder
-    logger.info("已安装 decoder wrapper，可获取原始三通道序列")
-
-
-# ==================== 事件-Chunk 精确切片分析工具 ====================
-
-def _analyze_event_in_chunk(raw_seq, event, chunk_pos_start, chunk_pos_end, tokenizer):
-    """
-    分析某个事件在某个 chunk 的 pos 范围内新增的 text/stoken 详情。
-    
-    关键: 只分析该事件 [start_pos, end_pos) 与 [chunk_pos_start, chunk_pos_end) 的交集。
-    这样避免不同事件之间的 token 被错误计算。
-    
-    Args:
-        raw_seq: 原始三通道序列 dict
-        event: 事件 dict (含 start_pos, end_pos)
-        chunk_pos_start: 当前 chunk 的 pos 起始
-        chunk_pos_end: 当前 chunk 的 pos 结束
-        tokenizer: 分词器
-    
-    Returns:
-        dict: {
-            "chunk_text_tokens": 当前 chunk 内该事件的有效文本 token ids,
-            "chunk_text_pad_count": 当前 chunk 内该事件的 text padding 数目,
-            "chunk_text_str": 当前 chunk 内该事件的文本字符串,
-            "chunk_stoken_count": 当前 chunk 内该事件的有效语音 token 数,
-            "chunk_stoken_pad_count": 当前 chunk 内该事件的 stoken padding 数,
-        }
-    """
-    text_ids = raw_seq["text_ids"]
-    stoken_ids = raw_seq["stoken_ids"]
-    text_pad_id = raw_seq["text_pad_token_id"]
-    tts_pad_id = raw_seq["tts_pad_id"]
-    stoken_pad_id = raw_seq["stoken_pad_token_id"]
-    stoken_delay_id = raw_seq["stoken_delay_token_id"]
-
-    # 事件的 pos 范围
-    ev_start = event.get("start_pos", 0)
-    ev_end = event.get("end_pos", -1)
-    if ev_end <= 0:
-        ev_end = len(text_ids)  # 未结束的事件延伸到末尾
-
-    # 计算事件范围与 chunk 范围的交集
-    inter_start = max(ev_start, chunk_pos_start)
-    inter_end = min(ev_end, chunk_pos_end)
-
-    if inter_start >= inter_end:
-        return {
-            "chunk_text_tokens": [],
-            "chunk_text_pad_count": 0,
-            "chunk_text_str": "",
-            "chunk_stoken_count": 0,
-            "chunk_stoken_pad_count": 0,
-        }
-
-    # 确保范围有效
-    inter_start = max(0, inter_start)
-    inter_end = min(len(text_ids), inter_end)
-
-    chunk_text_raw = text_ids[inter_start:inter_end]
-    chunk_stoken_raw = stoken_ids[inter_start:inter_end]
-
-    # 文本通道: 有效文本 token (非 pad) 和 padding 数目
-    chunk_text_tokens = [t for t in chunk_text_raw if t < 151688 and t not in [text_pad_id, tts_pad_id]]
-    chunk_text_pad_count = sum(1 for t in chunk_text_raw if t == text_pad_id or t == tts_pad_id)
-
-    # 解码文本
-    chunk_text_str = ""
-    if chunk_text_tokens:
-        try:
-            chunk_text_str = tokenizer.decode(chunk_text_tokens, skip_special_tokens=True)
-        except Exception:
-            chunk_text_str = f"[decode error, {len(chunk_text_tokens)} tokens]"
-
-    # 语音通道: 有效语音 token 和 padding 数
-    chunk_stoken_count = sum(1 for s in chunk_stoken_raw if s > 151695 and s not in [stoken_delay_id, stoken_pad_id])
-    chunk_stoken_pad_count = sum(1 for s in chunk_stoken_raw if s == stoken_pad_id or s == stoken_delay_id)
-
-    return {
-        "chunk_text_tokens": chunk_text_tokens,
-        "chunk_text_pad_count": chunk_text_pad_count,
-        "chunk_text_str": chunk_text_str,
-        "chunk_stoken_count": chunk_stoken_count,
-        "chunk_stoken_pad_count": chunk_stoken_pad_count,
-    }
-
-
-def _format_chunk_text_display(chunk_text_str, chunk_text_pad_count):
-    """
-    格式化 chunk 的文本显示:
-    - 如果有真实文本, 显示文本内容
-    - 如果有 text padding, 压缩显示为 <text_padding>*N
-    """
-    parts = []
-    if chunk_text_str:
-        parts.append(chunk_text_str)
-    if chunk_text_pad_count > 0:
-        parts.append(f"`<text_padding>`*{chunk_text_pad_count}")
-    return " ".join(parts) if parts else "(无)"
-
-
-# ==================== 逐 Chunk 对话式展示的核心推理 ====================
+# ==================== Online Inference Path ====================
 
 def run_chunk_dialogue_inference(
     audio_input,
@@ -1620,36 +1288,27 @@ def run_chunk_dialogue_inference(
     direct_text_callback=None,
     direct_state_callback=None,
 ):
-    """按在线推理方式处理音频并逐步产出 UI/实时事件。
+    """Process audio in the online path and stream UI/realtime events.
 
-    Process audio in the online inference path and stream UI/realtime events.
-
-    中文:
-        1. 音频直接送入模型，不额外 padding。
-        2. 模型按 chunk/round 推理，必要时复用 realtime prefix。
-        3. 结果按时间窗拆分，用 generator yield 更新 Gradio 或实时会话。
-
-    English:
-        1. Feed audio directly into the model without extra padding.
-        2. Run chunk/round inference and reuse the realtime prefix when present.
-        3. Split results by time window and yield updates for Gradio or the
-           realtime HTTP session.
+    The audio is fed directly into the model without extra padding. Results are
+    split by time window and yielded to either the Gradio compatibility API or
+    the realtime HTTP session.
 
     Yields:
-        chatbot_messages: 对话消息列表 / Chat messages.
-        output_audio_path: 合成语音路径 / Synthesized response WAV path.
-        status_text: 当前状态 / Current status text.
-        json_text: 原始 JSON 结果 / Raw JSON result.
-        audio_debug_text: 音频 token 诊断 / Audio token diagnostics.
+        chatbot_messages: Chat messages.
+        output_audio_path: Synthesized response audio.
+        status_text: Current status text.
+        json_text: Raw JSON result.
+        audio_debug_text: Audio-token diagnostics.
     """
     global generator, token2wav_model
 
     if generator is None or not is_token2wav_available():
-        yield [], None, "模型尚未加载，请先点击'加载模型'按钮。", "", ""
+        yield [], None, "Models are not loaded yet.", "", ""
         return
 
     if audio_input is None:
-        yield [], None, "请先上传一段音频文件。", "", ""
+        yield [], None, "Please upload an audio file first.", "", ""
         return
 
     StreamingDecoder = _import_streaming_decoder()
@@ -1707,14 +1366,20 @@ def run_chunk_dialogue_inference(
 
         if not os.path.isfile(prompt_wav_path):
             err_msg = (
-                f"提示音色文件不存在: {prompt_wav_path}\n\n"
-                f"请在目录 {ASSETS_DIR} 下放置 16kHz 单声道 wav 文件:\n"
-                f"  - default_male.wav  (男声参考)\n"
-                f"  - default_female.wav (女声参考)\n"
-                f"当前目录下仅有图片文件，无 wav，Token2Wav 无法合成语音。"
+                f"Prompt voice file not found: {prompt_wav_path}\n\n"
+                f"Place 16 kHz mono WAV prompt files under {ASSETS_DIR}, for example:\n"
+                f"  - default_male.wav\n"
+                f"  - default_female.wav\n"
+                "Token2Wav cannot synthesize speech without a prompt WAV."
             )
             logger.error(err_msg)
-            yield [{"role": "user", "content": f"**Upload**: {total_duration:.2f}s audio"}, {"role": "assistant", "content": f"**错误**\n\n{err_msg}"}, "缺少提示音色文件", "", ""]
+            yield [
+                {"role": "user", "content": f"**Upload**: {total_duration:.2f}s audio"},
+                {"role": "assistant", "content": f"**Error**\n\n{err_msg}"},
+                "Missing prompt voice file",
+                "",
+                "",
+            ]
             return
 
         # --- Build chatbot initial state ---
@@ -1723,10 +1388,13 @@ def run_chunk_dialogue_inference(
             "role": "user",
             "content": f"**Upload**: {total_duration:.2f}s audio\n\nStreaming inference in progress..."
         })
-        # 清空上一次推理的音频：用极短静音（非零避免归一化除零），避免 Gradio 对空数组报错
-        # empty_audio = (TTS_SAMPLE_RATE, np.full(100, 1e-7, dtype=np.float32))
-        # yield chatbot_msgs, empty_audio, f"Streaming... (input: {total_duration:.2f}s)", ""
-        yield chatbot_msgs, None, f"Streaming... (input: {total_duration:.2f}s)", "", "[Audio Token / RFT] 等待首个音频 token..."
+        yield (
+            chatbot_msgs,
+            None,
+            f"Streaming... (input: {total_duration:.2f}s)",
+            "",
+            "[Audio Token / RTF] waiting for the first audio token...",
+        )
 
         t_start = time.time()
         t_stream_start_perf = time.perf_counter()
@@ -1850,11 +1518,11 @@ def run_chunk_dialogue_inference(
         pending_audio_np = []
         event_audio_tokens = []
 
-        #  音频 Token / RFT 诊断 
-        t_first_audio_token = None   # 本事件内首个 audio token 到达时间
-        total_token2wav_sec = 0.0   # 累计 token2wav 耗时(秒)
-        last_audio_debug = ""        # 最近一次要展示的 RFT 信息
-        synth_stats = {"total_time": 0.0}  # 供 _synth_stoken_chunk 累加合成耗时
+        # Audio-token / RTF diagnostics.
+        t_first_audio_token = None
+        total_token2wav_sec = 0.0
+        last_audio_debug = ""
+        synth_stats = {"total_time": 0.0}
 
         pre_lookahead_len = get_token2wav_pre_lookahead_len()
         logger.info(
@@ -2003,7 +1671,7 @@ def run_chunk_dialogue_inference(
             synth_stats["total_time"] = 0.0
             if not (bool(active_tts_bridge.persistent_mode) and bool(active_tts_bridge.event_active)):
                 active_tts_bridge.submit_event_start()
-            last_audio_debug = f"[Audio Token] 续跑事件开始: {resumed_kind}，等待 token..."
+            last_audio_debug = f"[Audio Token] resumed {resumed_kind} event; waiting for tokens..."
             chatbot_msgs.append({
                 "role": "assistant",
                 "content": f"**[{resumed_kind}]** generating...(resumed)"
@@ -2306,7 +1974,7 @@ def run_chunk_dialogue_inference(
                     t_first_audio_token = None
                     synth_stats["total_time"] = 0.0
                     active_tts_bridge.submit_event_start()
-                    last_audio_debug = f"[Audio Token] 事件开始: {kind}，等待 token..."
+                    last_audio_debug = f"[Audio Token] {kind} event started; waiting for tokens..."
                     chatbot_msgs.append({
                         "role": "assistant",
                         "content": f"**[{kind}]** generating..."
@@ -2435,16 +2103,18 @@ def run_chunk_dialogue_inference(
                         current_event_trace["first_t2w_submit_observed"] = True
                     active_tts_bridge.submit_audio_chunk(list(stoken_ids_raw))
                     _drain_tts_output()
-                    # 更新 RFT 诊断信息
+                    # Update RTF diagnostics.
                     total_token2wav_sec = synth_stats["total_time"]
                     elapsed = time.time() - t_start
                     token_dur_sec = current_stoken_count / TOKENS_PER_SECOND if current_stoken_count else 0
                     rft_token = (time.time() - t_first_audio_token) / (token_dur_sec or 1e-6) if current_stoken_count else 0
                     rft_wav = total_token2wav_sec / (token_dur_sec or 1e-6) if current_stoken_count else 0
                     last_audio_debug = (
-                        f"[Audio Token] 本批: +{batch_size} | 累计: {current_stoken_count} tokens\n"
-                        f"[RFT] Token生成: {rft_token:.3f} | Token2Wav: {rft_wav:.3f}   (RFT>1 表示慢于实时)\n"
-                        f"[耗时] 总推理: {elapsed:.2f}s | Token2Wav累计: {total_token2wav_sec:.2f}s | 等价音频时长: {token_dur_sec:.2f}s"
+                        f"[Audio Token] batch: +{batch_size} | total: {current_stoken_count} tokens\n"
+                        f"[RTF] token generation: {rft_token:.3f} | Token2Wav: {rft_wav:.3f} "
+                        "(RTF > 1 is slower than realtime)\n"
+                        f"[Timing] inference: {elapsed:.2f}s | Token2Wav total: {total_token2wav_sec:.2f}s "
+                        f"| equivalent audio: {token_dur_sec:.2f}s"
                     )
 
                 elif evtype == "event_end":
@@ -2510,7 +2180,7 @@ def run_chunk_dialogue_inference(
                         bool(event_interrupted),
                     )
                     if not event_interrupted:
-                        # 事件结束时让 worker flush 剩余 token，补全尾音
+                        # Flush remaining tokens at event end so tail audio is emitted.
                         active_tts_bridge.submit_event_end(force_flush=True)
                         if _wait_event_stats(max_wait_sec=30.0) is None:
                             raise RuntimeError("Timed out waiting for TTS worker event flush")
@@ -2622,7 +2292,7 @@ def run_chunk_dialogue_inference(
                     f"text_len={len(current_text)}, events={len(finished_events)}, "
                     f"S-L={sl_disp}, S-S={ss_disp}",
                     "",
-                    last_audio_debug if last_audio_debug else "[Audio Token / RFT] 暂无本事件音频 token",
+                    last_audio_debug if last_audio_debug else "[Audio Token / RTF] no audio token for this event yet",
                 )
 
             t_wait_anchor = time.perf_counter()
@@ -2778,7 +2448,13 @@ def run_chunk_dialogue_inference(
 
         json_result = json.dumps(finished_events, ensure_ascii=False, indent=2, default=str)
         logger.info(f"========== Inference complete run_id={run_id} ==========")
-        yield chatbot_msgs, final_audio, "Inference complete", json_result, last_audio_debug if last_audio_debug else "[Audio Token / RFT] 推理结束"
+        yield (
+            chatbot_msgs,
+            final_audio,
+            "Inference complete",
+            json_result,
+            last_audio_debug if last_audio_debug else "[Audio Token / RTF] inference complete",
+        )
 
     except Exception:
         try:
@@ -2799,10 +2475,7 @@ def run_chunk_dialogue_inference(
 
 @dataclass
 class InputSilenceGateState:
-    """输入静音门控状态。
-
-    State for the input silence gate.
-    """
+    """State for the input silence gate."""
 
     is_open: bool = False
     hangover_frames_left: int = 0
@@ -2812,11 +2485,7 @@ def _apply_input_silence_gate(
     chunk_np: np.ndarray,
     state: InputSilenceGateState,
 ) -> tuple[np.ndarray, Dict[str, int]]:
-    """对输入 chunk 做能量门控，静音帧置零但保持长度不变。
-
-    Apply energy-based gating to an input chunk, zeroing silent frames while
-    preserving the original sample length.
-    """
+    """Apply energy gating while preserving the original sample length."""
     arr = np.asarray(chunk_np, dtype=np.float32).reshape(-1)
     if arr.size == 0:
         return arr, {"total_samples": 0, "muted_samples": 0, "voice_samples": 0}
@@ -2885,10 +2554,7 @@ def _apply_input_silence_gate(
 
 @dataclass
 class RealtimeSessionState:
-    """一个实时 HTTP session 的完整运行状态。
-
-    Complete runtime state for one realtime HTTP session.
-    """
+    """Complete runtime state for one realtime HTTP session."""
 
     session_id: str
     start_speak_factor: float
@@ -3353,7 +3019,7 @@ def _run_realtime_session_worker(session_id: str) -> None:
     if session is None:
         return
 
-    _push_session_event(session, {"type": "status", "status": "实时会话已启动，等待音频分片..."})
+    _push_session_event(session, {"type": "status", "status": "Realtime session started; waiting for audio chunks..."})
 
     def _register_audio_hash(audio_hash: Optional[str]) -> bool:
         if not isinstance(audio_hash, str) or not audio_hash:
@@ -3448,7 +3114,7 @@ def _run_realtime_session_worker(session_id: str) -> None:
             "server_audio_emit_epoch_ms": emit_epoch_ms,
             "round_id": int(round_id),
         }
-        # token2wav 活动轨迹诊断字段（解耦异步合成，便于和卡顿对照）
+        # Token2Wav activity trace fields for correlating async synthesis with stalls.
         if isinstance(t2w_meta, dict):
             event_payload["t2w_synth_start_epoch_ms"] = t2w_meta.get("synth_start_epoch_ms")
             event_payload["t2w_synth_end_epoch_ms"] = t2w_meta.get("synth_end_epoch_ms")
@@ -3615,8 +3281,9 @@ def _run_realtime_session_worker(session_id: str) -> None:
             continue
 
         status_msg = (
-            f"实时会话推理中: round={round_id}, 累计输入 {snapshot_total_received / INPUT_SAMPLE_RATE:.2f}s, "
-            f"本轮新分片 {round_consumed_samples / INPUT_SAMPLE_RATE:.2f}s, "
+            f"Realtime inference: round={round_id}, "
+            f"total_input={snapshot_total_received / INPUT_SAMPLE_RATE:.2f}s, "
+            f"new_audio={round_consumed_samples / INPUT_SAMPLE_RATE:.2f}s, "
             f"audio_mode={'strict_incremental' if strict_infer_window else 'incremental'}"
         )
         _push_session_event(session, {"type": "status", "status": status_msg, "round_id": round_id})
@@ -4337,7 +4004,7 @@ def _build_stage_timing_event(entry: dict, round_id: int, queue_meta: Optional[d
         except (TypeError, ValueError):
             return None
 
-    # 本轮主导 state：从 transformer span 取 state；含 speaking 即视为说话轮。
+    # Dominant round state from transformer spans; any speaking span wins.
     _states = [
         str(sp.get("state"))
         for sp in (entry.get("spans") or [])
@@ -4401,16 +4068,10 @@ def _flush_control_prob_trace_json(
 
 
 def register_realtime_session_routes(app) -> None:
-    """注册实时会话 HTTP API 路由。
-
-    Register HTTP API routes for realtime sessions.
-    """
+    """Register HTTP API routes for realtime sessions."""
     @app.get("/api/realtime/voices")
     async def list_realtime_prompt_voices():
-        """返回可用参考音色列表。
-
-        Return available prompt voices.
-        """
+        """Return available prompt voices."""
         return JSONResponse(
             {
                 "default_voice": DEFAULT_REALTIME_PROMPT_VOICE,
@@ -4421,10 +4082,7 @@ def register_realtime_session_routes(app) -> None:
 
     @app.post("/api/realtime/warmup")
     async def realtime_warmup(request: Request):
-        """预热本地或远端 Token2Wav。
-
-        Warm up the local or remote Token2Wav service.
-        """
+        """Warm up the local or remote Token2Wav service."""
         if not is_token2wav_available():
             raise HTTPException(status_code=503, detail="Token2Wav is not loaded yet.")
         payload = {}
@@ -4458,10 +4116,7 @@ def register_realtime_session_routes(app) -> None:
 
     @app.post("/api/realtime/session/start")
     async def start_realtime_session(request: Request):
-        """创建一个新的实时推理 session。
-
-        Create a new realtime inference session.
-        """
+        """Create a new realtime inference session."""
         if generator is None or not is_token2wav_available():
             raise HTTPException(status_code=503, detail="Models are not loaded yet.")
 
@@ -4584,11 +4239,7 @@ def register_realtime_session_routes(app) -> None:
 
     @app.post("/api/realtime/session/{session_id}/chunk")
     async def push_realtime_chunk(session_id: str, request: Request):
-        """接收客户端上传的实时音频 chunk 并追加到 session 队列。
-
-        Receive a realtime audio chunk from the client and append it to the
-        session queue.
-        """
+        """Receive a realtime audio chunk and append it to the session queue."""
         session = _get_realtime_session_or_404(session_id)
         chunk_recv_epoch_ms = int(time.time() * 1000)
         client_chunk_sent_epoch_ms = None
@@ -4663,10 +4314,7 @@ def register_realtime_session_routes(app) -> None:
 
     @app.get("/api/realtime/session/{session_id}/events")
     async def stream_realtime_events(session_id: str):
-        """以 SSE 形式推送实时文本、状态和音频事件。
-
-        Stream realtime text, state, and audio events over server-sent events.
-        """
+        """Stream realtime text, state, and audio events over server-sent events."""
         session = _get_realtime_session_or_404(session_id)
 
         def event_stream():
@@ -4725,22 +4373,16 @@ def register_realtime_session_routes(app) -> None:
 
     @app.post("/api/realtime/session/{session_id}/stop")
     async def stop_realtime_session(session_id: str):
-        """请求停止实时 session。
-
-        Request a realtime session shutdown.
-        """
+        """Request a realtime session shutdown."""
         session = _get_realtime_session_or_404(session_id)
         with session.lock:
             session.stop_requested = True
-        _push_session_event(session, {"type": "status", "status": "实时会话正在停止..."})
+        _push_session_event(session, {"type": "status", "status": "Realtime session is stopping..."})
         return JSONResponse({"ok": True, "session_id": session_id})
 
     @app.post("/api/realtime/session/{session_id}/save_aligned")
     async def save_realtime_aligned_audio(session_id: str, request: Request):
-        """保存客户端对齐后的输入/输出音频和元信息。
-
-        Save client-aligned input/output audio and metadata.
-        """
+        """Save client-aligned input/output audio and metadata."""
         # Allow saving after stop; session may still be cleaning up. We keep route
         # idempotent and only use session_id for naming.
         try:
@@ -5114,135 +4756,109 @@ def register_realtime_session_routes(app) -> None:
         )
 
 
-# ==================== 构建 Gradio 界面 ====================
+# ==================== Gradio Compatibility UI ====================
 
 def build_demo():
-    """构建 Gradio 调试界面并挂载实时 API 路由。
-
-    Build the Gradio debugging UI and mount the realtime API routes.
-    """
-    # with gr.Blocks(
-    #     title="StepAudio2 全双工实时对话 Demo",
-    #     theme=gr.themes.Soft(),
-    #     css="""
-    #     .main-title { text-align: center; margin-bottom: 5px; }
-    #     .subtitle { text-align: center; color: #666; font-size: 14px; margin-bottom: 15px; }
-    #     """,
-    # ) as demo:
-    with gr.Blocks(
-            title="StepAudio2 全双工实时对话 Demo",
-        ) as demo:
+    """Build the Gradio compatibility UI and mount realtime API routes."""
+    with gr.Blocks(title="Lychee-FD Realtime Full-Duplex Demo") as demo:
 
         gr.HTML("""
         <div class="main-title">
-            <h1>🎙️ StepAudio2 全双工实时对话 Demo</h1>
+            <h1>🎙️ Lychee-FD Realtime Full-Duplex Demo</h1>
         </div>
         <div class="subtitle">
-            <p>基于全双工对话范式 — 模型持续监听并自主决策何时说话 (无 padding, 在线模式)</p>
-            <p>上传音频后, 模型逐 2 秒 chunk 处理, 以对话形式展示每个时间窗内的模型状态变化</p>
+            <p>The model continuously listens and decides when to speak in an online full-duplex loop.</p>
+            <p>Upload audio to inspect chunk-level model state, text, and synthesized speech.</p>
         </div>
         """)
 
-        # ========== 模型加载区 ==========
-        with gr.Accordion("⚙️ 模型配置与加载", open=True):
+        with gr.Accordion("⚙️ Model Loading", open=True):
             with gr.Row():
                 model_path_input = gr.Textbox(
-                    label="模型路径", value=DEFAULT_MODEL_PATH, scale=3,
+                    label="Model path", value=DEFAULT_MODEL_PATH, scale=3,
                 )
                 token2wav_path_input = gr.Textbox(
-                    label="Token2Wav 路径", value=DEFAULT_TOKEN2WAV_PATH, scale=3,
+                    label="Token2Wav path", value=DEFAULT_TOKEN2WAV_PATH, scale=3,
                 )
-                load_btn = gr.Button("🚀 加载模型", variant="primary", scale=1)
-            load_status = gr.Textbox(label="加载状态", interactive=False, lines=3)
+                load_btn = gr.Button("🚀 Load Models", variant="primary", scale=1)
+            load_status = gr.Textbox(label="Load status", interactive=False, lines=3)
             load_btn.click(
                 fn=load_models,
                 inputs=[model_path_input, token2wav_path_input],
                 outputs=[load_status],
             )
 
-        # ========== 推理参数区 ==========
-        with gr.Accordion("🔧 推理参数", open=False):
+        with gr.Accordion("🔧 Inference Parameters", open=False):
             with gr.Row():
                 start_speak_factor = gr.Slider(
                     minimum=0.0, maximum=20.0, value=1.2, step=0.1,
-                    label="开始说话因子 (Start Speak Factor, logit加法)",
-                    info="加到SS token的logit上; 值越大模型越倾向说话 (推荐 2~10)",
+                    label="Start-speak factor",
+                    info="Added to the SS-token logit. Higher values make the model more likely to speak.",
                 )
                 end_speak_factor = gr.Slider(
                     minimum=0.1, maximum=10, value=1.0, step=0.1,
-                    label="结束说话因子 (End Speak Factor)",
-                    info="值越大, 模型越倾向于更早停止说话",
+                    label="End-speak factor",
+                    info="Higher values make the model more likely to stop speaking earlier.",
                 )
                 prompt_voice = gr.Radio(
-                    choices=["男声", "女声"], value="男声", label="输出音色",
+                    choices=["male", "female"], value="male", label="Prompt voice",
                 )
                 tts_chunk_size = gr.Slider(
                     minimum=5, maximum=40, value=5, step=1,
-                    label="上游吐块大小 (stoken 数)",
-                    info="只控制上游 StreamingDecoder 吐块频率；下游 Token2Wav hop 固定为 25（官方对齐）。越小首包越早但调度更频繁 (推荐 5~15)",
+                    label="Decoder chunk size (stokens)",
+                    info="Controls upstream StreamingDecoder flush frequency only. Smaller values lower first-packet latency but increase scheduling overhead.",
                 )
 
-        # ========== 主界面 ==========
-        gr.Markdown("### 📁 上传音频文件 (在线推理模式, 无 padding)")
+        gr.Markdown("### 📁 Upload Audio")
         gr.Markdown("""
-        **使用方法**:
-        1. 上传一段音频文件 (wav/mp3)
-        2. 点击 **开始推理** — 模型将逐 chunk 处理, 以对话形式展示每个时间窗的状态变化
-        3. 推理完成后, 可播放模型的语音回复, 并查看原始 JSON 结果
+        **Usage**:
+        1. Upload an audio file.
+        2. Click **Run Inference** to process audio in online chunks.
+        3. Inspect the synthesized speech, chat view, and raw JSON result.
         """)
 
         with gr.Row():
             with gr.Column(scale=1):
                 upload_input = gr.Audio(
-                    label="🎤 上传音频文件",
+                    label="🎤 Audio input",
                     type="numpy",
                     sources=["upload", "microphone"],
                 )
-                infer_btn = gr.Button("▶️ 开始推理", variant="primary", size="lg")
-                status_text = gr.Textbox(label="状态", value="等待上传音频...", interactive=False)
+                infer_btn = gr.Button("▶️ Run Inference", variant="primary", size="lg")
+                status_text = gr.Textbox(label="Status", value="Waiting for audio...", interactive=False)
 
                 audio_debug_display = gr.Textbox(
-                    label="🔬 音频 Token / RFT 诊断",
-                    value="(推理时此处会实时显示: 本批/累计 token 数、Token生成 RFT、Token2Wav RFT)",
+                    label="🔬 Audio-token / RTF Diagnostics",
+                    value="Diagnostics will appear during inference.",
                     interactive=False,
                     lines=5,
                 )
 
                 output_audio = gr.Audio(
-                    label="🔊 模型语音回复",
-                    # type="filepath",
-                    # interactive=False,
-                    # autoplay=False,
+                    label="🔊 Synthesized response",
                     type="numpy",
                     interactive=False,
-                    autoplay=True,        # 自动播放
-                    streaming=True,       # 原生流式拼接
+                    autoplay=True,
+                    streaming=True,
                 )
-                clear_btn = gr.Button("🗑️ 清除回复", variant="secondary", size="sm")
+                clear_btn = gr.Button("🗑️ Clear", variant="secondary", size="sm")
 
             with gr.Column(scale=2):
                 chatbot = gr.Chatbot(
-                    label="📜 逐 Chunk 对话展示",
+                    label="📜 Chunk-level Dialogue",
                     height=600,
                 )
 
-        with gr.Accordion("📋 原始 JSON 结果", open=False):
-            json_output = gr.Code(label="原始 JSON", language="json", interactive=False)
+        with gr.Accordion("📋 Raw JSON", open=False):
+            json_output = gr.Code(label="Raw JSON", language="json", interactive=False)
 
-        # 推理按钮绑定
-        # infer_btn.click(
-        #     fn=run_chunk_dialogue_inference,
-        #     inputs=[upload_input, start_speak_factor, end_speak_factor, prompt_voice, tts_chunk_size],
-        #     outputs=[chatbot, output_audio, status_text, json_output],
-        # )
         infer_btn.click(
-            fn=lambda: ([], None, "准备推理...", "", "(准备推理...)"),
+            fn=lambda: ([], None, "Preparing inference...", "", "(preparing...)"),
             inputs=None,
             outputs=[chatbot, output_audio, status_text, json_output, audio_debug_display],
-            queue=False, # 不需要排队，立即执行
+            queue=False,
             api_name="prepare_run_chunk_dialogue_inference",
         ).then(
-            # 清空完毕后，开始执行真正的推理逻辑
             fn=run_chunk_dialogue_inference,
             inputs=[upload_input, start_speak_factor, end_speak_factor, prompt_voice, tts_chunk_size],
             outputs=[chatbot, output_audio, status_text, json_output, audio_debug_display],
@@ -5250,10 +4866,8 @@ def build_demo():
         )
 
         def clear_reply():
-            """清除模型语音回复与对话展示，恢复为空状态。"""
-            # empty_audio = (TTS_SAMPLE_RATE, np.full(100, 1e-7, dtype=np.float32))
-            # return [], empty_audio, "等待上传音频...", ""
-            return [], None, "等待上传音频...", "", "(清除后重新推理可查看 RFT)"
+            """Reset the compatibility UI outputs."""
+            return [], None, "Waiting for audio...", "", "(cleared)"
 
         clear_btn.click(
             fn=clear_reply,
@@ -5262,81 +4876,74 @@ def build_demo():
             api_name="clear_run_chunk_dialogue_inference",
         )
 
-        # 示例音频
         example_files = []
         if os.path.exists(ASSETS_DIR):
             for f in sorted(os.listdir(ASSETS_DIR)):
                 if f.endswith(".wav") and "default" not in f:
                     example_files.append(os.path.join(ASSETS_DIR, f))
         if example_files:
-            with gr.Accordion("🎵 示例音频", open=False):
+            with gr.Accordion("🎵 Example Audio", open=False):
                 gr.Examples(
                     examples=[[f] for f in example_files[:5]],
                     inputs=[upload_input],
-                    label="点击选择示例音频",
+                    label="Select an example audio file",
                 )
 
-        # ========== 使用说明 ==========
-        with gr.Accordion("📖 使用说明", open=False):
+        with gr.Accordion("📖 Notes", open=False):
             gr.Markdown("""
-## 全双工对话模型说明
+## Full-Duplex Dialogue Model
 
-### 模型特点
-- **全双工对话范式**: 模型始终保持监听状态, 通过 Control Channel 自主决策何时说话
-- **三通道并行生成**: 同时生成文本(Text)、语音Token(Stoken)和控制信号(Control)
-- **无 Padding 在线模式**: 音频直接送入模型, 不追加静音, 模拟真实在线场景
+### Features
+- **Full-duplex dialogue**: the model keeps listening and decides when to speak through the control channel.
+- **Three-channel generation**: text, speech tokens, and control signals are generated together.
+- **Online mode**: audio is fed directly without extra padding.
 
-### 对话式展示说明
+### Dialogue View
 
-| 角色 | 含义 |
+| Role | Meaning |
 |------|------|
-| 👤 用户 (左侧) | 每 2 秒一个 chunk 的输入音频信息 (时间范围、音频能量) |
-| 🤖 模型 (右侧) | 该 chunk 内模型的状态变化和生成内容 |
+| User | Input-audio chunk metadata |
+| Model | Model state changes and generated content |
 
-### 控制信号说明
-| 信号 | 含义 |
+### Control Signals
+| Signal | Meaning |
 |------|------|
-| K-L (Keep Listening) | 继续监听 |
-| S-S (Start Speaking) | 开始说话 |
-| S-L (Start Listening) | 停止说话, 转为监听 |
-| K-S (Keep Speaking) | 继续说话 |
-| B-C (Backchannel) | 插话/反馈 |
-
-### 参数说明
-- **开始说话因子**: 值越大, 模型越容易开口说话
-- **结束说话因子**: 值越大, 模型越容易停止说话
+| K-L (Keep Listening) | Continue listening |
+| S-S (Start Speaking) | Start speaking |
+| S-L (Start Listening) | Stop speaking and return to listening |
+| K-S (Keep Speaking) | Continue speaking |
+| B-C (Backchannel) | Backchannel response |
             """)
 
     return demo
 
 
-# ==================== 入口 ====================
+# ==================== Entrypoint ====================
 if __name__ == "__main__":
     # CLI entrypoint for local serving.
-    # 命令行入口: 用于本地启动实时服务。
-    parser = argparse.ArgumentParser(description="StepAudio full-duplex realtime Gradio demo")
+    parser = argparse.ArgumentParser(description="Lychee-FD full-duplex realtime service")
     parser.add_argument("--model_path", type=str, default=DEFAULT_MODEL_PATH)
     parser.add_argument("--token2wav_path", type=str, default=DEFAULT_TOKEN2WAV_PATH)
     parser.add_argument("--server_name", type=str, default="0.0.0.0")
     parser.add_argument("--server_port", type=int, default=7860)
-    # 默认开启 share，便于临时外网访问；如需关闭可传 --no-share
+    # Keep share enabled by default for quick remote debugging.
     parser.add_argument("--share", dest="share", action="store_true", help="Enable temporary public Gradio URL")
     parser.add_argument("--no-share", dest="share", action="store_false", help="Disable public Gradio URL")
     parser.set_defaults(share=True)
-    parser.add_argument("--auto_load", default=True, help="启动时自动加载模型")
+    parser.add_argument("--auto_load", default=True, help="Load models at startup")
     args = parser.parse_args()
 
     DEFAULT_MODEL_PATH = args.model_path
     DEFAULT_TOKEN2WAV_PATH = args.token2wav_path
 
     if args.auto_load:
-        logger.info("自动加载模型...")
+        logger.info("Auto-loading models...")
         status = load_models(args.model_path, args.token2wav_path)
         logger.info(status)
 
     demo = build_demo()
     demo.queue()
-    # Gradio 6.x 会在 launch() 内部重建 app，需在 launch 之后注册自定义路由。
+    # Gradio 6.x rebuilds the app inside launch(), so register custom routes after launch().
     app, _local_url, _share_url = demo.launch(
         server_name=args.server_name,
         server_port=args.server_port,

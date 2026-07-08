@@ -17,7 +17,7 @@ import torch.nn.functional as F
 from peft import PeftModel
 from pprint import pprint
 from torch.utils.data import Dataset
-from transformers import LogitsProcessor, LogitsProcessorList, AutoTokenizer, NoRepeatNGramLogitsProcessor
+from transformers import LogitsProcessor, LogitsProcessorList, NoRepeatNGramLogitsProcessor
 from transformers.feature_extraction_utils import BatchFeature
 from transformers.models.qwen2_5_omni.processing_qwen2_5_omni import Qwen2_5OmniProcessorKwargs
 from transformers.processing_utils import Unpack
@@ -32,6 +32,10 @@ except:
     IS_CUDA = True
 
 SYSTEM_MESSAGE_PREFIX = "<|BOT|>system\nYou are a helpful assistant.<|EOT|>"
+SUPPORTED_FULL_DUPLEX_MODEL_TYPES = {
+    "lychee_full_duplex",
+    "step_audio_2_full_duplex",
+}
 
 # logits 处理器的快速路径:
 # - 默认: 为降低时延，跳过逐 token 的整张量 sanitize 检查
@@ -57,7 +61,7 @@ def _load_stepaudio_config(model_path: str):
     try:
         with open(config_path, "r", encoding="utf-8") as f:
             raw_config = json.load(f)
-        if raw_config.get("model_type") == "step_audio_2_full_duplex":
+        if raw_config.get("model_type") in SUPPORTED_FULL_DUPLEX_MODEL_TYPES:
             return _to_attr_config(raw_config)
     except Exception:
         raw_config = None
@@ -313,7 +317,7 @@ class SpeakingControlLogitsProcessor(LogitsProcessor):
         vocab_size,
         prefix_input_len,
         control_token_chunk_size,
-        start_listen_token_factor=1.2,
+        start_listen_token_factor=1.0,
     ):
         self.sleep_token_id = sleep_token_id
         self.detect_token_id = detect_token_id
@@ -544,6 +548,14 @@ class SpeakingLogitsProcessor(LogitsProcessor):
 
         return scores
 class SingleTurnGenerationFramework:
+    """
+    Shared realtime state-machine base for the vLLM runtime.
+
+    This class intentionally does not load a HuggingFace model in the public
+    release. HF realtime inference is implemented by
+    lychee_fd.runtime.hf_v9_realtime.HFRealtimeV9GenerationFramework, while
+    vLLM inference uses VLLMGenerationFramework below.
+    """
 
     TOKENS_PER_SECOND = 25
 
@@ -551,94 +563,14 @@ class SingleTurnGenerationFramework:
 
     MAX_TEXT_TOKEN_NUM = 128
 
-    def __init__(
-        self,
-        model_type,
-        model_path,
-        device = "cuda",
-        attn_implementation= "eager",
-        torch_dtype=torch.float,
-        align_audio_input=False,
-        allowing_backchannel=True,
-    ):
-        self.device = torch.device(device)
-
-        from lychee_fd.models.lychee_duplex import LycheeDuplexForCausalLM
-
-        self.model = LycheeDuplexForCausalLM.from_pretrained(
-            model_path,
-            torch_dtype=torch_dtype,
-            attn_implementation=attn_implementation,
-            trust_remote_code=True,
-            device_map="auto"
-        ).eval()
-        self.model.stream_generation_flag = True
-
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            model_path,
-            padding_side="right",
-            use_fast=False,
-            trust_remote_code=True
+    def __init__(self, *args, **kwargs):
+        raise RuntimeError(
+            "SingleTurnGenerationFramework in vllm_generation.py is a shared "
+            "state-machine base and must not be instantiated directly. Use "
+            "VLLMGenerationFramework for vLLM inference, or "
+            "HFRealtimeV9GenerationFramework from hf_v9_realtime.py for HF "
+            "realtime inference."
         )
-
-        self.kl_token_id            = self.model.config.keep_listening_token_id
-        self.ss_token_id            = self.model.config.start_speaking_token_id
-        self.sl_token_id            = self.model.config.start_listening_token_id
-        self.ks_token_id            = self.model.config.keep_speaking_token_id
-        self.bc_token_id            = self.model.config.start_bc_token_id
-        self.detect_token_id        = self.model.config.detect_token_id
-        self.sleep_token_id         = self.model.config.sleep_token_id
-        self.text_pad_token_id      = self.model.config.text_pad_token_id
-        self.stoken_pad_token_id    = self.model.config.stoken_pad_token_id
-        self.audio_pad_token_id     = self.model.config.audio_pad_token_id
-        self.stoken_delay_token_id  = self.model.config.stoken_delay_token_id
-        self.adding_text_hiddenstates = self.model.config.adding_text_hiddenstates
-
-        self.align_audio_input      = align_audio_input
-        self.allowing_backchannel   = allowing_backchannel    
-
-        self.audio_token_id     = self.tokenizer(["<audio_patch>"]).input_ids[0][0]
-        self.tts_pad_id         = self.tokenizer(["<tts_pad>"]).input_ids[0][0]
-        self.tts_end_id         = self.tokenizer(["<tts_end>"]).input_ids[0][0]
-        self.tts_start_id       = self.tokenizer(["<tts_start>"]).input_ids[0][0]
-        self.eos_token_id       = self.tokenizer(["<|EOT|>"]).input_ids[0][0]
-        self.control_token_chunk_size = self.model.config.control_token_chunk_size
-
-        try:
-            self.stoken_audio_start_id = self.tokenizer(["<audio_0>"]).input_ids[0][0]
-            self.stoken_audio_tokenizer_end_id = self.tokenizer(["<audio_6655>"]).input_ids[0][0] + 1
-        except Exception:
-            self.stoken_audio_start_id = 151696
-            self.stoken_audio_tokenizer_end_id = 158352
-        self.stoken_audio_t2w_end_id = self.stoken_audio_start_id + _STEPAUDIO_T2W_CODEC_VOCAB_SIZE
-        if _STEPAUDIO_T2W_STRICT_STOKEN_RANGE:
-            self.stoken_audio_end_id = min(
-                self.stoken_audio_tokenizer_end_id,
-                self.stoken_audio_t2w_end_id,
-            )
-        else:
-            self.stoken_audio_end_id = self.stoken_audio_tokenizer_end_id
-
-        self.window_second = 0.4
-        self.stoken_delay_num = 10
-        self.stoken_no_repeat_n_gram = 4
-        if _STEPAUDIO_VERBOSE_STREAM_LOG or _STEPAUDIO_T2W_STRICT_STOKEN_RANGE:
-            print(f"[SETTING] stoken_delay_num={self.stoken_delay_num}")
-            print(f"[SETTING] stoken_no_repeat_n_gram={self.stoken_no_repeat_n_gram}")
-            print(f"[SETTING] s2l_fill_eot_tts_end={int(_STEPAUDIO_S2L_FILL_EOT_TTS_END)}")
-            print(
-                "[SETTING] t2w_strict_stoken_range="
-                f"{int(_STEPAUDIO_T2W_STRICT_STOKEN_RANGE)} "
-                f"audio_range=[{self.stoken_audio_start_id},{self.stoken_audio_end_id}) "
-                f"tokenizer_end={self.stoken_audio_tokenizer_end_id} "
-                f"t2w_vocab_size={_STEPAUDIO_T2W_CODEC_VOCAB_SIZE}"
-            )
-
-        self.sampling_rate = 16000
-
-        self.last_ss_pos = None
-
-        self.use_cache = True
 
     def init_speaking_processor(self, end_speak_token_factor):
         # 璇寸殑鏃跺€欙紝闄愬埗 Text 閫氶亾 (澶勭悊 EOS 绛?
@@ -754,7 +686,7 @@ class SingleTurnGenerationFramework:
         prefix=None, 
         initial_listening_state='l', 
         start_speak_token_factor=1.2,
-        start_listen_token_factor=1.2,
+        start_listen_token_factor=1.0,
         bc_speak_token_factor=1,
         end_speak_token_factor=1,
     ):
@@ -1202,7 +1134,7 @@ class SingleTurnGenerationFramework:
         prefix=None,
         initial_listening_state='l',
         start_speak_token_factor=1.2,
-        start_listen_token_factor=1.2,
+        start_listen_token_factor=1.0,
         bc_speak_token_factor=1,
         end_speak_token_factor=1,
     ):
@@ -1916,7 +1848,7 @@ class SingleTurnGenerationFramework:
         prefix=None,
         initial_listening_state='l',
         start_speak_token_factor=1.2,
-        start_listen_token_factor=1.2,
+        start_listen_token_factor=1.0,
         bc_speak_token_factor=1,
         end_speak_token_factor=1,
         audio_incremental_mode=False,
@@ -1942,7 +1874,7 @@ class SingleTurnGenerationFramework:
         prefix=None,
         initial_listening_state='l',
         start_speak_token_factor=1.2,
-        start_listen_token_factor=1.2,
+        start_listen_token_factor=1.0,
         bc_speak_token_factor=1,
         end_speak_token_factor=1,
         audio_incremental_mode=False,
@@ -2026,7 +1958,7 @@ class SingleTurnGenerationFramework:
 class _VLLMModelAdapter:
     """
     Adapter that wraps the vLLM engine to expose the same interface as
-    StepAudio2FullDuplex for the inherited framework methods.
+    the HF full-duplex model for the inherited framework methods.
 
     Provides:
       - .device
@@ -2136,11 +2068,11 @@ class _VLLMModelAdapter:
 
 class VLLMGenerationFramework(SingleTurnGenerationFramework):
     """
-    Drop-in replacement for SingleTurnGenerationFramework that uses vLLM
-    PagedAttention for KV cache management instead of HuggingFace DynamicCache.
+    vLLM realtime inference framework.
 
     The state machine logic (listening/speaking/backchannel) is inherited
-    unchanged. Only the model loading and the generate call are replaced.
+    from SingleTurnGenerationFramework, but model loading is handled here via
+    LycheeVLLMEngine. Public HF realtime inference lives in hf_v9_realtime.py.
 
     Usage:
         framework = VLLMGenerationFramework(
@@ -2280,7 +2212,7 @@ class IncrementalChunkStreamSession:
         prefix=None,
         initial_listening_state="l",
         start_speak_token_factor=1.2,
-        start_listen_token_factor=1.2,
+        start_listen_token_factor=1.0,
         bc_speak_token_factor=1,
         end_speak_token_factor=1,
         audio_incremental_mode=False,
@@ -3726,7 +3658,7 @@ class HFIncrementalChunkStreamSession(IncrementalChunkStreamSession):
         prefix=None,
         initial_listening_state="l",
         start_speak_token_factor=1.2,
-        start_listen_token_factor=1.2,
+        start_listen_token_factor=1.0,
         bc_speak_token_factor=1,
         end_speak_token_factor=1,
         audio_incremental_mode=False,

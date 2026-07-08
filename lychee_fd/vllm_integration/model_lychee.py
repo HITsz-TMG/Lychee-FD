@@ -1,16 +1,9 @@
 """
-Lychee-FD 全双工（3 头）架构对应的自定义 vLLM 模型类。
+Custom vLLM model implementation for the Lychee-FD full-duplex architecture.
 
-将 3 个 Qwen2Model 实例（main、stoken、control）摊平为统一的层列表，
-使 vLLM 的 PagedAttention 与 KV cache 管理可以覆盖全部层。
-KV cache 总层数 = N（main）+ M（stoken）+ K（control）。
-
-forward 流程:
-  1. 组装嵌入: text + stoken + control + audio
-  2. 运行 N 层 main，并在 (N-M) 与 (N-K) 处分支隐藏状态
-  3. 在分支隐藏状态上运行 M 层 stoken
-  4. 在分支隐藏状态上运行 K 层 control
-  5. 通过共享 lm_head 返回 3 组 logits
+The checkpoint contains main, speech-token, control, and merge branches. This
+module flattens those branches into a single vLLM model so PagedAttention can
+manage KV cache across all transformer layers.
 """
 
 import math
@@ -51,6 +44,13 @@ def _cfg_get(obj, key, default=None):
     if isinstance(obj, dict):
         return obj.get(key, default)
     return getattr(obj, key, default)
+
+
+def _cfg_required(obj, key, *, context: str = "config"):
+    value = _cfg_get(obj, key, None)
+    if value is None:
+        raise ValueError(f"Missing required {context}.{key}")
+    return value
 
 
 def _cfg_set(obj, key, value):
@@ -109,18 +109,24 @@ def _infer_control_branch_idx(config, n_main: int, n_control: int) -> int:
     return max(0, int(n_main) - int(n_control))
 
 
-class LycheeDuplexState:
-    """
-    全局状态走私库。
-    用于在 vLLM 的 LLMEngine 外部和模型 forward 内部之间，传递 stoken 和 control 信号。
-    """
-    stoken_ids = None
-    control_ids = None
-    audio_embeds = None
-    
-    # 存放模型内部采样好的结果，供外部读取
-    out_stoken = None
-    out_control = None
+def _qwen2_layer_kwargs(cfg, layer_prefix: str, *, cache_config, quant_config) -> Dict[str, object]:
+    hidden_size = int(_cfg_required(cfg, "hidden_size", context=layer_prefix))
+    num_heads = int(_cfg_required(cfg, "num_attention_heads", context=layer_prefix))
+    return {
+        "hidden_size": hidden_size,
+        "intermediate_size": int(_cfg_required(cfg, "intermediate_size", context=layer_prefix)),
+        "num_heads": num_heads,
+        "num_kv_heads": int(_cfg_get(cfg, "num_key_value_heads", num_heads)),
+        "head_dim": hidden_size // num_heads,
+        "max_position_embeddings": int(_cfg_get(cfg, "max_position_embeddings", 32768)),
+        "rope_theta": float(_cfg_get(cfg, "rope_theta", 1000000.0)),
+        "rms_norm_eps": float(_cfg_get(cfg, "rms_norm_eps", 1e-6)),
+        "layer_idx": 0,
+        "cache_config": cache_config,
+        "quant_config": quant_config,
+        "prefix": layer_prefix,
+    }
+
 
 class Qwen2MLPForVLLM(nn.Module):
     def __init__(self, hidden_size: int, intermediate_size: int):
@@ -262,319 +268,11 @@ class Qwen2DecoderLayerForVLLM(nn.Module):
         return hidden_states
 
 
-class LycheeDuplexForVLLM(nn.Module):
-    """
-    vLLM-compatible model wrapping the 3-head Lychee-FD architecture.
-
-    Layer layout in the unified KV cache:
-      - kv_caches[0 .. N-1]     : main model layers
-      - kv_caches[N .. N+M-1]   : stoken branch layers
-      - kv_caches[N+M .. N+M+K-1]: control branch layers
-    """
-    # Hint vLLM task resolver that this custom architecture is for generation.
-    is_text_generation_model = True
-    is_pooling_model = False
-    supported_tasks = {"generate"}
-
-    def __init__(self, *, vllm_config: "VllmConfig", prefix: str = ""):
-        super().__init__()
-        config = vllm_config.model_config.hf_config
-
-        # 适配不同版本vllm 同时支持 字典['key'] 和 对象.key
-        def _g(obj, key, default=None):
-            if obj is None: return default
-            if isinstance(obj, dict): return obj.get(key, default)
-            return getattr(obj, key, default)
-
-        self.config = config
-        
-        # 使用 _g 提取顶层 config 配置，避免某些层级就是 dict 的情况
-        text_cfg = _g(config, "text_config")
-        stoken_cfg = _g(config, "stoken_layer_config")
-        control_cfg = _g(config, "control_layer_config")
-        merge_cfg = _g(config, "merge_layer_config")
-
-        self.hidden_size = _g(text_cfg, "hidden_size")
-        self.vocab_size = _g(text_cfg, "vocab_size")
-
-        M = int(_g(stoken_cfg, "num_hidden_layers", 0) or 0)
-        K = int(_g(control_cfg, "num_hidden_layers", 0) or 0)
-        N = int(_infer_main_num_layers(config, text_cfg, M, K))
-
-        self.num_main_layers = N
-        self.num_stoken_layers = M
-        self.num_control_layers = K
-        self.stoken_branch_idx = max(0, N - M)
-        self.control_branch_idx = _infer_control_branch_idx(config, N, K)
-        self.total_num_layers = N + M + K
-
-        _cfg_set(config, "stepaudio_main_num_hidden_layers", N)
-        _cfg_set(config, "stepaudio_total_num_hidden_layers", self.total_num_layers)
-        config.num_hidden_layers = self.total_num_layers
-        if hasattr(vllm_config, "model_config") and hasattr(vllm_config.model_config, "hf_config"):
-            vllm_config.model_config.hf_config.num_hidden_layers = self.total_num_layers
-
-        cache_config = getattr(vllm_config, "cache_config", None)
-        quant_config = getattr(vllm_config, "quant_config", None)
-
-        def _layer_kwargs(cfg, idx, prefix_str):
-            h_size = _g(cfg, "hidden_size")
-            n_heads = _g(cfg, "num_attention_heads")
-            
-            return dict(
-                hidden_size=h_size,
-                intermediate_size=_g(cfg, "intermediate_size"),
-                num_heads=n_heads,
-                num_kv_heads=_g(cfg, "num_key_value_heads", n_heads),
-                head_dim=h_size // n_heads if (h_size and n_heads) else 128,
-                max_position_embeddings=_g(cfg, "max_position_embeddings", 32768),
-                rope_theta=_g(cfg, "rope_theta", 1000000.0),
-                rms_norm_eps=_g(cfg, "rms_norm_eps", 1e-6),
-                layer_idx=idx,
-                cache_config=cache_config,
-                quant_config=quant_config,
-                prefix=prefix_str,
-            )
-
-        self.embed_tokens = VocabParallelEmbedding(self.vocab_size, self.hidden_size)
-        # Newer checkpoints may keep side-channel embeddings as separate tensors.
-        # Keep backward compatibility by falling back to shared embed_tokens when absent.
-        self.stoken_embed_tokens = (
-            VocabParallelEmbedding(self.vocab_size, self.hidden_size) if M > 0 else None
-        )
-        self.control_embed_tokens = (
-            VocabParallelEmbedding(self.vocab_size, self.hidden_size) if K > 0 else None
-        )
-
-        self.main_layers = nn.ModuleList([
-            Qwen2DecoderLayerForVLLM(**_layer_kwargs(text_cfg, i, f"{prefix}.model.layers.{i}"))
-            for i in range(N)
-        ])
-        
-        self.main_norm = nn.RMSNorm(self.hidden_size, eps=_g(text_cfg, "rms_norm_eps", 1e-6))
-
-        self.stoken_layers = nn.ModuleList([
-            Qwen2DecoderLayerForVLLM(**_layer_kwargs(stoken_cfg, j, f"{prefix}.stoken_model.layers.{j}"))
-            for j in range(M)
-        ]) if M > 0 else nn.ModuleList()
-        
-        self.stoken_norm = nn.RMSNorm(
-            _g(stoken_cfg, "hidden_size", self.hidden_size),
-            eps=_g(stoken_cfg, "rms_norm_eps", 1e-6),
-        ) if M > 0 else None
-
-        self.control_layers = nn.ModuleList([
-            Qwen2DecoderLayerForVLLM(**_layer_kwargs(control_cfg, k, f"{prefix}.control_model.layers.{k}"))
-            for k in range(K)
-        ]) if K > 0 else nn.ModuleList()
-        
-        self.control_norm = nn.RMSNorm(
-            _g(control_cfg, "hidden_size", self.hidden_size),
-            eps=_g(control_cfg, "rms_norm_eps", 1e-6),
-        ) if K > 0 else None
-
-        self.lm_head = ParallelLMHead(self.vocab_size, self.hidden_size, bias=False)
-
-    def get_input_embeddings(self) -> VocabParallelEmbedding:
-        return self.embed_tokens
-
-    def _get_channel_embed_module(self, channel: str):
-        # Keep channel API stable but force shared embedding with main text path.
-        return self.embed_tokens
-
-    def _project_logits(self, hidden_states: torch.Tensor) -> torch.Tensor:
-        # vLLM 0.6.x forbids calling ParallelLMHead.forward directly here.
-        # Use the same LM head weights for a numerically equivalent projection.
-        return torch.nn.functional.linear(hidden_states, self.lm_head.weight)
-
-    def forward(
-        self,
-        input_ids: torch.Tensor,
-        positions: torch.Tensor,
-        kv_caches: List[torch.Tensor],
-        attn_metadata: "AttentionMetadata",
-        intermediate_tensors: Optional["IntermediateTensors"] = None,
-        inputs_embeds: Optional[torch.Tensor] = None,
-        **kwargs,
-    ):
-        if inputs_embeds is not None:
-            hidden_states = inputs_embeds
-        else:
-            hidden_states = self.embed_tokens(input_ids)
-
-        # [HACK 1]：放弃 kwargs，直接从全局走私库秘密获取多模态输入
-        stoken_ids = LycheeDuplexState.stoken_ids
-        control_ids = LycheeDuplexState.control_ids
-        audio_embeds = LycheeDuplexState.audio_embeds
-
-        def align_and_add(base_states, new_embeds):
-            if new_embeds is None:
-                return base_states
-
-            if new_embeds.dim() == 3:
-                new_embeds = new_embeds.view(-1, new_embeds.shape[-1])
-                
-            target_len = base_states.shape[0]
-            curr_len = new_embeds.shape[0]
-            
-            if curr_len < target_len:
-                pad_len = target_len - curr_len
-                # 在第 0 维（上方）补零
-                zero_pad = torch.zeros(
-                    (pad_len, new_embeds.shape[-1]),
-                    dtype=new_embeds.dtype, device=new_embeds.device
-                )
-                new_embeds = torch.cat([zero_pad, new_embeds], dim=0)
-            elif curr_len > target_len:
-                # 截断
-                new_embeds = new_embeds[-target_len:, :]
-                
-            return base_states + new_embeds
-
-
-        if stoken_ids is not None:
-            hidden_states = align_and_add(
-                hidden_states, self._get_channel_embed_module("stoken")(stoken_ids)
-            )
-        if control_ids is not None:
-            hidden_states = align_and_add(
-                hidden_states, self._get_channel_embed_module("control")(control_ids)
-            )
-        if audio_embeds is not None:
-            hidden_states = align_and_add(hidden_states, audio_embeds)
-
-        N = self.num_main_layers
-        M = self.num_stoken_layers
-        K = self.num_control_layers
-
-        stoken_branch_input = None
-        control_branch_input = None
-
-        # 走 vLLM 标准的多层 forward，完美利用 kv_caches
-        for i, layer in enumerate(self.main_layers):
-            hidden_states = layer(positions, hidden_states, kv_caches[i], attn_metadata)
-            if i == self.stoken_branch_idx and M > 0:
-                stoken_branch_input = hidden_states.clone()
-            if i == self.control_branch_idx and K > 0:
-                control_branch_input = hidden_states.clone()
-
-        hidden_states = self.main_norm(hidden_states)
-
-        if M > 0 and stoken_branch_input is not None:
-            stoken_hidden = stoken_branch_input
-            for j, layer in enumerate(self.stoken_layers):
-                stoken_hidden = layer(positions, stoken_hidden, kv_caches[N + j], attn_metadata)
-            stoken_hidden = self.stoken_norm(stoken_hidden)
-        else:
-            stoken_hidden = hidden_states
-
-        if K > 0 and control_branch_input is not None:
-            control_hidden = control_branch_input
-            for k, layer in enumerate(self.control_layers):
-                control_hidden = layer(positions, control_hidden, kv_caches[N + M + k], attn_metadata)
-            control_hidden = self.control_norm(control_hidden)
-        else:
-            control_hidden = hidden_states
-
-        text_logits = self._project_logits(hidden_states)
-        stoken_logits = self._project_logits(stoken_hidden)
-        control_logits = self._project_logits(control_hidden)
-
-        # [HACK 2]：在模型内部强行完成副流的采样，存回全局状态
-        # 这里使用快速的 greedy (argmax) 采样，保证实时性
-        # LycheeDuplexState.out_stoken = torch.argmax(stoken_logits[:, -1, :], dim=-1).item()
-        # LycheeDuplexState.out_control = torch.argmax(control_logits[:, -1, :], dim=-1).item()
-        LycheeDuplexState.out_stoken = torch.argmax(stoken_logits[-1, :], dim=-1).item()
-        LycheeDuplexState.out_control = torch.argmax(control_logits[-1, :], dim=-1).item()
-
-        # [HACK 3]：只返回 text_logits 给 vLLM，骗过它的单头采样器
-        return text_logits
-
-    def load_weights(self, weights: Iterable[Tuple[str, torch.Tensor]]):
-        """
-        Map HuggingFace checkpoint weight names to the flattened vLLM model.
-
-        HF layout:
-          model.model.layers.{i}.* -> self.main_layers[i].*
-          model.stoken_model.layers.{j}.* -> self.stoken_layers[j].*
-          model.control_model.layers.{k}.* -> self.control_layers[k].*
-          model.model.embed_tokens.* -> self.embed_tokens.*
-          model.model.norm.* -> self.main_norm.*
-          model.stoken_model.norm.* -> self.stoken_norm.*
-          model.control_model.norm.* -> self.control_norm.*
-          model.lm_head.* -> self.lm_head.*
-          model.encoder.* -> (audio encoder, loaded separately)
-          model.adapter.* -> (audio adapter, loaded separately)
-        """
-        stacked_params_mapping = [
-            ("qkv_proj", "q_proj", "q"),
-            ("qkv_proj", "k_proj", "k"),
-            ("qkv_proj", "v_proj", "v"),
-            ("gate_up_proj", "gate_proj", 0),
-            ("gate_up_proj", "up_proj", 1),
-        ]
-
-        params_dict = dict(self.named_parameters())
-
-        for name, loaded_weight in weights:
-            # Remap HF prefixes to vLLM model structure
-            if name.startswith("model.model.layers."):
-                name = name.replace("model.model.layers.", "main_layers.", 1)
-            elif name.startswith("model.stoken_model.layers."):
-                name = name.replace("model.stoken_model.layers.", "stoken_layers.", 1)
-            elif name.startswith("model.control_model.layers."):
-                name = name.replace("model.control_model.layers.", "control_layers.", 1)
-            elif name.startswith("model.model.embed_tokens."):
-                name = name.replace("model.model.embed_tokens.", "embed_tokens.", 1)
-            elif name.startswith("model.stoken_model.embed_tokens."):
-                name = name.replace("model.stoken_model.embed_tokens.", "stoken_embed_tokens.", 1)
-            elif name.startswith("model.control_model.embed_tokens."):
-                name = name.replace("model.control_model.embed_tokens.", "control_embed_tokens.", 1)
-            elif name.startswith("stoken_model.embed_tokens."):
-                name = name.replace("stoken_model.embed_tokens.", "stoken_embed_tokens.", 1)
-            elif name.startswith("control_model.embed_tokens."):
-                name = name.replace("control_model.embed_tokens.", "control_embed_tokens.", 1)
-            elif name.startswith("model.model.norm."):
-                name = name.replace("model.model.norm.", "main_norm.", 1)
-            elif name.startswith("model.stoken_model.norm."):
-                name = name.replace("model.stoken_model.norm.", "stoken_norm.", 1)
-            elif name.startswith("model.control_model.norm."):
-                name = name.replace("model.control_model.norm.", "control_norm.", 1)
-            elif name.startswith("model.lm_head."):
-                name = name.replace("model.lm_head.", "lm_head.", 1)
-            elif (
-                name.startswith("model.encoder.")
-                or name.startswith("encoder.")
-                or name.startswith("model.adapter.")
-                or name.startswith("adapter.")
-            ):
-                continue
-
-            # Handle qkv and gate_up merged projections
-            is_stacked = False
-            for (param_name, weight_name, shard_id) in stacked_params_mapping:
-                if weight_name not in name:
-                    continue
-                stacked_name = name.replace(weight_name, param_name)
-                if stacked_name in params_dict:
-                    param = params_dict[stacked_name]
-                    weight_loader = getattr(param, "weight_loader", default_weight_loader)
-                    weight_loader(param, loaded_weight, shard_id)
-                    is_stacked = True
-                    break
-
-            if not is_stacked:
-                # Rename self_attn.{q,k,v}_proj -> self_attn.qkv_proj already handled
-                if name in params_dict:
-                    param = params_dict[name]
-                    weight_loader = getattr(param, "weight_loader", default_weight_loader)
-                    weight_loader(param, loaded_weight)
-
-# Patched classes are defined here to avoid external file dependency issues.
+# Runtime state and model classes registered with vLLM.
 import torch.nn.functional as _F
 
 
-class _PatchedLycheeDuplexState:
+class LycheeDuplexState:
     text_input_ids = None
     text_processors = None
     text_sampling = None
@@ -638,7 +336,7 @@ class _PatchedLycheeDuplexState:
         cls.fwd_profile = None
 
 
-class _PatchedLycheeDuplexForVLLM(nn.Module):
+class LycheeDuplexForVLLM(nn.Module):
     # Hint vLLM task resolver that this custom architecture is for generation.
     is_text_generation_model = True
     is_pooling_model = False
@@ -648,25 +346,18 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
         super().__init__()
         config = vllm_config.model_config.hf_config
 
-        def _g(obj, key, default=None):
-            if obj is None:
-                return default
-            if isinstance(obj, dict):
-                return obj.get(key, default)
-            return getattr(obj, key, default)
-
         self.config = config
-        text_cfg = _g(config, "text_config")
-        stoken_cfg = _g(config, "stoken_layer_config")
-        control_cfg = _g(config, "control_layer_config")
-        merge_cfg = _g(config, "merge_layer_config")
+        text_cfg = _cfg_required(config, "text_config")
+        stoken_cfg = _cfg_required(config, "stoken_layer_config")
+        control_cfg = _cfg_required(config, "control_layer_config")
+        merge_cfg = _cfg_required(config, "merge_layer_config")
 
-        self.hidden_size = _g(text_cfg, "hidden_size")
-        self.vocab_size = _g(text_cfg, "vocab_size")
+        self.hidden_size = int(_cfg_required(text_cfg, "hidden_size", context="text_config"))
+        self.vocab_size = int(_cfg_required(text_cfg, "vocab_size", context="text_config"))
 
-        n_stoken = int(_g(stoken_cfg, "num_hidden_layers", 0) or 0)
-        n_control = int(_g(control_cfg, "num_hidden_layers", 0) or 0)
-        n_merge = int(_g(merge_cfg, "num_hidden_layers", 0) or 0)
+        n_stoken = int(_cfg_get(stoken_cfg, "num_hidden_layers", 0) or 0)
+        n_control = int(_cfg_get(control_cfg, "num_hidden_layers", 0) or 0)
+        n_merge = int(_cfg_get(merge_cfg, "num_hidden_layers", 0) or 0)
         n_main = int(_infer_main_num_layers(config, text_cfg, n_stoken, n_control))
 
         self.num_main_layers = n_main
@@ -679,30 +370,13 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
 
         _cfg_set(config, "stepaudio_main_num_hidden_layers", n_main)
         _cfg_set(config, "stepaudio_total_num_hidden_layers", self.total_num_layers)
-        config.num_hidden_layers = self.total_num_layers
-        if hasattr(vllm_config, "model_config") and hasattr(vllm_config.model_config, "hf_config"):
-            vllm_config.model_config.hf_config.num_hidden_layers = self.total_num_layers
+        _cfg_set(config, "num_hidden_layers", self.total_num_layers)
+        model_config = getattr(vllm_config, "model_config", None)
+        if model_config is not None:
+            _cfg_set(getattr(model_config, "hf_config", None), "num_hidden_layers", self.total_num_layers)
 
         cache_config = getattr(vllm_config, "cache_config", None)
         quant_config = getattr(vllm_config, "quant_config", None)
-
-        def _layer_kwargs(cfg, layer_prefix: str):
-            h_size = _g(cfg, "hidden_size")
-            n_heads = _g(cfg, "num_attention_heads")
-            return dict(
-                hidden_size=h_size,
-                intermediate_size=_g(cfg, "intermediate_size"),
-                num_heads=n_heads,
-                num_kv_heads=_g(cfg, "num_key_value_heads", n_heads),
-                head_dim=h_size // n_heads if (h_size and n_heads) else 128,
-                max_position_embeddings=_g(cfg, "max_position_embeddings", 32768),
-                rope_theta=_g(cfg, "rope_theta", 1000000.0),
-                rms_norm_eps=_g(cfg, "rms_norm_eps", 1e-6),
-                layer_idx=0,
-                cache_config=cache_config,
-                quant_config=quant_config,
-                prefix=layer_prefix,
-            )
 
         self.embed_tokens = VocabParallelEmbedding(self.vocab_size, self.hidden_size)
         # Side-channel embeddings may be checkpoint-specific; keep them optional.
@@ -715,25 +389,35 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
         self.main_layers = nn.ModuleList(
             [
                 Qwen2DecoderLayerForVLLM(
-                    **_layer_kwargs(text_cfg, f"{prefix}.model.layers.{i}")
+                    **_qwen2_layer_kwargs(
+                        text_cfg,
+                        f"{prefix}.model.layers.{i}",
+                        cache_config=cache_config,
+                        quant_config=quant_config,
+                    )
                 )
                 for i in range(n_main)
             ]
         )
-        self.main_norm = nn.RMSNorm(self.hidden_size, eps=_g(text_cfg, "rms_norm_eps", 1e-6))
+        self.main_norm = nn.RMSNorm(self.hidden_size, eps=float(_cfg_get(text_cfg, "rms_norm_eps", 1e-6)))
 
         self.stoken_layers = nn.ModuleList(
             [
                 Qwen2DecoderLayerForVLLM(
-                    **_layer_kwargs(stoken_cfg, f"{prefix}.stoken_model.layers.{j}")
+                    **_qwen2_layer_kwargs(
+                        stoken_cfg,
+                        f"{prefix}.stoken_model.layers.{j}",
+                        cache_config=cache_config,
+                        quant_config=quant_config,
+                    )
                 )
                 for j in range(n_stoken)
             ]
         )
         self.stoken_norm = (
             nn.RMSNorm(
-                _g(stoken_cfg, "hidden_size", self.hidden_size),
-                eps=_g(stoken_cfg, "rms_norm_eps", 1e-6),
+                int(_cfg_get(stoken_cfg, "hidden_size", self.hidden_size)),
+                eps=float(_cfg_get(stoken_cfg, "rms_norm_eps", 1e-6)),
             )
             if n_stoken > 0
             else None
@@ -742,15 +426,20 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
         self.control_layers = nn.ModuleList(
             [
                 Qwen2DecoderLayerForVLLM(
-                    **_layer_kwargs(control_cfg, f"{prefix}.control_model.layers.{k}")
+                    **_qwen2_layer_kwargs(
+                        control_cfg,
+                        f"{prefix}.control_model.layers.{k}",
+                        cache_config=cache_config,
+                        quant_config=quant_config,
+                    )
                 )
                 for k in range(n_control)
             ]
         )
         self.control_norm = (
             nn.RMSNorm(
-                _g(control_cfg, "hidden_size", self.hidden_size),
-                eps=_g(control_cfg, "rms_norm_eps", 1e-6),
+                int(_cfg_get(control_cfg, "hidden_size", self.hidden_size)),
+                eps=float(_cfg_get(control_cfg, "rms_norm_eps", 1e-6)),
             )
             if n_control > 0
             else None
@@ -759,15 +448,20 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
         self.merge_layers = nn.ModuleList(
             [
                 Qwen2DecoderLayerForVLLM(
-                    **_layer_kwargs(merge_cfg, f"{prefix}.merge_model.layers.{r}")
+                    **_qwen2_layer_kwargs(
+                        merge_cfg,
+                        f"{prefix}.merge_model.layers.{r}",
+                        cache_config=cache_config,
+                        quant_config=quant_config,
+                    )
                 )
                 for r in range(n_merge)
             ]
         )
         self.merge_norm = (
             nn.RMSNorm(
-                _g(merge_cfg, "hidden_size", self.hidden_size),
-                eps=_g(merge_cfg, "rms_norm_eps", 1e-6),
+                int(_cfg_get(merge_cfg, "hidden_size", self.hidden_size)),
+                eps=float(_cfg_get(merge_cfg, "rms_norm_eps", 1e-6)),
             )
             if n_merge > 0
             else None
@@ -805,33 +499,33 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
             os.getenv("STEPAUDIO_VLLM_LOGITS_NAN_GUARD", "0")
         ).strip().lower() in {"1", "true", "yes", "on"}
         # Lightweight forward-internal profiler. Default off. When on, accumulates
-        # per-section wall time into _PatchedLycheeDuplexState.fwd_profile and the
+        # per-section wall time into LycheeDuplexState.fwd_profile and the
         # engine can emit it. Uses torch.cuda.synchronize so numbers are real.
         self._forward_profile = str(
             os.getenv("STEPAUDIO_VLLM_FORWARD_PROFILE", "0")
         ).strip().lower() in {"1", "true", "yes", "on"}
-        stoken_min = int(_g(config, "stoken_token_ids_min", 151696) or 151696)
-        stoken_max = int(_g(config, "stoken_token_ids_max", self.vocab_size) or self.vocab_size)
-        control_min = int(_g(config, "control_token_ids_min", stoken_max) or stoken_max)
-        control_max = int(_g(config, "control_token_ids_max", self.vocab_size) or self.vocab_size)
+        stoken_min = int(_cfg_get(config, "stoken_token_ids_min", 151696) or 151696)
+        stoken_max = int(_cfg_get(config, "stoken_token_ids_max", self.vocab_size) or self.vocab_size)
+        control_min = int(_cfg_get(config, "control_token_ids_min", stoken_max) or stoken_max)
+        control_max = int(_cfg_get(config, "control_token_ids_max", self.vocab_size) or self.vocab_size)
         stoken_extra = [
-            _g(config, "stoken_delay_token_id"),
-            _g(config, "stoken_pad_token_id"),
-            _g(config, "start_speaking_token_id"),
-            _g(config, "start_listening_token_id"),
-            _g(config, "keep_speaking_token_id"),
-            _g(config, "keep_listening_token_id"),
-            _g(config, "sleep_token_id"),
-            _g(config, "detect_token_id"),
+            _cfg_get(config, "stoken_delay_token_id"),
+            _cfg_get(config, "stoken_pad_token_id"),
+            _cfg_get(config, "start_speaking_token_id"),
+            _cfg_get(config, "start_listening_token_id"),
+            _cfg_get(config, "keep_speaking_token_id"),
+            _cfg_get(config, "keep_listening_token_id"),
+            _cfg_get(config, "sleep_token_id"),
+            _cfg_get(config, "detect_token_id"),
         ]
         control_extra = [
-            _g(config, "start_speaking_token_id"),
-            _g(config, "keep_listening_token_id"),
-            _g(config, "start_listening_token_id"),
-            _g(config, "keep_speaking_token_id"),
-            _g(config, "start_bc_token_id"),
-            _g(config, "sleep_token_id"),
-            _g(config, "detect_token_id"),
+            _cfg_get(config, "start_speaking_token_id"),
+            _cfg_get(config, "keep_listening_token_id"),
+            _cfg_get(config, "start_listening_token_id"),
+            _cfg_get(config, "keep_speaking_token_id"),
+            _cfg_get(config, "start_bc_token_id"),
+            _cfg_get(config, "sleep_token_id"),
+            _cfg_get(config, "detect_token_id"),
         ]
         self._stoken_subset_ids = self._build_subset_token_ids(
             ranges=[(stoken_min, stoken_max)],
@@ -855,7 +549,7 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
         self.audio_patch_token_id = 151690
         self.logits_processor = self._build_logits_processor(
             self.vocab_size,
-            float(_g(config, "logit_scale", 1.0)),
+            float(_cfg_get(config, "logit_scale", 1.0)),
         )
         self.sampler = Sampler()
         profile_latency_env = str(os.getenv("STEPAUDIO_PROFILE_LATENCY", "0")).strip().lower()
@@ -1206,11 +900,11 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
         return forced
 
     def _emit_control_early_callback(self, control_token: int, positions: torch.Tensor) -> None:
-        callback = _PatchedLycheeDuplexState.control_early_callback
+        callback = LycheeDuplexState.control_early_callback
         if not callable(callback):
             return
-        text_ids = _PatchedLycheeDuplexState.text_input_ids
-        initial_len = _PatchedLycheeDuplexState.control_early_initial_text_len
+        text_ids = LycheeDuplexState.text_input_ids
+        initial_len = LycheeDuplexState.control_early_initial_text_len
         try:
             current_len = int(text_ids.shape[-1]) if text_ids is not None else 0
         except Exception:
@@ -1227,7 +921,7 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
             position = None
         payload = {
             "type": "control_head_early",
-            "request_id": _PatchedLycheeDuplexState.diag_request_id,
+            "request_id": LycheeDuplexState.diag_request_id,
             "step": int(step),
             "position": position,
             "control_token": int(control_token),
@@ -1242,14 +936,14 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
         text_last = self._project_logits(self._select_last_hidden(text_hidden))
         text_last = self._apply_processors(
             text_last,
-            _PatchedLycheeDuplexState.text_input_ids,
-            _PatchedLycheeDuplexState.text_processors,
+            LycheeDuplexState.text_input_ids,
+            LycheeDuplexState.text_processors,
         )
 
-        text_ids = _PatchedLycheeDuplexState.text_input_ids
-        text_pad_id = _PatchedLycheeDuplexState.text_after_eos_pad_token_id
-        text_eos_id = _PatchedLycheeDuplexState.text_after_eos_token_id
-        force_text_pad = bool(_PatchedLycheeDuplexState.text_after_eos_seen)
+        text_ids = LycheeDuplexState.text_input_ids
+        text_pad_id = LycheeDuplexState.text_after_eos_pad_token_id
+        text_eos_id = LycheeDuplexState.text_after_eos_token_id
+        force_text_pad = bool(LycheeDuplexState.text_after_eos_seen)
         if (
             not force_text_pad
             and text_ids is not None
@@ -1264,7 +958,7 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
         if force_text_pad and text_pad_id is not None:
             return int(text_pad_id)
 
-        text_cfg = _PatchedLycheeDuplexState.text_sampling or {}
+        text_cfg = LycheeDuplexState.text_sampling or {}
         return self._sample_token(
             text_last,
             do_sample=bool(text_cfg.get("do_sample", False)),
@@ -1314,10 +1008,10 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
         Only called when STEPAUDIO_VLLM_FORWARD_PROFILE=1. Stores
         {section: [total_sec, count]} on the global state for the engine to log.
         """
-        store = _PatchedLycheeDuplexState.fwd_profile
+        store = LycheeDuplexState.fwd_profile
         if store is None:
             store = {}
-            _PatchedLycheeDuplexState.fwd_profile = store
+            LycheeDuplexState.fwd_profile = store
         slot = store.get(name)
         if slot is None:
             store[name] = [float(dt), 1]
@@ -1421,7 +1115,7 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
         # absolute positions exceed (prefix_len + 1).
         needs_prefix_projection = channel_ids.shape[-1] > 1
         if needs_prefix_projection:
-            prefix_len = int(_PatchedLycheeDuplexState.prefix_input_len or 0)
+            prefix_len = int(LycheeDuplexState.prefix_input_len or 0)
             if prefix_len > 0:
                 prefix_zeros = torch.zeros(
                     (channel_embeds.shape[0], prefix_len, channel_embeds.shape[-1]),
@@ -1434,12 +1128,12 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
         return self._align_and_add(torch.zeros_like(hidden_states), channel_embeds)
 
     def _build_audio_embeds_for_positions(self, positions, hidden_states):
-        audio_embeds = _PatchedLycheeDuplexState.audio_embeds
+        audio_embeds = LycheeDuplexState.audio_embeds
         if audio_embeds is None:
             return None
 
         # Fallback: if no audio token layout is available, keep legacy align-add behavior.
-        audio_input_ids = _PatchedLycheeDuplexState.audio_input_ids
+        audio_input_ids = LycheeDuplexState.audio_input_ids
         if audio_input_ids is None:
             return self._align_and_add(torch.zeros_like(hidden_states), audio_embeds)
 
@@ -1448,7 +1142,7 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
         if audio_input_ids.dim() == 1:
             audio_input_ids = audio_input_ids.unsqueeze(0)
 
-        feat_lens = _PatchedLycheeDuplexState.audio_feat_lens
+        feat_lens = LycheeDuplexState.audio_feat_lens
         if feat_lens is None:
             feat_lens = torch.full(
                 (audio_embeds.shape[0],),
@@ -1464,7 +1158,7 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
         valid_mask = torch.arange(audio_embeds.shape[1], device=audio_embeds.device)[None, :] < feat_lens[:, None]
         audio_features = audio_embeds[valid_mask]
 
-        patch_token_id = _PatchedLycheeDuplexState.audio_patch_token_id
+        patch_token_id = LycheeDuplexState.audio_patch_token_id
         if patch_token_id is None:
             patch_token_id = self.audio_patch_token_id
         patch_token_id = int(patch_token_id)
@@ -1494,7 +1188,7 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
             audio_features = audio_features.to(audio_inputs_embeds.device, audio_inputs_embeds.dtype)
             audio_inputs_embeds = audio_inputs_embeds.masked_scatter(expanded_mask, audio_features)
 
-        prefix_len = int(_PatchedLycheeDuplexState.prefix_input_len or 0)
+        prefix_len = int(LycheeDuplexState.prefix_input_len or 0)
         if prefix_len > 0:
             prefix_zeros = torch.zeros(
                 (audio_inputs_embeds.shape[0], prefix_len, audio_inputs_embeds.shape[-1]),
@@ -1511,7 +1205,7 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
         hidden_states: torch.Tensor,
         out_text: Optional[int],
     ):
-        text_ids = _PatchedLycheeDuplexState.text_input_ids
+        text_ids = LycheeDuplexState.text_input_ids
         if text_ids is None:
             return None
         if text_ids.dim() == 1:
@@ -1594,34 +1288,34 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
         **kwargs,
     ):
         del intermediate_tensors, kwargs
-        diag_enabled = bool(_PatchedLycheeDuplexState.diag_enabled)
+        diag_enabled = bool(LycheeDuplexState.diag_enabled)
         if diag_enabled:
-            _PatchedLycheeDuplexState.diag_forward_calls += 1
+            LycheeDuplexState.diag_forward_calls += 1
 
         if inputs_embeds is not None:
             hidden_states = inputs_embeds
         else:
             hidden_states = self.embed_tokens(input_ids)
 
-        if _PatchedLycheeDuplexState.stoken_ids is not None:
+        if LycheeDuplexState.stoken_ids is not None:
             stoken_step_embeds = self._build_channel_embeds_for_positions(
-                _PatchedLycheeDuplexState.stoken_ids,
+                LycheeDuplexState.stoken_ids,
                 positions,
                 hidden_states,
                 channel_type="stoken",
             )
             if stoken_step_embeds is not None:
                 hidden_states = hidden_states + stoken_step_embeds
-        if _PatchedLycheeDuplexState.control_ids is not None:
+        if LycheeDuplexState.control_ids is not None:
             control_step_embeds = self._build_channel_embeds_for_positions(
-                _PatchedLycheeDuplexState.control_ids,
+                LycheeDuplexState.control_ids,
                 positions,
                 hidden_states,
                 channel_type="control",
             )
             if control_step_embeds is not None:
                 hidden_states = hidden_states + control_step_embeds
-        if _PatchedLycheeDuplexState.audio_embeds is not None:
+        if LycheeDuplexState.audio_embeds is not None:
             audio_step_embeds = self._build_audio_embeds_for_positions(positions, hidden_states)
             if audio_step_embeds is not None:
                 hidden_states = hidden_states + audio_step_embeds
@@ -1753,11 +1447,11 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
         control_hidden = self._sanitize_tensor_finite(control_hidden)
 
         target_pos = None
-        if _PatchedLycheeDuplexState.text_input_ids is not None:
-            target_pos = int(_PatchedLycheeDuplexState.text_input_ids.shape[-1] - 1)
+        if LycheeDuplexState.text_input_ids is not None:
+            target_pos = int(LycheeDuplexState.text_input_ids.shape[-1] - 1)
         apply_last_token_logic = self._should_apply_last_token_logic(
             positions,
-            _PatchedLycheeDuplexState.text_input_ids,
+            LycheeDuplexState.text_input_ids,
         )
         is_capturing = self._is_current_stream_capturing()
 
@@ -1771,7 +1465,7 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
             control_last = self._project_side_last_logits(
                 control_hidden,
                 branch="control",
-                processors=_PatchedLycheeDuplexState.control_processors,
+                processors=LycheeDuplexState.control_processors,
             )
             control_proj_sec = time.perf_counter() - control_proj_t0
             if diag_enabled:
@@ -1779,13 +1473,13 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
             control_proc_t0 = time.perf_counter()
             control_last = self._apply_processors(
                 control_last,
-                _PatchedLycheeDuplexState.control_input_ids,
-                _PatchedLycheeDuplexState.control_processors,
+                LycheeDuplexState.control_input_ids,
+                LycheeDuplexState.control_processors,
             )
             control_proc_sec = time.perf_counter() - control_proc_t0
-            control_cfg = _PatchedLycheeDuplexState.control_sampling or {}
+            control_cfg = LycheeDuplexState.control_sampling or {}
             control_sample_t0 = time.perf_counter()
-            _PatchedLycheeDuplexState.out_control = self._sample_token(
+            LycheeDuplexState.out_control = self._sample_token(
                 control_last,
                 do_sample=bool(control_cfg.get("do_sample", False)),
                 temperature=float(control_cfg.get("temperature", 1.0)),
@@ -1795,7 +1489,7 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
             )
             control_sample_sec = time.perf_counter() - control_sample_t0
             self._emit_control_early_callback(
-                int(_PatchedLycheeDuplexState.out_control),
+                int(LycheeDuplexState.out_control),
                 positions,
             )
 
@@ -1830,9 +1524,9 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
         merge_pre_norm_stats = None
         merge_hidden_before = None
         merge_hidden_after = None
-        _PatchedLycheeDuplexState.out_text = None
+        LycheeDuplexState.out_text = None
         if n_merge > 0 and apply_last_token_logic and not is_capturing:
-            _PatchedLycheeDuplexState.out_text = self._sample_text_token_for_merge(
+            LycheeDuplexState.out_text = self._sample_text_token_for_merge(
                 hidden_states
             )
 
@@ -1840,7 +1534,7 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
             merge_text_embeds = self._build_merge_text_embeds_for_positions(
                 positions,
                 stoken_hidden,
-                _PatchedLycheeDuplexState.out_text,
+                LycheeDuplexState.out_text,
             )
             if merge_text_embeds is not None:
                 merge_inputs = stoken_hidden + merge_text_embeds
@@ -1871,9 +1565,9 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
         if not apply_last_token_logic:
             if diag_enabled:
                 pos_flat = positions.reshape(-1).to(dtype=torch.long)
-                _PatchedLycheeDuplexState.diag_last = {
-                    "request_id": _PatchedLycheeDuplexState.diag_request_id,
-                    "forward_calls": int(_PatchedLycheeDuplexState.diag_forward_calls),
+                LycheeDuplexState.diag_last = {
+                    "request_id": LycheeDuplexState.diag_request_id,
+                    "forward_calls": int(LycheeDuplexState.diag_forward_calls),
                     "reason": "skip_last_token_logic",
                     "positions_min": int(pos_flat.min().item()) if pos_flat.numel() > 0 else None,
                     "positions_max": int(pos_flat.max().item()) if pos_flat.numel() > 0 else None,
@@ -1885,14 +1579,14 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
         # This model performs Python-side side-channel sampling for stoken/control.
         # CUDA graph capture cannot safely execute this path.
         if is_capturing:
-            _PatchedLycheeDuplexState.out_text = None
-            _PatchedLycheeDuplexState.out_stoken = None
-            _PatchedLycheeDuplexState.out_control = None
+            LycheeDuplexState.out_text = None
+            LycheeDuplexState.out_stoken = None
+            LycheeDuplexState.out_control = None
             if diag_enabled:
                 pos_flat = positions.reshape(-1).to(dtype=torch.long)
-                _PatchedLycheeDuplexState.diag_last = {
-                    "request_id": _PatchedLycheeDuplexState.diag_request_id,
-                    "forward_calls": int(_PatchedLycheeDuplexState.diag_forward_calls),
+                LycheeDuplexState.diag_last = {
+                    "request_id": LycheeDuplexState.diag_request_id,
+                    "forward_calls": int(LycheeDuplexState.diag_forward_calls),
                     "reason": "cuda_stream_capturing",
                     "positions_min": int(pos_flat.min().item()) if pos_flat.numel() > 0 else None,
                     "positions_max": int(pos_flat.max().item()) if pos_flat.numel() > 0 else None,
@@ -1906,7 +1600,7 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
         stoken_last = self._project_side_last_logits(
             stoken_hidden,
             branch="stoken",
-            processors=_PatchedLycheeDuplexState.stoken_processors,
+            processors=LycheeDuplexState.stoken_processors,
         )
         side_proj_sec = (time.perf_counter() - side_proj_t0) + float(control_proj_sec)
         if diag_enabled:
@@ -1917,16 +1611,16 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
         stoken_proc_t0 = time.perf_counter()
         stoken_last = self._apply_processors(
             stoken_last,
-            _PatchedLycheeDuplexState.stoken_input_ids,
-            _PatchedLycheeDuplexState.stoken_processors,
+            LycheeDuplexState.stoken_input_ids,
+            LycheeDuplexState.stoken_processors,
         )
         stoken_proc_sec = time.perf_counter() - stoken_proc_t0
         side_proc_sec = (time.perf_counter() - side_proc_t0) + float(control_proc_sec)
 
-        stoken_cfg = _PatchedLycheeDuplexState.stoken_sampling or {}
+        stoken_cfg = LycheeDuplexState.stoken_sampling or {}
 
         side_sample_t0 = time.perf_counter()
-        _PatchedLycheeDuplexState.out_stoken = self._sample_token(
+        LycheeDuplexState.out_stoken = self._sample_token(
             stoken_last,
             do_sample=bool(stoken_cfg.get("do_sample", True)),
             temperature=float(stoken_cfg.get("temperature", 0.7)),
@@ -1964,8 +1658,8 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
                     "(stoken=%.4fms control=%.4fms) sample=%.4fms "
                     "avg_total=%.4fms avg_proj=%.4fms avg_proc=%.4fms "
                     "(avg_stoken=%.4fms avg_control=%.4fms) avg_sample=%.4fms",
-                    _PatchedLycheeDuplexState.diag_request_id,
-                    _PatchedLycheeDuplexState.diag_forward_calls,
+                    LycheeDuplexState.diag_request_id,
+                    LycheeDuplexState.diag_forward_calls,
                     int(self._side_profile_calls),
                     side_total_sec * 1000.0,
                     side_proj_sec * 1000.0,
@@ -1983,9 +1677,9 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
         if diag_enabled:
             pos_flat = positions.reshape(-1).to(dtype=torch.long)
             control_diag = self._diag_control_tokens(control_last)
-            _PatchedLycheeDuplexState.diag_last = {
-                "request_id": _PatchedLycheeDuplexState.diag_request_id,
-                "forward_calls": int(_PatchedLycheeDuplexState.diag_forward_calls),
+            LycheeDuplexState.diag_last = {
+                "request_id": LycheeDuplexState.diag_request_id,
+                "forward_calls": int(LycheeDuplexState.diag_forward_calls),
                 "reason": "sampled",
                 "positions_min": int(pos_flat.min().item()) if pos_flat.numel() > 0 else None,
                 "positions_max": int(pos_flat.max().item()) if pos_flat.numel() > 0 else None,
@@ -2029,11 +1723,11 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
                     "sample": float(side_sample_sec * 1000.0),
                 },
                 "sampled_text": (
-                    int(_PatchedLycheeDuplexState.out_text)
-                    if _PatchedLycheeDuplexState.out_text is not None else None
+                    int(LycheeDuplexState.out_text)
+                    if LycheeDuplexState.out_text is not None else None
                 ),
-                "sampled_stoken": int(_PatchedLycheeDuplexState.out_stoken),
-                "sampled_control": int(_PatchedLycheeDuplexState.out_control),
+                "sampled_stoken": int(LycheeDuplexState.out_stoken),
+                "sampled_control": int(LycheeDuplexState.out_control),
             }
 
         # vLLM generation runner expects hidden states here and calls
@@ -2060,15 +1754,15 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
             else:
                 logits = self._project_logits(hidden_states)
 
-        text_ids = _PatchedLycheeDuplexState.text_input_ids
-        text_processors = _PatchedLycheeDuplexState.text_processors
+        text_ids = LycheeDuplexState.text_input_ids
+        text_processors = LycheeDuplexState.text_processors
         if text_ids is not None and text_processors is not None:
             text_last = logits[-1:, :] if logits.dim() == 2 else logits[:, -1, :]
             text_last = self._apply_processors(text_last, text_ids, text_processors)
             logits = self._set_last_logits(logits, text_last)
-        text_pad_id = _PatchedLycheeDuplexState.text_after_eos_pad_token_id
-        text_eos_id = _PatchedLycheeDuplexState.text_after_eos_token_id
-        force_text_pad = bool(_PatchedLycheeDuplexState.text_after_eos_seen)
+        text_pad_id = LycheeDuplexState.text_after_eos_pad_token_id
+        text_eos_id = LycheeDuplexState.text_after_eos_token_id
+        force_text_pad = bool(LycheeDuplexState.text_after_eos_seen)
         if (
             not force_text_pad
             and text_ids is not None
@@ -2087,8 +1781,8 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
                 text_last.fill_(-1e4)
                 text_last[:, pad_id] = 0.0
                 logits = self._set_last_logits(logits, text_last)
-                _PatchedLycheeDuplexState.text_after_eos_seen = True
-        out_text = _PatchedLycheeDuplexState.out_text
+                LycheeDuplexState.text_after_eos_seen = True
+        out_text = LycheeDuplexState.out_text
         if out_text is not None:
             text_last = logits[-1:, :] if logits.dim() == 2 else logits[:, -1, :]
             forced_last = self._force_single_token_logits(text_last, int(out_text))
@@ -2308,7 +2002,3 @@ class _PatchedLycheeDuplexForVLLM(nn.Module):
                 "Lychee-FD unmatched checkpoint keys (showing up to 20): %s",
                 unmatched_examples,
             )
-
-
-LycheeDuplexState = _PatchedLycheeDuplexState
-LycheeDuplexForVLLM = _PatchedLycheeDuplexForVLLM

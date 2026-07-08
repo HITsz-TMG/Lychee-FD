@@ -1,16 +1,17 @@
 
 """
-Lychee-FD 全双工场景使用的 vLLM 推理引擎。
+vLLM inference engine for Lychee-FD full-duplex serving.
 
-该模块将自定义的 LycheeDuplexForVLLM 模型与 MultiHeadSampler 封装为
-step_generate() 接口，供 SingleTurnGenerationFramework 的状态机调用，
-用于替代 multi_head_generate / multi_head_generate_stream。
+This module wraps the custom LycheeDuplexForVLLM model and the multi-head
+sampler behind a step_generate() interface. The realtime state machine calls
+that interface instead of the original multi_head_generate /
+multi_head_generate_stream methods.
 
-核心设计:
-  - 听/说状态机逻辑保持在 vLLM 之外
-  - 每个解码步只调用一次 step_generate()
-  - 音频编码作为预处理执行，特征通过额外 kwargs 传入
-  - 使用 PagedAttention 统一管理 N+M+K 层的 KV cache
+Design:
+  - Keep listening/speaking state transitions outside vLLM.
+  - Call step_generate() once per decode step.
+  - Run audio encoding as preprocessing and pass features through side state.
+  - Use PagedAttention to manage KV cache for all flattened branch layers.
 """
 
 import logging
@@ -59,6 +60,19 @@ from .sampler import (
 
 logger = logging.getLogger(__name__)
 
+LYCHEE_FULL_DUPLEX_ARCH = "LycheeFullDuplex"
+LEGACY_FULL_DUPLEX_ARCH = "StepAudio2FullDuplex"
+SUPPORTED_FULL_DUPLEX_ARCHS = (
+    LYCHEE_FULL_DUPLEX_ARCH,
+    LEGACY_FULL_DUPLEX_ARCH,
+)
+LYCHEE_FULL_DUPLEX_MODEL_TYPE = "lychee_full_duplex"
+LEGACY_FULL_DUPLEX_MODEL_TYPE = "step_audio_2_full_duplex"
+SUPPORTED_FULL_DUPLEX_MODEL_TYPES = (
+    LYCHEE_FULL_DUPLEX_MODEL_TYPE,
+    LEGACY_FULL_DUPLEX_MODEL_TYPE,
+)
+
 
 def _to_attr_config(value):
     if isinstance(value, dict):
@@ -74,23 +88,27 @@ def _load_config_json(model_path: str):
         return json.load(f)
 
 
-def _ensure_stepaudio_auto_config_registered():
+def _ensure_duplex_auto_config_registered():
     from transformers import AutoConfig, PretrainedConfig
 
-    class StepAudio2FullDuplexConfig(PretrainedConfig):
-        model_type = "step_audio_2_full_duplex"
+    class LycheeFullDuplexConfig(PretrainedConfig):
+        model_type = LYCHEE_FULL_DUPLEX_MODEL_TYPE
 
         def __init__(self, **kwargs):
             super().__init__(**kwargs)
 
-    try:
-        AutoConfig.register(
-            StepAudio2FullDuplexConfig.model_type,
-            StepAudio2FullDuplexConfig,
-        )
-    except ValueError:
-        # Already registered in this process.
-        pass
+    class LegacyStepAudio2FullDuplexConfig(PretrainedConfig):
+        model_type = LEGACY_FULL_DUPLEX_MODEL_TYPE
+
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+
+    for config_cls in (LycheeFullDuplexConfig, LegacyStepAudio2FullDuplexConfig):
+        try:
+            AutoConfig.register(config_cls.model_type, config_cls)
+        except ValueError:
+            # Already registered in this process.
+            pass
 
 
 def _load_model_config(model_path: str):
@@ -101,14 +119,17 @@ def _load_model_config(model_path: str):
         raw_config = _load_config_json(model_path)
     except Exception:
         raw_config = None
-    if isinstance(raw_config, dict) and raw_config.get("model_type") == "step_audio_2_full_duplex":
+    if (
+        isinstance(raw_config, dict)
+        and raw_config.get("model_type") in SUPPORTED_FULL_DUPLEX_MODEL_TYPES
+    ):
         return _to_attr_config(raw_config)
 
     try:
         return AutoConfig.from_pretrained(model_path, trust_remote_code=True)
     except Exception as exc:
         logger.warning(
-            "AutoConfig could not load custom StepAudio config from %s (%s); "
+            "AutoConfig could not load custom full-duplex config from %s (%s); "
             "falling back to raw config.json.",
             model_path,
             exc,
@@ -143,7 +164,7 @@ class AudioPreprocessor:
             AudioEncoder = get_class_from_dynamic_module("modeling_step_audio_2.AudioEncoder", model_path)
             Adaptor = get_class_from_dynamic_module("modeling_step_audio_2.Adaptor", model_path)
         except Exception as e:
-            raise ImportError(f"使用 HuggingFace 动态加载 AudioEncoder/Adaptor 失败: {e}")
+            raise ImportError(f"Failed to dynamically load AudioEncoder/Adaptor from the HF checkpoint: {e}")
 
         config = _load_model_config(model_path)
 
@@ -209,7 +230,7 @@ class AudioPreprocessor:
 
 class LycheeVLLMEngine:
     """
-    High-level vLLM engine for the StepAudio2 Full-Duplex model.
+    High-level vLLM engine for the Lychee-FD full-duplex model.
 
     The state machine calls step_generate() for each decode step.
     This gives us PagedAttention benefits while keeping the complex
@@ -228,11 +249,17 @@ class LycheeVLLMEngine:
         if not VLLM_AVAILABLE:
             raise RuntimeError("vLLM is not installed. Install with: pip install vllm")
 
-        # Register custom model
-        ModelRegistry.register_model(
-            "StepAudio2FullDuplex",
-            "lychee_fd.vllm_integration.model_lychee:LycheeDuplexForVLLM",
-        )
+        # Register both the current Lychee name and the legacy checkpoint alias.
+        for arch_name in SUPPORTED_FULL_DUPLEX_ARCHS:
+            try:
+                ModelRegistry.register_model(
+                    arch_name,
+                    "lychee_fd.vllm_integration.model_lychee:LycheeDuplexForVLLM",
+                )
+            except Exception as exc:
+                msg = str(exc).lower()
+                if "already" not in msg or "register" not in msg:
+                    raise
 
         self.model_path = model_path
         self.device = device
@@ -382,19 +409,19 @@ class LycheeVLLMEngine:
         device = input_ids.device
         request_id = f"audio_stream_{time.time()}"
 
-        # 预填阶段：把首批多模态数据塞进走私库
+        # Prefill: publish the initial side-channel tensors for model.forward().
         LycheeDuplexState.stoken_ids = stoken_ids
         LycheeDuplexState.control_ids = control_ids
         LycheeDuplexState.audio_embeds = audio_embeds
 
-        # 转换采样参数为 vLLM 标准格式
+        # Convert multi-head sampling settings to vLLM's text sampling params.
         vllm_sampling = SamplingParams(
             temperature=sampling_params.text_temperature if sampling_params else 1.0,
             top_p=sampling_params.text_top_p if sampling_params else 1.0,
             max_tokens=max_new_tokens,
         )
 
-        # 把文本序列交给引擎，建立正式的 request
+        # Register the text prompt as a normal vLLM request.
         prompt_list = input_ids[0].tolist()
         # self.engine.add_request(request_id, prompt=None, prompt_token_ids=prompt_list, sampling_params=vllm_sampling)
         self.engine.add_request(
@@ -408,19 +435,19 @@ class LycheeVLLMEngine:
         generated_stoken_ids = stoken_ids.clone()
         generated_control_ids = control_ids.clone()
 
-        # 开启 vLLM 的轮询（取代手写的模型调用循环）
+        # Poll vLLM instead of calling model.forward() manually.
         while self.engine.has_unfinished_requests():
-            # 这里引擎会自动分配 KV Cache，并调用 forward 算出结果
+            # vLLM allocates KV cache and calls forward internally.
             step_outputs = self.engine.step()
 
             for request_output in step_outputs:
                 if request_output.request_id != request_id:
                     continue
 
-                # 从 vLLM 获取生成的文本 Token
+                # Read the generated text token from vLLM.
                 text_token = request_output.outputs[0].token_ids[-1]
                 
-                # 走私库里拿出副流 Token
+                # Read side-channel tokens emitted by model.forward().
                 stoken_token = LycheeDuplexState.out_stoken
                 control_token = LycheeDuplexState.out_control
 
@@ -445,10 +472,10 @@ class LycheeVLLMEngine:
                     "control_ids": generated_control_ids,
                 }
 
-                # 更新下一轮的走私状态！
+                # Publish side-channel tensors for the next decode step.
                 LycheeDuplexState.stoken_ids = next_stoken
                 LycheeDuplexState.control_ids = next_control
-                LycheeDuplexState.audio_embeds = None  # 只在首轮需要
+                LycheeDuplexState.audio_embeds = None  # Only needed during prefill.
 
                 step += 1
 
@@ -472,7 +499,6 @@ class _PatchedLycheeVLLMEngine:
     @classmethod
     def _register_duplex_model(cls):
         model_cls = LycheeDuplexForVLLM
-        arch_name = "StepAudio2FullDuplex"
         try:
             model_src = _inspect.getsourcefile(model_cls) or _inspect.getfile(model_cls)
         except Exception:
@@ -481,11 +507,13 @@ class _PatchedLycheeVLLMEngine:
 
         try:
             from vllm.model_executor.models.registry import ModelRegistry
-            if arch_name not in ModelRegistry.get_supported_archs():
-                ModelRegistry.register_model(arch_name, model_cls)
+            for arch_name in SUPPORTED_FULL_DUPLEX_ARCHS:
+                if arch_name not in ModelRegistry.get_supported_archs():
+                    ModelRegistry.register_model(arch_name, model_cls)
             import vllm.model_executor.models.registry as vllm_reg
             if hasattr(vllm_reg, "_MODEL_PRIORITY"):
-                vllm_reg._MODEL_PRIORITY[arch_name] = ["generate"]
+                for arch_name in SUPPORTED_FULL_DUPLEX_ARCHS:
+                    vllm_reg._MODEL_PRIORITY[arch_name] = ["generate"]
             model_cls.supported_tasks = {"generate"}
             
         except Exception as e:
@@ -498,18 +526,13 @@ class _PatchedLycheeVLLMEngine:
         setattr(model_cls, "is_pooling_model", False)
         setattr(model_cls, "supported_tasks", {"generate"})
 
+        registered_archs = set()
         last_error = None
         for registry in cls._all_model_registries():
-            unregister = getattr(registry, "unregister_model", None)
-            if callable(unregister):
-                try:
-                    unregister(arch_name)
-                except Exception:
-                    pass
-
             sig_params = _inspect.signature(registry.register_model).parameters
             logger.info(
-                "Registering StepAudio2FullDuplex via %s.%s (supports keys: %s)",
+                "Registering Lychee-FD architectures %s via %s.%s (supports keys: %s)",
+                ",".join(SUPPORTED_FULL_DUPLEX_ARCHS),
                 registry.__module__,
                 registry.__name__ if hasattr(registry, "__name__") else type(registry).__name__,
                 ",".join(sorted(sig_params.keys())),
@@ -528,26 +551,38 @@ class _PatchedLycheeVLLMEngine:
             if "runner_type" in sig_params:
                 extra_kwargs["runner_type"] = "generate"
 
-            for entry in (model_cls, model_entry):
-                try:
-                    registry.register_model(arch_name, entry, **extra_kwargs)
-                    return
-                except TypeError:
+            unregister = getattr(registry, "unregister_model", None)
+            for arch_name in SUPPORTED_FULL_DUPLEX_ARCHS:
+                if callable(unregister):
                     try:
-                        registry.register_model(arch_name, entry)
-                        return
-                    except Exception as exc:
-                        last_error = exc
-                except Exception as exc:
-                    # "already registered" may be raised by some versions; treat as usable.
-                    msg = str(exc).lower()
-                    if "already" in msg and "register" in msg:
-                        return
-                    last_error = exc
+                        unregister(arch_name)
+                    except Exception:
+                        pass
 
-        if last_error is not None:
+                for entry in (model_cls, model_entry):
+                    try:
+                        registry.register_model(arch_name, entry, **extra_kwargs)
+                        registered_archs.add(arch_name)
+                        break
+                    except TypeError:
+                        try:
+                            registry.register_model(arch_name, entry)
+                            registered_archs.add(arch_name)
+                            break
+                        except Exception as exc:
+                            last_error = exc
+                    except Exception as exc:
+                        # "already registered" may be raised by some versions; treat as usable.
+                        msg = str(exc).lower()
+                        if "already" in msg and "register" in msg:
+                            registered_archs.add(arch_name)
+                            break
+                        last_error = exc
+
+        if not registered_archs and last_error is not None:
             raise RuntimeError(
-                f"Failed to register custom Lychee-FD vLLM model architecture '{arch_name}': {last_error}"
+                "Failed to register custom Lychee-FD vLLM model architectures "
+                f"{SUPPORTED_FULL_DUPLEX_ARCHS}: {last_error}"
             )
 
     @staticmethod
@@ -649,7 +684,7 @@ class _PatchedLycheeVLLMEngine:
         )
 
         overrides = {
-            "architectures": ["StepAudio2FullDuplex"],
+            "architectures": [LYCHEE_FULL_DUPLEX_ARCH],
             "num_hidden_layers": total_layers,
             "text_config": text_override,
             "stepaudio_main_num_hidden_layers": int(n_main),
@@ -773,7 +808,7 @@ class _PatchedLycheeVLLMEngine:
             )
 
         self._register_duplex_model()
-        _ensure_stepaudio_auto_config_registered()
+        _ensure_duplex_auto_config_registered()
         hf_overrides = self._build_hf_overrides(model_path)
 
         sig_params = _inspect.signature(EngineArgs.__init__).parameters

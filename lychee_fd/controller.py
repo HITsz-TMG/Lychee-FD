@@ -2,15 +2,15 @@
 lychee_fd.controller
 ====================
 
-实验性"前端 + 控制器"合体进程：
-- 同时托管 Vue 静态文件 (默认 dist/) 与 /admin/* 控制接口
-- /admin/* 用来代浏览器执行 scripts/start_backend.sh，
-  从而实现"前端选模型 → 一键(重)启后端"
+Frontend static server plus backend controller process:
+- Serves Vue static files (dist/ by default) and /admin/* control endpoints.
+- /admin/* starts scripts/start_backend.sh on behalf of the browser, allowing
+  the frontend to select a model and restart the backend.
 
-启动:
+Start through the project script:
     bash scripts/start_frontend_dev.sh prod public
 
-或直接:
+Or run directly:
     python -m lychee_fd.controller \
         --static-dir /path/to/frontend/dist \
         --host 0.0.0.0 --port 8084 \
@@ -54,10 +54,12 @@ log = logging.getLogger("lychee_fd.controller")
 
 class BackendSupervisor:
     """
-    管理一个 backend 子进程 (scripts/start_backend.sh)。
-    - 用 start_new_session=True 创建独立进程组，便于 killpg 一次性收尸
-    - kill 顺序: SIGTERM -> 等待 grace 秒 -> SIGKILL
-    - kill 后等待 GPU 显存掉下来 (best-effort)，避免新进程立刻 OOM
+    Manage one backend subprocess (scripts/start_backend.sh).
+
+    - start_new_session=True creates an independent process group so killpg can
+      stop vLLM workers together.
+    - Shutdown sequence: SIGTERM -> grace wait -> SIGKILL.
+    - After shutdown, wait briefly for GPU memory to settle before restart.
     """
 
     def __init__(
@@ -167,7 +169,7 @@ class BackendSupervisor:
 
         env = os.environ.copy()
         env["STEPAUDIO_MODEL_PATH"] = model_path
-        # 透传额外 env (例如 hop_size / lookahead)
+        # Forward selected runtime env overrides, such as hop size or lookahead.
         for k, v in (extra_env or {}).items():
             if v is None:
                 continue
@@ -181,8 +183,8 @@ class BackendSupervisor:
         )
         self._state = "starting"
 
-        # 关键: start_new_session=True -> 子进程成为新会话/进程组组长
-        # 这样 vLLM spawn 出来的 worker 进程也都在同一个 pgid 下,可一并收尸
+        # start_new_session=True makes the subprocess a session/process-group
+        # leader, keeping vLLM worker processes under the same pgid.
         proc = subprocess.Popen(
             ["bash", str(self.backend_script), mode, backend_type],
             cwd=str(self.backend_root),
@@ -242,14 +244,15 @@ class BackendSupervisor:
         self._pgid = None
         self._state = "idle"
 
-        # 给 GPU 一点点时间释放显存
+        # Give the GPU driver a short best-effort window to release memory.
         if self.gpu_settle_s > 0:
             time.sleep(self.gpu_settle_s)
 
     def _wait_until_ready(self, timeout_s: int) -> tuple[bool, str]:
         """
-        通过 TCP 探活 backend_health_url 上的 host:port，确认进程已经监听端口。
-        端口 OK 即视为 ready (warmup 完成与否由前端再做应用级 ping 判断)。
+        Probe the host:port from backend_health_url until the backend listens.
+        A reachable TCP port is treated as ready; application-level warmup can
+        still be checked separately by the frontend.
         """
         host, port = _parse_host_port(self.backend_health_url)
         log.info("waiting backend ready on %s:%s (timeout=%ss)", host, port, timeout_s)
@@ -270,7 +273,7 @@ class BackendSupervisor:
 
 
 def _parse_host_port(url: str) -> tuple[str, int]:
-    # 简陋解析，够用即可
+    # Minimal URL parsing is enough for controller health probes.
     s = url.replace("http://", "").replace("https://", "")
     if "/" in s:
         s = s.split("/", 1)[0]
@@ -318,13 +321,13 @@ class PresetsStore:
             return []
 
     def is_path_allowed(self, model_path: str) -> bool:
-        # 1) 命中预设直接放行
+        # 1. Preset paths are always allowed.
         for p in self.load():
             if os.path.realpath(p["model_path"]) == os.path.realpath(model_path):
                 return True
-        # 2) 否则必须落在 allowed_root 下 (若设置了)
+        # 2. Otherwise, require the path to be under allowed_root when configured.
         if self.allowed_root is None:
-            return True  # 实验环境，未设白名单根，则放行
+            return True
         try:
             real = Path(model_path).resolve()
             return str(real).startswith(str(self.allowed_root) + os.sep) or real == self.allowed_root
@@ -413,7 +416,7 @@ def build_app(
         _check_token(req)
         return supervisor.stop()
 
-    # ---- 静态文件 (Vue dist) 必须最后挂，避免吃掉 /admin/* ----
+    # Mount Vue dist last so /admin/* routes remain reachable.
     if static_dir.is_dir():
         app.mount("/", StaticFiles(directory=str(static_dir), html=True), name="static")
     else:
@@ -479,7 +482,7 @@ def main() -> None:
         admin_token=(args.admin_token or None),
     )
 
-    # 优雅退出
+    # Graceful shutdown.
     def _graceful(signum, _frame):
         log.info("controller received signal=%s, stopping backend...", signum)
         try:
