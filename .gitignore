@@ -10,3 +10,6 @@ __pycache__/
 *.pyc
 *.log
 .DS_Store
+HUGGINGFACE_README.md
+reference.md
+docs/vllm_memory_growth_analysis.md
