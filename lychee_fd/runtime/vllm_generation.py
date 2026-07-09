@@ -2350,6 +2350,10 @@ class IncrementalChunkStreamSession:
         self._audio_feat_lens_cache: List[int] = []
         self._audio_embed_seq_cache: List[torch.Tensor] = []
         self._audio_embed_lens_cache: List[int] = []
+        self._audio_embed_packed_buffer: Optional[torch.Tensor] = None
+        self._audio_embed_lens_buffer: Optional[torch.Tensor] = None
+        self._audio_embed_packed_count = 0
+        self._audio_embed_packed_max_len = 0
         self._timeline_spans: List[Dict[str, object]] = []
         self._closed = False
 
@@ -2410,6 +2414,105 @@ class IncrementalChunkStreamSession:
             "audio_embeds_mib": round(float(self._tensor_list_bytes(audio_embeds)) / 1024.0 / 1024.0, 2),
         }
 
+    def _clear_packed_audio_embed_buffer(self) -> None:
+        self._audio_embed_packed_buffer = None
+        self._audio_embed_lens_buffer = None
+        self._audio_embed_packed_count = 0
+        self._audio_embed_packed_max_len = 0
+
+    def _ensure_packed_audio_embed_capacity(
+        self,
+        *,
+        required_count: int,
+        required_max_len: int,
+        prototype: torch.Tensor,
+    ) -> None:
+        required_count = max(1, int(required_count))
+        required_max_len = max(1, int(required_max_len))
+        hidden_size = int(prototype.shape[-1])
+        current = self._audio_embed_packed_buffer
+        current_lens = self._audio_embed_lens_buffer
+        current_count = int(self._audio_embed_packed_count)
+        need_new = (
+            current is None
+            or current_lens is None
+            or current.device != prototype.device
+            or current.dtype != prototype.dtype
+            or int(current.shape[0]) < required_count
+            or int(current.shape[1]) < required_max_len
+            or int(current.shape[2]) != hidden_size
+        )
+        if not need_new:
+            return
+
+        old_capacity = int(current.shape[0]) if current is not None and current.ndim == 3 else 0
+        old_max_len = int(current.shape[1]) if current is not None and current.ndim == 3 else 0
+        new_capacity = max(required_count, 16 if old_capacity <= 0 else old_capacity * 2)
+        new_max_len = max(required_max_len, old_max_len)
+        new_buffer = torch.zeros(
+            (new_capacity, new_max_len, hidden_size),
+            dtype=prototype.dtype,
+            device=prototype.device,
+        )
+        new_lens = torch.zeros((new_capacity,), dtype=torch.int32, device=prototype.device)
+        can_copy_current = (
+            current is not None
+            and current_lens is not None
+            and current_count > 0
+            and current.ndim == 3
+            and int(current.shape[2]) == int(new_buffer.shape[2])
+        )
+        if can_copy_current:
+            kept = min(current_count, int(current.shape[0]), int(new_buffer.shape[0]))
+            copy_len = min(int(current.shape[1]), int(new_buffer.shape[1]))
+            new_buffer[:kept, :copy_len, :].copy_(current[:kept, :copy_len, :])
+            new_lens[:kept].copy_(current_lens[:kept])
+
+        self._audio_embed_packed_buffer = new_buffer
+        self._audio_embed_lens_buffer = new_lens
+        self._audio_embed_packed_max_len = int(new_max_len)
+
+    def _append_packed_audio_embed(self, seq: torch.Tensor, length: int) -> None:
+        if not torch.is_tensor(seq) or seq.ndim != 2:
+            return
+        seq = seq.detach()
+        length = max(0, min(int(length), int(seq.shape[0])))
+        required_count = int(self._audio_embed_packed_count) + 1
+        required_max_len = max(int(self._audio_embed_packed_max_len), int(length), 1)
+        self._ensure_packed_audio_embed_capacity(
+            required_count=required_count,
+            required_max_len=required_max_len,
+            prototype=seq,
+        )
+        buffer = self._audio_embed_packed_buffer
+        lens = self._audio_embed_lens_buffer
+        if buffer is None or lens is None:
+            return
+        row = int(self._audio_embed_packed_count)
+        buffer[row].zero_()
+        if length > 0:
+            buffer[row, :length, :].copy_(seq[:length, :])
+        lens[row] = int(length)
+        self._audio_embed_packed_count = row + 1
+
+    def _rebuild_packed_audio_embed_buffer(self) -> None:
+        self._clear_packed_audio_embed_buffer()
+        for seq, length in zip(self._audio_embed_seq_cache, self._audio_embed_lens_cache):
+            if torch.is_tensor(seq):
+                self._append_packed_audio_embed(seq, int(length))
+
+    def _packed_audio_embeds(self):
+        if not self._audio_embed_seq_cache:
+            return None
+        if int(self._audio_embed_packed_count) != int(len(self._audio_embed_seq_cache)):
+            self._rebuild_packed_audio_embed_buffer()
+        buffer = self._audio_embed_packed_buffer
+        lens = self._audio_embed_lens_buffer
+        count = int(self._audio_embed_packed_count)
+        if buffer is None or lens is None or count <= 0:
+            return None
+        return buffer[:count], lens[:count]
+
     def close(self) -> Dict[str, object]:
         """Release per-call streaming state held by this realtime session."""
         if getattr(self, "_closed", False):
@@ -2462,6 +2565,7 @@ class IncrementalChunkStreamSession:
             else:
                 setattr(self, attr, [])
 
+        self._clear_packed_audio_embed_buffer()
         self.profile_model = {}
         self.fw = None
 
@@ -2666,6 +2770,7 @@ class IncrementalChunkStreamSession:
         self._audio_embed_lens_cache = [
             int(x) for x in list(snapshot.get("audio_embed_lens") or [])
         ]
+        self._clear_packed_audio_embed_buffer()
         self._audio_tail = np.zeros(0, dtype=np.float32)
 
         return {
@@ -2856,8 +2961,10 @@ class IncrementalChunkStreamSession:
         for i in range(int(out.shape[0])):
             li = int(out_lens[i].item()) if torch.is_tensor(out_lens) else int(out_lens[i])
             li = max(0, min(li, int(out.shape[1])))
-            self._audio_embed_seq_cache.append(out[i, :li, :].detach())
+            seq = out[i, :li, :].detach()
+            self._audio_embed_seq_cache.append(seq)
             self._audio_embed_lens_cache.append(li)
+            self._append_packed_audio_embed(seq, li)
 
     def _append_incremental_audio(self, audio: np.ndarray, flush_audio_tail: bool) -> None:
         windows = self._split_incremental_windows(audio, flush_audio_tail=flush_audio_tail)
@@ -2899,7 +3006,10 @@ class IncrementalChunkStreamSession:
 
         wavs = None
         wav_lens = None
-        if self._audio_feats_cache:
+        build_raw_wavs = bool(self._audio_feats_cache) and not (
+            self._is_vllm_backend() and bool(self._audio_embed_seq_cache)
+        )
+        if build_raw_wavs:
             wavs = torch.nn.utils.rnn.pad_sequence(
                 self._audio_feats_cache, batch_first=True, padding_value=0
             ).transpose(1, 2).to(self.fw.device)
@@ -2910,17 +3020,17 @@ class IncrementalChunkStreamSession:
         audio_embeds = None
         pre_computed_audio = None
         if self._audio_embed_seq_cache:
-            packed = torch.nn.utils.rnn.pad_sequence(
-                self._audio_embed_seq_cache,
-                batch_first=True,
-                padding_value=0.0,
-            ).to(self.fw.device)
-            packed_lens = torch.tensor(
-                self._audio_embed_lens_cache, dtype=torch.int32, device=self.fw.device
-            )
             if self._is_vllm_backend():
-                audio_embeds = (packed, packed_lens)
+                audio_embeds = self._packed_audio_embeds()
             else:
+                packed = torch.nn.utils.rnn.pad_sequence(
+                    self._audio_embed_seq_cache,
+                    batch_first=True,
+                    padding_value=0.0,
+                ).to(self.fw.device)
+                packed_lens = torch.tensor(
+                    self._audio_embed_lens_cache, dtype=torch.int32, device=self.fw.device
+                )
                 pre_computed_audio = (packed, packed_lens)
 
         return audio_input_ids, wavs, wav_lens, total_len, audio_embeds, pre_computed_audio
