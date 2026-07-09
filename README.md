@@ -42,10 +42,6 @@ This repository provides:
 - vLLM-optimized backend support for low-latency online inference.
 - Runtime integration notes and third-party license notices.
 
-## 📀 Demo Video
-
-[**todo**] 这里放web demo + 数字人 + 机器人 各10秒演示的视频
-
 ## 🌟 Model Structure
 
 Lychee-FD is a native end-to-end full-duplex speech language model designed for realtime spoken interaction. Instead of relying on cascaded ASR, LLM, TTS, and turn-taking modules, it jointly models listening, understanding, speaking, and interaction control within an end-to-end multi-stream architecture.
