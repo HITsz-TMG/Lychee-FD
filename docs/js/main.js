@@ -31,6 +31,30 @@
     `;
   }
 
+  function renderInlineSegments(segments = []) {
+    if (!Array.isArray(segments) || !segments.length) return "";
+    return segments.map((segment) => {
+      const text = escapeHTML(segment.text || "");
+      if (segment.strong) return `<strong>${text}</strong>`;
+      if (segment.accent) return `<span class="text-accent">${text}</span>`;
+      return text;
+    }).join("");
+  }
+
+  function renderTextBlock(block = {}, fallbackClass = "") {
+    const className = block.className || fallbackClass;
+    const classAttr = className ? ` class="${escapeHTML(className)}"` : "";
+    const segments = Array.isArray(block.segments) && block.segments.length
+      ? block.segments
+      : [{ text: block.text || "" }];
+    return `<p${classAttr}>${renderInlineSegments(segments)}</p>`;
+  }
+
+  function renderTextBlocks(blocks = [], fallbackClass = "") {
+    if (!Array.isArray(blocks)) return "";
+    return blocks.map((block) => renderTextBlock(block, fallbackClass)).join("");
+  }
+
   function createAssetCard(assetId, options = {}) {
     const asset = typeof assetId === "string" ? getAsset(assetId) : assetId;
     const variant = options.variant || "standard";
@@ -53,6 +77,17 @@
         <p>${escapeHTML(asset.description || "")}</p>
       </div>
     `;
+
+    if (asset.type === "reservedVideo") {
+      card.classList.add("asset-reserved-video");
+      card.innerHTML = `
+        <div class="media-frame reserved-demo-media-frame">
+          ${renderVideoPlayer(asset, "reserved-demo-player avatar-demo-player")}
+        </div>
+        ${caption}
+      `;
+      return card;
+    }
 
     if (!enabled || !hasSrc) {
       card.innerHTML = placeholderHTML(
@@ -109,6 +144,187 @@
       return;
     }
     ids.forEach((id) => target.appendChild(createAssetCard(id, { variant })));
+  }
+
+
+  function renderProblemFigure(figure = {}) {
+    const title = figure.title || "路线对比图";
+    const src = (figure.src || "").trim();
+    if (!src) {
+      return placeholderHTML(title, figure.placeholder || "请在 config.js 中配置这张核心对比图的 src。");
+    }
+    const dimensionAttrs = figure.width && figure.height
+      ? ` width="${escapeHTML(figure.width)}" height="${escapeHTML(figure.height)}"`
+      : "";
+    const alt = figure.alt || title;
+    return `
+      <figure class="problem-main-figure has-image" aria-label="${escapeHTML(title)}">
+        <img src="${escapeHTML(src)}" alt="${escapeHTML(alt)}"${dimensionAttrs} loading="lazy" decoding="async" fetchpriority="low" data-lightbox-src="${escapeHTML(src)}" data-lightbox-title="${escapeHTML(title)}" />
+      </figure>
+    `;
+  }
+
+  function renderProblemRouteCard(card = {}, index = 0) {
+    return `
+      <article>
+        <span>${escapeHTML(card.label || String(index + 1).padStart(2, "0"))}</span>
+        <h3>${escapeHTML(card.title || "")}</h3>
+        <p>${escapeHTML(card.text || "")}</p>
+      </article>
+    `;
+  }
+
+  function renderProblemSection() {
+    const mount = $("[data-problem-section]");
+    if (!mount) return;
+
+    const section = CONFIG.problemSection || {};
+    const routeCards = Array.isArray(section.routeCards) ? section.routeCards.map(renderProblemRouteCard).join("") : "";
+    const conclusion = section.conclusion || {};
+
+    mount.innerHTML = `
+      <div class="section-head reveal problem-section-head">
+        <p class="section-index">${escapeHTML(section.sectionIndex || "技术介绍 02 / 科学问题")}</p>
+        <h2>${escapeHTML(section.title || "")}</h2>
+        <div class="problem-flow-card">
+          <div class="problem-flow-intro">
+            ${renderTextBlocks(section.intro || [], "problem-lead")}
+          </div>
+          ${renderProblemFigure(section.figure || {})}
+          ${routeCards ? `<div class="problem-route-grid" aria-label="语音交互路线对比">${routeCards}</div>` : ""}
+          <div class="problem-route-summary">
+            ${conclusion.title ? `<h3>${escapeHTML(conclusion.title)}</h3>` : ""}
+            ${renderTextBlocks(conclusion.paragraphs || [])}
+          </div>
+          ${section.callout ? `<div class="problem-final-callout">${renderTextBlock(section.callout)}</div>` : ""}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderResearchFigure(figure = {}) {
+    const title = figure.title || "原图展示位";
+    const src = (figure.src || "").trim();
+    if (!src) {
+      return `
+        <div class="research-image-slot" aria-label="${escapeHTML(title)}预留位">
+          <div class="research-slot-inner">
+            <span>${escapeHTML(figure.slotLabel || "Original Figure Slot")}</span>
+            <strong>${escapeHTML(title)}</strong>
+            <p>${escapeHTML(figure.placeholder || "后续在 js/config.js 中配置 src 后自动显示原图。")}</p>
+          </div>
+        </div>
+      `;
+    }
+
+    const dimensionAttrs = figure.width && figure.height
+      ? ` width="${escapeHTML(figure.width)}" height="${escapeHTML(figure.height)}"`
+      : "";
+    const alt = figure.alt || title;
+    return `
+      <div class="research-image-slot has-image" aria-label="${escapeHTML(title)}">
+        <img src="${escapeHTML(src)}" alt="${escapeHTML(alt)}"${dimensionAttrs} loading="lazy" decoding="async" fetchpriority="low" data-lightbox-src="${escapeHTML(src)}" data-lightbox-title="${escapeHTML(title)}" />
+      </div>
+    `;
+  }
+
+  function renderResearchModule(item = {}, index = 0, extraClass = "") {
+    const delayClass = item.delayClass || `delay-${Math.min(index + 1, 3)}`;
+    const className = extraClass.trim() ? ` ${escapeHTML(extraClass.trim())}` : "";
+    return `
+      <div class="research-module${className} reveal ${escapeHTML(delayClass)}">
+        <div class="research-copy">
+          <span class="research-kicker">${escapeHTML(item.kicker || "")}</span>
+          <h3>${escapeHTML(item.title || "")}</h3>
+          <p>${escapeHTML(item.description || item.lead || "")}</p>
+        </div>
+        ${renderResearchFigure(item.figure || {})}
+      </div>
+    `;
+  }
+
+  function renderResearchPoint(point = {}) {
+    return `
+      <article class="research-solution-point">
+        <span>${escapeHTML(point.label || "")}</span>
+        <h4>${escapeHTML(point.title || "")}</h4>
+        <p>${escapeHTML(point.text || "")}</p>
+      </article>
+    `;
+  }
+
+  function renderResearchDetail(detail = {}) {
+    if (!detail || (!detail.title && !Array.isArray(detail.paragraphs))) return "";
+    return `
+      <div class="research-solution-detail">
+        ${detail.title ? `<h4>${escapeHTML(detail.title)}</h4>` : ""}
+        ${renderTextBlocks(detail.paragraphs || [])}
+      </div>
+    `;
+  }
+
+  function renderResearchSolution(group = {}, index = 0) {
+    const delayClass = group.delayClass || `delay-${Math.min(index + 1, 3)}`;
+    const points = Array.isArray(group.points) ? group.points.map(renderResearchPoint).join("") : "";
+    const leadBlocks = Array.isArray(group.leadParagraphs) && group.leadParagraphs.length
+      ? group.leadParagraphs
+      : [{ text: group.lead || group.description || "" }];
+    const detailHTML = renderResearchDetail(group.detail || {});
+    const noteHTML = group.note ? `<p class="research-solution-note">${escapeHTML(group.note)}</p>` : "";
+    const figureHTML = renderResearchFigure(group.figure || {});
+
+    return `
+      <div class="research-solution-card research-solution-card-wide reveal ${escapeHTML(delayClass)}">
+        <div class="research-solution-copy">
+          <span class="research-kicker">${escapeHTML(group.kicker || "")}</span>
+          <h3>${escapeHTML(group.title || "")}</h3>
+          <div class="research-solution-lead-list">${renderTextBlocks(leadBlocks, "research-solution-lead")}</div>
+          ${points ? `<div class="research-solution-points">${points}</div>` : ""}
+        </div>
+        <div class="research-solution-figure-row">
+          ${figureHTML}
+        </div>
+        ${(detailHTML || noteHTML) ? `<div class="research-solution-bottom">${detailHTML}${noteHTML}</div>` : ""}
+      </div>
+    `;
+  }
+
+  function renderResearchGroup(group = {}, index = 0) {
+    if (group.type === "figurePair") {
+      const modules = Array.isArray(group.modules) ? group.modules : [];
+      return `
+        <div class="research-figure-pair reveal ${escapeHTML(group.delayClass || `delay-${Math.min(index + 1, 3)}`)}" data-research-group="${escapeHTML(group.id || "figurePair")}">
+          ${modules.map((item, itemIndex) => renderResearchModule(item, itemIndex, "research-science-module research-figure-card")).join("")}
+        </div>
+      `;
+    }
+
+    if (group.type === "solutionPlaceholder") {
+      return renderResearchSolution(group, index);
+    }
+
+    return renderResearchModule(group, index);
+  }
+
+  function renderResearchPath() {
+    const mount = $("[data-research-path]");
+    if (!mount) return;
+
+    const path = CONFIG.researchPath || {};
+    const groups = Array.isArray(path.groups) && path.groups.length
+      ? path.groups
+      : (Array.isArray(path.modules) ? path.modules : []);
+    const groupHTML = groups.map((group, index) => renderResearchGroup(group, index)).join("");
+
+    mount.innerHTML = `
+      <div class="section-head reveal">
+        <p class="section-index">${escapeHTML(path.sectionIndex || "技术介绍 03")}</p>
+        <h2>${escapeHTML(path.title || "")}</h2>
+        <p>${escapeHTML(path.description || "")}</p>
+      </div>
+      ${groupHTML}
+      ${path.summary ? `<p class="root-summary reveal delay-3">${escapeHTML(path.summary)}</p>` : ""}
+    `;
   }
 
   function renderSiteText() {
@@ -182,18 +398,6 @@
     });
   }
 
-  function renderHighlights() {
-    const mount = $("#highlightGrid");
-    if (!mount) return;
-    mount.innerHTML = (CONFIG.highlights || []).map((item) => `
-      <article class="highlight-card">
-        <div class="highlight-icon">${escapeHTML(item.icon)}</div>
-        <h3>${escapeHTML(item.title)}</h3>
-        <p>${escapeHTML(item.text)}</p>
-      </article>
-    `).join("");
-  }
-
   function getDemoVideoSources(item = {}) {
     const sources = [];
     const add = (value) => {
@@ -245,12 +449,13 @@
     player.dataset.videoHeight = String(ratioHeight);
   }
 
-  function renderVideoPlayer(item) {
+  function renderVideoPlayer(item, extraClass = "") {
     const sources = getDemoVideoSources(item);
     const id = item.videoId || item.id || "demo-video-placeholder";
     const hasVideo = sources.length > 0;
     const sourceAttr = sources.join("|");
     const poster = item.poster || "";
+    const posterMode = item.posterMode || (poster ? "image" : "none");
     const fallbackText = hasVideo
       ? "当前视频暂时无法播放，请稍后查看。"
       : "当前视频暂时无法播放，请稍后查看。";
@@ -268,12 +473,17 @@
 
     const dimensions = getDemoMediaDimensions(item);
     const styleAttr = getDemoMediaStyle(dimensions);
-    const posterHTML = poster
-      ? `<img class="video-poster" src="${escapeHTML(poster)}" alt="${escapeHTML(item.title)} 封面" width="${dimensions.posterWidth}" height="${dimensions.posterHeight}" loading="lazy" decoding="async" fetchpriority="low" />`
+    const firstFrameHTML = posterMode === "firstFrame" && sources[0]
+      ? `<video class="video-first-frame" data-preview-src="${escapeHTML(sources[0])}" preload="${escapeHTML(item.previewPreload || "metadata")}" muted playsinline aria-hidden="true"></video>`
       : "";
+    const posterHTML = posterMode !== "firstFrame" && poster
+      ? `<img class="video-poster" src="${escapeHTML(poster)}" alt="${escapeHTML(item.title)} 封面" width="${dimensions.posterWidth}" height="${dimensions.posterHeight}" loading="lazy" decoding="async" fetchpriority="low" />`
+      : firstFrameHTML;
+
+    const extraClassName = extraClass.trim() ? ` ${escapeHTML(extraClass.trim())}` : "";
 
     return `
-      <div class="lychee-video-player has-video is-poster-only" data-video-id="${escapeHTML(id)}" data-sources="${escapeHTML(sourceAttr)}" data-poster="${escapeHTML(poster)}" data-title="${escapeHTML(item.title)}" data-video-width="${dimensions.videoWidth || ""}" data-video-height="${dimensions.videoHeight || ""}" ${styleAttr}>
+      <div class="lychee-video-player${extraClassName} has-video is-poster-only" data-video-id="${escapeHTML(id)}" data-sources="${escapeHTML(sourceAttr)}" data-poster="${escapeHTML(poster)}" data-poster-mode="${escapeHTML(posterMode)}" data-title="${escapeHTML(item.title)}" data-video-width="${dimensions.videoWidth || ""}" data-video-height="${dimensions.videoHeight || ""}" ${styleAttr}>
         ${posterHTML}
         <button class="video-play-button demo-video-load" type="button" data-demo-video-load aria-label="播放 ${escapeHTML(item.title)}">
           <span class="video-play-icon" aria-hidden="true"></span>
@@ -360,6 +570,14 @@
     showVideoFallback(video, player);
   }
 
+  function hydrateFirstFramePreview(player) {
+    const preview = $(".video-first-frame[data-preview-src]", player);
+    if (!preview || preview.dataset.previewHydrated === "true") return;
+    preview.src = preview.dataset.previewSrc;
+    preview.dataset.previewHydrated = "true";
+    try { preview.load(); } catch (_) {}
+  }
+
   function createDemoVideo(player) {
     const existing = $("video[data-demo-video]", player);
     if (existing) return existing;
@@ -442,6 +660,7 @@
       loadButton.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
+        hydrateFirstFramePreview(player);
         const video = createDemoVideo(player);
         if (video) playHydratedVideo(video);
       });
@@ -450,13 +669,18 @@
     if ("IntersectionObserver" in window) {
       const observer = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) return;
+          if (entry.isIntersecting) {
+            hydrateFirstFramePreview(entry.target);
+            return;
+          }
           const video = $("video[data-demo-video]", entry.target);
           if (video && !video.paused) video.pause();
         });
-      }, { rootMargin: "0px", threshold: 0.01 });
+      }, { rootMargin: "420px 0px", threshold: 0.01 });
 
       players.forEach((player) => observer.observe(player));
+    } else {
+      players.forEach(hydrateFirstFramePreview);
     }
 
     document.addEventListener("visibilitychange", () => {
@@ -491,6 +715,8 @@
     $$('[data-asset-id]').forEach(mountAsset);
     $$('[data-asset-list]').forEach(mountAssetList);
     attachImageErrorHandlers();
+    const embodiedSection = $("#embodied");
+    if (embodiedSection) initLazyDemoVideos(embodiedSection);
   }
 
   function enableRevealAnimation() {
@@ -792,7 +1018,8 @@
     renderHeroPills();
     renderHeroPromoVideo();
     renderMetrics();
-    renderHighlights();
+    renderProblemSection();
+    renderResearchPath();
     renderAssets();
     renderDemoList();
     enableRevealAnimation();

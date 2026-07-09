@@ -1,29 +1,14 @@
-# Lychee-FD Project Page v33
+# Lychee-FD Project Page v49
 
-本版本基于当前 v32 页面做局部优化：只调整 Demo 视频封面播放按钮，并清理确定已经无入口的旧交互残留。页面主线、章节内容、导航、首页宣传视频、技术介绍、评测效果和数字人区域均保持原样。
+本版基于 v48 做局部增量优化：
 
-## 本轮改动
+- 技术介绍 03：将架构主图从左右并列改为独立 full-width 图像行，形成“标题总述 → 要点卡片 → 核心架构主图 → 工程实现总结”的阅读层次。
+- 全双工驱动数字人：恢复 3 张数字人 / 机器人效果图卡片，并保留 6 个数字人 / 机器人视频 Demo 卡片。
+- 继续保持浅色科技官网 / 技术博客风格，不引入新依赖、复杂动画或重型滚动逻辑。
 
-- Demo 视频封面统一使用一个共享播放按钮组件：`video-play-button demo-video-load`。
-- 播放按钮固定居中，默认直径 `160px`，通过 `--play-button-size` 控制。
-- 按钮使用轻量 CSS 绘制：圆形蓝白玻璃拟态外观、深蓝播放三角形、克制外发光与阴影。
-- 删除旧版 Demo 播放按钮的文字胶囊样式和多处重复覆盖，Demo 按钮样式集中在 `css/styles.css` 的 v33 区块。
-- 保留 Demo 视频懒加载：初始只加载 poster，点击按钮后才创建 `<video>` 并挂载真实视频资源。
-- 保留播放新 Demo 时释放其他 Demo 视频节点的逻辑，避免多个视频同时占用解码资源。
-- 清理 `main.js` 中已经没有入口的旧版指标卡片弹窗属性，以及未使用的评分星级函数。
+主要修改文件：
 
-## 当前 Demo 视频
-
-当前 Demo 配置只使用以下 3 个视频：
-
-- `assets/videos/demo-ai-product-comment.mp4`
-- `assets/videos/demo-user-strategy.mp4`
-- `assets/videos/demo-cooking-beef.mp4`
-
-首页宣传视频：
-
-- `assets/videos/xuanchuan.mp4`
-
-## 性能注意
-
-代码层继续避免一次性给多个 Demo 视频挂载 `src`，但原视频文件仍然较大。后续如果继续卡顿，优先处理视频素材本身：压缩码率、统一 H.264、将 60fps 降到 30fps，并使用 `ffmpeg -movflags +faststart` 把 `moov atom` 移到文件开头。
+- `js/config.js`
+- `js/main.js`
+- `css/styles.css`
+- `index.html`

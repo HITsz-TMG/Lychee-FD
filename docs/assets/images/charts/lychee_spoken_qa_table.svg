@@ -1,0 +1,189 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1900" height="1120" viewBox="0 0 1900 1120" text-rendering="geometricPrecision" shape-rendering="geometricPrecision">
+<defs>
+  <linearGradient id="pageBg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbfdff"/><stop offset="0.55" stop-color="#eef7ff"/><stop offset="1" stop-color="#f9fcff"/></linearGradient>
+  <linearGradient id="cardBg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity="0.985"/><stop offset="0.60" stop-color="#f8fcff" stop-opacity="0.96"/><stop offset="1" stop-color="#edf7ff" stop-opacity="0.88"/></linearGradient>
+  <linearGradient id="surfaceBg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.64" stop-color="#f9fcff"/><stop offset="1" stop-color="#f1f8ff"/></linearGradient>
+  <linearGradient id="headBg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e4f4ff"/><stop offset="1" stop-color="#f7fbff"/></linearGradient>
+  <filter id="softShadow" x="-4%" y="-5%" width="108%" height="114%"><feDropShadow dx="0" dy="24" stdDeviation="22" flood-color="#1f5e9c" flood-opacity="0.085"/></filter>
+  <style><![CDATA[
+    text { font-family: Arial, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, DejaVu Sans, sans-serif; }
+    .num { font-family: Arial, DejaVu Sans, sans-serif; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  ]]></style>
+</defs>
+
+<rect x="0" y="0" width="1900" height="1120" rx="0" fill="url(#pageBg)" stroke="none" stroke-width="1" />
+<rect x="24" y="22" width="1852" height="1074" rx="46" fill="url(#cardBg)" stroke="#c9dff4" stroke-width="1.05" filter="url(#softShadow)"/>
+<text x="72" y="82" font-size="41" font-weight="820" fill="#08284a" text-anchor="start" dominant-baseline="middle" >Performance on Spoken Question Answering Benchmarks</text>
+<text x="72" y="128" font-size="24" font-weight="500" fill="#5c7188" text-anchor="start" dominant-baseline="middle" >Accuracy in speech-to-text (S-T) and speech-to-speech (S-S) settings. Highlighted row shows Lychee-FD.</text>
+<rect x="1474" y="60" width="158" height="46" rx="23.0" fill="#eeebff" stroke="#bfb9ff" stroke-width="1.25" /><circle cx="1499" cy="83.0" r="5.8" fill="#6b55ff" opacity=".94"/><text x="1565.0" y="83.0" font-size="18.8" font-weight="830" fill="#5140e9" text-anchor="middle" dominant-baseline="middle" >Best</text>
+<rect x="1646" y="60" width="224" height="46" rx="23.0" fill="#fff6e3" stroke="#e4c77e" stroke-width="1.25" /><circle cx="1671" cy="83.0" r="5.8" fill="#d29b2c" opacity=".94"/><text x="1770.0" y="83.0" font-size="18.8" font-weight="830" fill="#9b6817" text-anchor="middle" dominant-baseline="middle" >Second Best</text>
+<rect x="54" y="166" width="1792" height="896" rx="36" fill="url(#surfaceBg)" stroke="#c8def3" stroke-width="1.05" />
+<rect x="80" y="200" width="1740" height="126" rx="26" fill="url(#headBg)" stroke="#d7e9f8" stroke-width="1" />
+<line x1="80" y1="200" x2="80" y2="964" stroke="#d5e7f7" stroke-width="1" opacity="0.62" />
+<line x1="400" y1="200" x2="400" y2="964" stroke="#d5e7f7" stroke-width="1" opacity="0.62" />
+<line x1="610" y1="200" x2="610" y2="964" stroke="#d5e7f7" stroke-width="1" opacity="0.62" />
+<line x1="850" y1="200" x2="850" y2="964" stroke="#d5e7f7" stroke-width="1" opacity="0.62" />
+<line x1="1090" y1="200" x2="1090" y2="964" stroke="#d5e7f7" stroke-width="1" opacity="0.62" />
+<line x1="1330" y1="200" x2="1330" y2="964" stroke="#d5e7f7" stroke-width="1" opacity="0.62" />
+<line x1="1570" y1="200" x2="1570" y2="964" stroke="#d5e7f7" stroke-width="1" opacity="0.62" />
+<line x1="1820" y1="200" x2="1820" y2="964" stroke="#d5e7f7" stroke-width="1" opacity="0.62" />
+<text x="106" y="262" font-size="27" font-weight="820" fill="#122f4c" text-anchor="start" dominant-baseline="middle" >Model</text>
+<text x="505.0" y="262" font-size="27" font-weight="820" fill="#122f4c" text-anchor="middle" dominant-baseline="middle" >Type</text>
+<text x="730.0" y="235" font-size="26" font-weight="820" fill="#122f4c" text-anchor="middle" dominant-baseline="middle" >LlamaQ</text>
+<text x="670.0" y="292" font-size="20" font-weight="740" fill="#607891" text-anchor="middle" dominant-baseline="middle" >S-T</text>
+<text x="790.0" y="292" font-size="20" font-weight="740" fill="#607891" text-anchor="middle" dominant-baseline="middle" >S-S</text>
+<text x="970.0" y="235" font-size="26" font-weight="820" fill="#122f4c" text-anchor="middle" dominant-baseline="middle" >WebQ</text>
+<text x="910.0" y="292" font-size="20" font-weight="740" fill="#607891" text-anchor="middle" dominant-baseline="middle" >S-T</text>
+<text x="1030.0" y="292" font-size="20" font-weight="740" fill="#607891" text-anchor="middle" dominant-baseline="middle" >S-S</text>
+<text x="1210.0" y="235" font-size="26" font-weight="820" fill="#122f4c" text-anchor="middle" dominant-baseline="middle" >TriviaQA</text>
+<text x="1150.0" y="292" font-size="20" font-weight="740" fill="#607891" text-anchor="middle" dominant-baseline="middle" >S-T</text>
+<text x="1270.0" y="292" font-size="20" font-weight="740" fill="#607891" text-anchor="middle" dominant-baseline="middle" >S-S</text>
+<text x="1450.0" y="235" font-size="26" font-weight="820" fill="#122f4c" text-anchor="middle" dominant-baseline="middle" >Avg.</text>
+<text x="1390.0" y="292" font-size="20" font-weight="740" fill="#607891" text-anchor="middle" dominant-baseline="middle" >S-T</text>
+<text x="1510.0" y="292" font-size="20" font-weight="740" fill="#607891" text-anchor="middle" dominant-baseline="middle" >S-S</text>
+<text x="1695.0" y="235" font-size="25.5" font-weight="820" fill="#122f4c" text-anchor="middle" dominant-baseline="middle" >Takeover Rate</text>
+<line x1="80" y1="326" x2="1820" y2="326" stroke="#a7c9e8" stroke-width="1.8" opacity="0.9" />
+<line x1="90" y1="326" x2="1810" y2="326" stroke="#e4f0fa" stroke-width="1" opacity="0.86" />
+<line x1="90" y1="326" x2="1810" y2="326" stroke="#e4f0fa" stroke-width="1" opacity="0.86" />
+<rect x="82" y="385" width="1736" height="57" rx="0" fill="#f8fbff" stroke="none" stroke-width="1" opacity="0.3" />
+<line x1="90" y1="384" x2="1810" y2="384" stroke="#e4f0fa" stroke-width="1" opacity="0.86" />
+<line x1="90" y1="442" x2="1810" y2="442" stroke="#e4f0fa" stroke-width="1" opacity="0.86" />
+<line x1="88" y1="442" x2="1812" y2="442" stroke="#c7def3" stroke-width="1.35" opacity="0.82" />
+<rect x="82" y="501" width="1736" height="57" rx="0" fill="#f8fbff" stroke="none" stroke-width="1" opacity="0.3" />
+<line x1="90" y1="500" x2="1810" y2="500" stroke="#e4f0fa" stroke-width="1" opacity="0.86" />
+<line x1="90" y1="558" x2="1810" y2="558" stroke="#e4f0fa" stroke-width="1" opacity="0.86" />
+<rect x="82" y="617" width="1736" height="57" rx="0" fill="#f8fbff" stroke="none" stroke-width="1" opacity="0.3" />
+<line x1="90" y1="616" x2="1810" y2="616" stroke="#e4f0fa" stroke-width="1" opacity="0.86" />
+<line x1="90" y1="674" x2="1810" y2="674" stroke="#e4f0fa" stroke-width="1" opacity="0.86" />
+<rect x="82" y="733" width="1736" height="57" rx="0" fill="#f8fbff" stroke="none" stroke-width="1" opacity="0.3" />
+<line x1="90" y1="732" x2="1810" y2="732" stroke="#e4f0fa" stroke-width="1" opacity="0.86" />
+<line x1="88" y1="732" x2="1812" y2="732" stroke="#c7def3" stroke-width="1.35" opacity="0.82" />
+<line x1="90" y1="790" x2="1810" y2="790" stroke="#e4f0fa" stroke-width="1" opacity="0.86" />
+<rect x="80" y="790" width="1740" height="56" rx="14" fill="#ffffff" stroke="#85c9ff" stroke-width="1.65" />
+<rect x="80" y="791" width="5" height="54" rx="3" fill="#72c7ff" stroke="none" stroke-width="1" />
+<rect x="82" y="849" width="1736" height="57" rx="0" fill="#f8fbff" stroke="none" stroke-width="1" opacity="0.3" />
+<line x1="90" y1="848" x2="1810" y2="848" stroke="#e4f0fa" stroke-width="1" opacity="0.86" />
+<line x1="90" y1="906" x2="1810" y2="906" stroke="#e4f0fa" stroke-width="1" opacity="0.86" />
+<line x1="90" y1="964" x2="1810" y2="964" stroke="#bdd8ef" stroke-width="1.25" opacity="0.9" />
+<text x="106" y="355.0" font-size="23.3" font-weight="650" fill="#09284a" text-anchor="start" dominant-baseline="middle" >Freeze-Omni</text>
+<rect x="428.0" y="337.5" width="154" height="35" rx="17.5" fill="#f3f7ff" stroke="#d4e1f2" stroke-width="1" /><text x="505.0" y="355.0" font-size="15.8" font-weight="750" fill="#506782" text-anchor="middle" dominant-baseline="middle" >System-level</text>
+<text x="670.0" y="355.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >71.3</text>
+<text x="790.0" y="355.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >50.7</text>
+<text x="910.0" y="355.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >38.3</text>
+<text x="1030.0" y="355.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >25.8</text>
+<text x="1150.0" y="355.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >24.3</text>
+<text x="1270.0" y="355.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >23.9</text>
+<text x="1390.0" y="355.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >44.6</text>
+<text x="1510.0" y="355.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >33.4</text>
+<text x="1695.0" y="355.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >99.6</text>
+<text x="106" y="413.0" font-size="23.3" font-weight="650" fill="#09284a" text-anchor="start" dominant-baseline="middle" >VITA 1.5</text>
+<rect x="428.0" y="395.5" width="154" height="35" rx="17.5" fill="#f3f7ff" stroke="#d4e1f2" stroke-width="1" /><text x="505.0" y="413.0" font-size="15.8" font-weight="750" fill="#506782" text-anchor="middle" dominant-baseline="middle" >System-level</text>
+<text x="670.0" y="413.0" font-size="24.2" font-weight="900" fill="#5b45ff" text-anchor="middle" dominant-baseline="middle" class="num" >75.7</text>
+<text x="790.0" y="413.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >51.0</text>
+<text x="910.0" y="413.0" font-size="24.2" font-weight="900" fill="#5b45ff" text-anchor="middle" dominant-baseline="middle" class="num" >41.8</text>
+<text x="1030.0" y="413.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >29.2</text>
+<text x="1150.0" y="413.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >35.0</text>
+<text x="1270.0" y="413.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >26.0</text>
+<text x="1390.0" y="413.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >50.8</text>
+<text x="1510.0" y="413.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >35.4</text>
+<text x="1695.0" y="413.0" font-size="24.2" font-weight="900" fill="#5b45ff" text-anchor="middle" dominant-baseline="middle" class="num" >100</text>
+<text x="106" y="471.0" font-size="23.3" font-weight="650" fill="#09284a" text-anchor="start" dominant-baseline="middle" >dGSLM</text>
+<rect x="457.0" y="453.5" width="96" height="35" rx="17.5" fill="#edf8ff" stroke="#cde7fa" stroke-width="1" /><text x="505.0" y="471.0" font-size="15.8" font-weight="750" fill="#386f9b" text-anchor="middle" dominant-baseline="middle" >Native</text>
+<text x="670.0" y="471.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >–</text>
+<text x="790.0" y="471.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >1.3</text>
+<text x="910.0" y="471.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >–</text>
+<text x="1030.0" y="471.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >0.2</text>
+<text x="1150.0" y="471.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >–</text>
+<text x="1270.0" y="471.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >0.4</text>
+<text x="1390.0" y="471.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >–</text>
+<text x="1510.0" y="471.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >0.6</text>
+<text x="1695.0" y="471.0" font-size="24.2" font-weight="900" fill="#5b45ff" text-anchor="middle" dominant-baseline="middle" class="num" >100</text>
+<text x="106" y="529.0" font-size="23.3" font-weight="650" fill="#09284a" text-anchor="start" dominant-baseline="middle" >FLM-audio</text>
+<rect x="457.0" y="511.5" width="96" height="35" rx="17.5" fill="#edf8ff" stroke="#cde7fa" stroke-width="1" /><text x="505.0" y="529.0" font-size="15.8" font-weight="750" fill="#386f9b" text-anchor="middle" dominant-baseline="middle" >Native</text>
+<text x="670.0" y="529.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >41.3</text>
+<text x="790.0" y="529.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >36.7</text>
+<text x="910.0" y="529.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >15.6</text>
+<text x="1030.0" y="529.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >14.5</text>
+<text x="1150.0" y="529.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >10.5</text>
+<text x="1270.0" y="529.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >10.4</text>
+<text x="1390.0" y="529.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >22.4</text>
+<text x="1510.0" y="529.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >20.5</text>
+<text x="1695.0" y="529.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >99.5</text>
+<text x="106" y="587.0" font-size="23.3" font-weight="650" fill="#09284a" text-anchor="start" dominant-baseline="middle" >Moshi</text>
+<rect x="457.0" y="569.5" width="96" height="35" rx="17.5" fill="#edf8ff" stroke="#cde7fa" stroke-width="1" /><text x="505.0" y="587.0" font-size="15.8" font-weight="750" fill="#386f9b" text-anchor="middle" dominant-baseline="middle" >Native</text>
+<text x="670.0" y="587.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >62.3</text>
+<text x="790.0" y="587.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >54.7</text>
+<text x="910.0" y="587.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >25.3</text>
+<text x="1030.0" y="587.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >19.6</text>
+<text x="1150.0" y="587.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >19.1</text>
+<text x="1270.0" y="587.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >17.4</text>
+<text x="1390.0" y="587.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >35.5</text>
+<text x="1510.0" y="587.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >30.5</text>
+<text x="1695.0" y="587.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >93.8</text>
+<text x="106" y="645.0" font-size="23.3" font-weight="650" fill="#09284a" text-anchor="start" dominant-baseline="middle" >SALMONN-omni*</text>
+<rect x="457.0" y="627.5" width="96" height="35" rx="17.5" fill="#edf8ff" stroke="#cde7fa" stroke-width="1" /><text x="505.0" y="645.0" font-size="15.8" font-weight="750" fill="#386f9b" text-anchor="middle" dominant-baseline="middle" >Native</text>
+<text x="670.0" y="645.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >67.0</text>
+<text x="790.0" y="645.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >61.7</text>
+<text x="910.0" y="645.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >33.7</text>
+<text x="1030.0" y="645.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >28.1</text>
+<text x="1150.0" y="645.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >32.9</text>
+<text x="1270.0" y="645.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >24.2</text>
+<text x="1390.0" y="645.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >44.5</text>
+<text x="1510.0" y="645.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >38.0</text>
+<text x="1695.0" y="645.0" font-size="23.2" font-weight="760" fill="#9b6817" text-anchor="middle" dominant-baseline="middle" class="num" >99.9</text><line x1="1674.0" y1="659.5" x2="1716.0" y2="659.5" stroke="#e1bd72" stroke-width="1.45" opacity="0.82" />
+<text x="106" y="703.0" font-size="23.3" font-weight="650" fill="#09284a" text-anchor="start" dominant-baseline="middle" >Fun-Audio-Chat</text>
+<rect x="457.0" y="685.5" width="96" height="35" rx="17.5" fill="#edf8ff" stroke="#cde7fa" stroke-width="1" /><text x="505.0" y="703.0" font-size="15.8" font-weight="750" fill="#386f9b" text-anchor="middle" dominant-baseline="middle" >Native</text>
+<text x="670.0" y="703.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >72.3</text>
+<text x="790.0" y="703.0" font-size="23.2" font-weight="760" fill="#9b6817" text-anchor="middle" dominant-baseline="middle" class="num" >64.3</text><line x1="769.0" y1="717.5" x2="811.0" y2="717.5" stroke="#e1bd72" stroke-width="1.45" opacity="0.82" />
+<text x="910.0" y="703.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >26.2</text>
+<text x="1030.0" y="703.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >24.4</text>
+<text x="1150.0" y="703.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >29.6</text>
+<text x="1270.0" y="703.0" font-size="23.2" font-weight="760" fill="#9b6817" text-anchor="middle" dominant-baseline="middle" class="num" >27.7</text><line x1="1249.0" y1="717.5" x2="1291.0" y2="717.5" stroke="#e1bd72" stroke-width="1.45" opacity="0.82" />
+<text x="1390.0" y="703.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >42.7</text>
+<text x="1510.0" y="703.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >38.8</text>
+<text x="1695.0" y="703.0" font-size="23.2" font-weight="760" fill="#9b6817" text-anchor="middle" dominant-baseline="middle" class="num" >99.9</text><line x1="1674.0" y1="717.5" x2="1716.0" y2="717.5" stroke="#e1bd72" stroke-width="1.45" opacity="0.82" />
+<text x="106" y="761.0" font-size="23.3" font-weight="650" fill="#09284a" text-anchor="start" dominant-baseline="middle" >StepAudio-2-mini</text>
+<rect x="442.0" y="743.5" width="126" height="35" rx="17.5" fill="#fff7e6" stroke="#ead19a" stroke-width="1" /><text x="505.0" y="761.0" font-size="15.8" font-weight="750" fill="#8a6215" text-anchor="middle" dominant-baseline="middle" >Half-duplex</text>
+<text x="670.0" y="761.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >74.7</text>
+<text x="790.0" y="761.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >62.0</text>
+<text x="910.0" y="761.0" font-size="23.2" font-weight="760" fill="#9b6817" text-anchor="middle" dominant-baseline="middle" class="num" >39.9</text><line x1="889.0" y1="775.5" x2="931.0" y2="775.5" stroke="#e1bd72" stroke-width="1.45" opacity="0.82" />
+<text x="1030.0" y="761.0" font-size="23.2" font-weight="760" fill="#9b6817" text-anchor="middle" dominant-baseline="middle" class="num" >30.8</text><line x1="1009.0" y1="775.5" x2="1051.0" y2="775.5" stroke="#e1bd72" stroke-width="1.45" opacity="0.82" />
+<text x="1150.0" y="761.0" font-size="23.2" font-weight="760" fill="#9b6817" text-anchor="middle" dominant-baseline="middle" class="num" >39.5</text><line x1="1129.0" y1="775.5" x2="1171.0" y2="775.5" stroke="#e1bd72" stroke-width="1.45" opacity="0.82" />
+<text x="1270.0" y="761.0" font-size="23.2" font-weight="760" fill="#9b6817" text-anchor="middle" dominant-baseline="middle" class="num" >29.8</text><line x1="1249.0" y1="775.5" x2="1291.0" y2="775.5" stroke="#e1bd72" stroke-width="1.45" opacity="0.82" />
+<text x="1390.0" y="761.0" font-size="23.2" font-weight="760" fill="#9b6817" text-anchor="middle" dominant-baseline="middle" class="num" >51.3</text><line x1="1369.0" y1="775.5" x2="1411.0" y2="775.5" stroke="#e1bd72" stroke-width="1.45" opacity="0.82" />
+<text x="1510.0" y="761.0" font-size="23.2" font-weight="760" fill="#9b6817" text-anchor="middle" dominant-baseline="middle" class="num" >40.9</text><line x1="1489.0" y1="775.5" x2="1531.0" y2="775.5" stroke="#e1bd72" stroke-width="1.45" opacity="0.82" />
+<text x="1695.0" y="761.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >–</text>
+<text x="108" y="819.0" font-size="25.5" font-weight="850" fill="#09284a" text-anchor="start" dominant-baseline="middle" >Lychee-FD</text>
+<rect x="316.0" y="801.5" width="68" height="35" rx="17.5" fill="#eaf6ff" stroke="#a9d3f5" stroke-width="1" /><text x="350" y="819.0" font-size="15.8" font-weight="750" fill="#196aa8" text-anchor="middle" dominant-baseline="middle" >Ours</text>
+<rect x="457.0" y="801.5" width="96" height="35" rx="17.5" fill="#edf8ff" stroke="#cde7fa" stroke-width="1" /><text x="505.0" y="819.0" font-size="15.8" font-weight="750" fill="#386f9b" text-anchor="middle" dominant-baseline="middle" >Native</text>
+<text x="670.0" y="819.0" font-size="23.2" font-weight="760" fill="#9b6817" text-anchor="middle" dominant-baseline="middle" class="num" >73.7</text><line x1="649.0" y1="833.5" x2="691.0" y2="833.5" stroke="#e1bd72" stroke-width="1.45" opacity="0.82" />
+<text x="790.0" y="819.0" font-size="24.2" font-weight="900" fill="#5b45ff" text-anchor="middle" dominant-baseline="middle" class="num" >65.3</text>
+<text x="910.0" y="819.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >38.3</text>
+<text x="1030.0" y="819.0" font-size="24.2" font-weight="900" fill="#5b45ff" text-anchor="middle" dominant-baseline="middle" class="num" >33.9</text>
+<text x="1150.0" y="819.0" font-size="24.2" font-weight="900" fill="#5b45ff" text-anchor="middle" dominant-baseline="middle" class="num" >42.5</text>
+<text x="1270.0" y="819.0" font-size="24.2" font-weight="900" fill="#5b45ff" text-anchor="middle" dominant-baseline="middle" class="num" >39.4</text>
+<text x="1390.0" y="819.0" font-size="24.2" font-weight="900" fill="#5b45ff" text-anchor="middle" dominant-baseline="middle" class="num" >51.5</text>
+<text x="1510.0" y="819.0" font-size="24.2" font-weight="900" fill="#5b45ff" text-anchor="middle" dominant-baseline="middle" class="num" >46.2</text>
+<text x="1695.0" y="819.0" font-size="24.2" font-weight="900" fill="#5b45ff" text-anchor="middle" dominant-baseline="middle" class="num" >100</text>
+<text x="106" y="877.0" font-size="23.3" font-weight="650" fill="#09284a" text-anchor="start" dominant-baseline="middle" >w/o Sem-Channel</text>
+<text x="670.0" y="877.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >69.3</text>
+<text x="790.0" y="877.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >61.0</text>
+<text x="910.0" y="877.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >34.1</text>
+<text x="1030.0" y="877.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >31.5</text>
+<text x="1150.0" y="877.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >34.2</text>
+<text x="1270.0" y="877.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >30.1</text>
+<text x="1390.0" y="877.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >45.9</text>
+<text x="1510.0" y="877.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >40.8</text>
+<text x="1695.0" y="877.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >99.6</text>
+<text x="106" y="935.0" font-size="23.3" font-weight="650" fill="#09284a" text-anchor="start" dominant-baseline="middle" >w/o Param-Sep</text>
+<text x="670.0" y="935.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >67.0</text>
+<text x="790.0" y="935.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >36.0</text>
+<text x="910.0" y="935.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >34.6</text>
+<text x="1030.0" y="935.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >22.5</text>
+<text x="1150.0" y="935.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >36.6</text>
+<text x="1270.0" y="935.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >24.2</text>
+<text x="1390.0" y="935.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >46.1</text>
+<text x="1510.0" y="935.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >27.6</text>
+<text x="1695.0" y="935.0" font-size="23.0" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >98.5</text>
+<text x="72" y="1080" font-size="18.5" font-weight="500" fill="#61778d" text-anchor="start" dominant-baseline="middle" >Best is shown in blue-violet; second best is amber underlined. Values are redrawn from the benchmark table.</text>
+</svg>
