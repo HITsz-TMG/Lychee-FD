@@ -21,7 +21,7 @@ Lychee-FD is a full-duplex realtime speech interaction system designed for low-l
 </p>
 
 <h4 align="center">
-If you appreciate our project, please consider giving us a star ⭐ on GitHub to stay updated with the latest developments.
+If you appreciate our project, please consider giving us a star ⭐ on GitHub for latest updates.
 </h4>
 
 ## 🔥 News
