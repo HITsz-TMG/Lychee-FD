@@ -35,7 +35,7 @@ window.LYCHEE_CONFIG = {
     { value: "7.4%", label: "语音问答准确率提升", note: "语音智能" },
     { value: "28.5%", label: "打断与附和拒识指标提升", note: "自然交互" },
     { value: "11.2%", label: "打断响应延迟降低", note: "及时响应" },
-    { value: "2.96", label: "多通道并行推理加速", note: "工程优化" },
+    { value: "2.96×", label: "多通道并行推理加速", note: "工程优化" },
   ],
 
   problemSection: {
