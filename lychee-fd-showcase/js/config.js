@@ -2,12 +2,12 @@
 
 window.LYCHEE_CONFIG = {
   site: {
-    title: "全双工大模型驱动的数字人与机器人交互",
+    title: "原生端到端全双工语音大模型",
     subtitle: "Lychee-FD",
-    slogan: "从轮流说话，到自然共话。",
-    description: "让大模型在真实语音对话中同时倾听、理解、反馈与表达，并进一步驱动数字人和机器人形成自然交互闭环。",
+    slogan: "从“听完再说”，到真正有来有往。",
+    description: "让 AI 在连续语音流中同步倾听、理解、回应和控制对话节奏，打破轮次式交互，让语音 AI 更接近人与人之间的自然交流。",
     brand: "Lychee-FD",
-    brandSub: "自然共话引擎",
+    brandSub: "原生全双工语音大模型",
   },
 
   navigation: [
@@ -18,7 +18,7 @@ window.LYCHEE_CONFIG = {
     { label: "全双工驱动数字人", target: "embodied" },
   ],
 
-  heroPills: ["自然打断", "实时反馈", "用户附和", "数字人驱动"],
+  heroPills: [],
 
   heroPromoVideo: {
     title: "Lychee-FD 交互演示",
