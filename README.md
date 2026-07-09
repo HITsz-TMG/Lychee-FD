@@ -69,36 +69,15 @@ Lychee-FD addresses this conflict through hierarchical acoustic-semantic modelin
   <img src="docs/assets/images/paper/lychee_fd_model_structure.png" alt="Lychee-FD hierarchical acoustic-semantic model architecture" width="100%">
 </p>
 
-This architecture also introduces distinct serving requirements. Standard LLM inference engines are optimized for a single forward path and a single output stream, while sequentially executing Lychee-FD's specialized streams would introduce avoidable latency. Our vLLM-optimized online pipeline reuses shared-backbone computation, dispatches intermediate states to stream-specific branches, and manages KV cache for multi-stream generation. The control stream further supports early-exit decisions, enabling interruption and turn-taking signals to be emitted before full speech generation is completed.
+## ⚙️ Engineering Implementation
 
-> **TODO:** Replace the following vLLM pipeline figure with the final version.
+Real full-duplex interaction must run as an online system. Lychee-FD therefore customizes vLLM for its hierarchical multi-channel architecture: after shared-backbone computation, the backend dispatches intermediate states to semantic, acoustic, and dialogue-control channels, while maintaining the generation state and KV cache required by multi-stream decoding.
+
+This design avoids forcing all specialized channels through a single serial inference path. The control head also uses an early-exit path, allowing interruption, stop-speaking, and listen/respond decisions to be produced before full speech generation completes. In our online evaluation, this vLLM-optimized multi-stream serving pipeline achieves about **2.96x** speedup in speaking rounds and reduces incremental GPU memory growth by about **23%** in long-session runs.
 
 <p align="center">
-  <img src="docs/assets/vllm_optimized_online_pipeline_detail.svg" alt="vLLM-optimized online full-duplex inference pipeline" width="100%">
+  <img src="docs/assets/images/architecture/online_multistream_inference.png" alt="Lychee-FD online multi-stream inference framework" width="100%">
 </p>
-
-The online pipeline separates realtime audio ingestion, state-aware full-duplex inference, vLLM-optimized response generation, and streaming token-to-waveform synthesis.
-
-## Online Serving 
-
-
-Performance
-
-We compare the Hugging Face online backend with the vLLM online backend on an evaluation subset. Each online round consumes a fixed 400 ms audio window, so the key metric is whether backend computation finishes before the next window arrives.
-
-| Scope | HF rounds | vLLM rounds | HF mean compute / window | vLLM mean compute / window | Speedup | HF window RTF | vLLM window RTF | HF within window | vLLM within window |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| All rounds | 15,191 | 15,191 | 288.49 ms | 249.30 ms | 1.16x | 0.721 | 0.623 | 70.8% | **99.5%** |
-| Speaking rounds | 4,470 | 4,183 | 777.50 ms | **261.50 ms** | **2.97x** | 1.944 | **0.654** | 0.6% | **98.5%** |
-| Listening rounds | 10,701 | 11,003 | 84.70 ms | 244.77 ms | 0.35x | 0.212 | 0.612 | **100.0%** | **99.9%** |
-
-**Key points:**
-
-- **Speaking rounds are the critical online workload:** vLLM reduces mean compute from 777.50 ms to 261.50 ms and raises within-window completion from 0.6% to 98.5%.
-- **Overall realtime stability improves:** across all rounds, vLLM finishes 99.5% of windows within the 400 ms budget.
-- **Long-context memory growth is reduced:** in controlled long-session runs, vLLM showed about 23% lower incremental GPU memory growth than the HF backend over a comparable 5 minutes audio stream.
-
-`window RTF = round_compute_ms / 400 ms`; values below 1.0 indicate that the backend finishes processing the current audio window before the next window arrives.
 
 ## Model Weights
 
