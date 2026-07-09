@@ -62,7 +62,7 @@ The architecture is motivated by the optimization dynamics observed in native fu
 Lychee-FD addresses this conflict through hierarchical acoustic-semantic modeling instead of external scheduling. The lower layers are shared to learn common speech-language representations from continuous audio streams, whereas the upper layers are decoupled into semantic, acoustic, and dialogue-control streams. This design enables semantic reasoning to preserve language understanding and knowledge, acoustic modeling to focus on natural speech token generation, and dialogue control to determine when to speak, stop, listen, or respond to interruptions.
 
 <p align="center">
-  <img src="docs/assets/images/paper/lychee_fd_model_structure.png" alt="Lychee-FD hierarchical acoustic-semantic model architecture" width="100%">
+  <img src="docs/assets/images/architecture/lychee_fd_architecture.png" alt="Lychee-FD hierarchical acoustic-semantic model architecture" width="100%">
 </p>
 
 ## ⚙️ Engineering Implementation
