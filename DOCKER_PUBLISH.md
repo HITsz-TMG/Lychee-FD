@@ -72,7 +72,7 @@ LYCHEE_FD_IMAGE=ghcr.io/your-github-username/lychee-fd:latest
 LYCHEE_FD_IMAGE=ghcr.io/${GHCR_OWNER}/lychee-fd:latest
 ```
 
-也可以把 `README.md` 和 `启动指南.md` 里的占位地址同步替换。
+也可以把 `README.md` 和 `QUICKSTART.zh-CN.md` 里的占位地址同步替换。
 
 用户之后只需要：
 

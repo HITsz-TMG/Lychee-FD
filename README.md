@@ -303,7 +303,7 @@ npm ci
 cd ..
 ```
 
-Then follow the source launch commands in [启动指南.md](启动指南.md).
+Then follow the source launch commands in [QUICKSTART.zh-CN.md](QUICKSTART.zh-CN.md).
 
 ## Third-Party Code
 
@@ -319,4 +319,4 @@ Copyright 2026 HITsz-TMG and Lychee-FD authors.
 
 ## Detailed Guide
 
-See [启动指南.md](启动指南.md) for more startup details and optional source-based launch commands.
+See [QUICKSTART.zh-CN.md](QUICKSTART.zh-CN.md) for more startup details and optional source-based launch commands.
