@@ -2,12 +2,12 @@
 
 window.LYCHEE_CONFIG = {
   site: {
-    title: "原生端到端全双工语音大模型",
+    title: "Lychee-FD",
     subtitle: "Lychee-FD",
-    slogan: "从“听完再说”，到真正有来有往。",
-    description: "让 AI 在连续语音流中同步倾听、理解、回应和控制对话节奏，打破轮次式交互，让语音 AI 更接近人与人之间的自然交流。",
+    slogan: "原生端到端全双工语音大模型",
+    description: "通过层次化语义-声学建模，实现实时、自然、可打断的全双工语音交互。",
     brand: "Lychee-FD",
-    brandSub: "原生全双工语音大模型",
+    brandSub: "原生端到端全双工语音大模型",
   },
 
   navigation: [
