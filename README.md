@@ -52,9 +52,16 @@ Lychee-FD is a native end-to-end full-duplex speech language model designed for 
 
 The architecture is motivated by the optimization dynamics observed in native full-duplex speech modeling. In deeper layers, acoustic generation and semantic reasoning tend to impose increasingly divergent optimization objectives on shared parameters. Meanwhile, high-frequency speech tokens can dilute sparse textual supervision, weakening semantic consistency during speech generation.
 
-<p align="center">
-  <img src="docs/assets/images/paper/acoustic_semantic_optimization.png" alt="Optimization dynamics of acoustic-semantic modeling in Lychee-FD" width="80%">
-</p>
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <img src="docs/assets/images/paper/acoustic_semantic_optimization.png" alt="Optimization dynamics of acoustic-semantic modeling in Lychee-FD" width="100%">
+    </td>
+    <td width="50%" align="center">
+      <img src="docs/assets/images/paper/modality_layer_conflict.png" alt="Layer-wise acoustic-semantic conflict in Lychee-FD" width="100%">
+    </td>
+  </tr>
+</table>
 
 Lychee-FD addresses this conflict through hierarchical acoustic-semantic modeling instead of external scheduling. The lower layers are shared to learn common speech-language representations from continuous audio streams, whereas the upper layers are decoupled into semantic, acoustic, and dialogue-control streams. This design enables semantic reasoning to preserve language understanding and knowledge, acoustic modeling to focus on natural speech token generation, and dialogue control to determine when to speak, stop, listen, or respond to interruptions.
 
