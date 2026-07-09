@@ -32,10 +32,10 @@ window.LYCHEE_CONFIG = {
   },
 
   metrics: [
-    { value: "7.4%", label: "语音问答准确率提升", note: "语义准确保持" },
-    { value: "28.5%", label: "打断与接话指标提升", note: "打断精确响应" },
-    { value: "11.2%", label: "打断响应延迟降低", note: "反馈及时触达" },
-    { value: "4.50", label: "语音自然度 UTMOS", note: "语音表达质量" },
+    { value: "7.4%", label: "语音问答准确率提升", note: "语音智能" },
+    { value: "28.5%", label: "打断与附和拒识指标提升", note: "自然交互" },
+    { value: "11.2%", label: "打断响应延迟降低", note: "及时响应" },
+    { value: "2.96", label: "多通道并行推理加速", note: "工程优化" },
   ],
 
   problemSection: {
