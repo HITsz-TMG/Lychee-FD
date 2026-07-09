@@ -12,7 +12,7 @@ Lychee-FD is a full-duplex realtime speech interaction system designed for low-l
   <a href="https://huggingface.co/PLACEHOLDER/Lychee-FD">
     <img src="https://img.shields.io/badge/🤗%20Hugging%20Face-Model-yellow" alt="Hugging Face">
   </a>
-  <a href="https://hitsz-tmg.github.io/Lychee-FD/">
+  <a href="https://hitsz-tmg.github.io/Lychee-FD/lychee-fd-showcase/">
     <img src="https://img.shields.io/badge/Demo-Website-blue?logo=googlechrome" alt="Demo">
   </a>
   <a href="https://arxiv.org/pdf/2607.06540">
