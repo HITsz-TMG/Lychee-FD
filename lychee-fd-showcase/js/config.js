@@ -3,9 +3,9 @@
 window.LYCHEE_CONFIG = {
   site: {
     title: "Lychee-FD",
-    subtitle: "Lychee-FD",
-    slogan: "原生端到端全双工语音大模型",
-    description: "通过层次化语义-声学建模，实现实时、自然、可打断的全双工语音交互。",
+    subtitle: "原生端到端全双工语音大模型",
+    slogan: "实时、自然、类人的全双工语音交互。",
+    description: "Lychee-FD 是一个原生端到端全双工语音大模型，面向实时语音交互设计。它通过层次化语义-声学建模，缓解原生全双工模型中的模态干扰与语义稀释问题，并进一步支持低时延在线推理、数字人和机器人交互展示。",
     brand: "Lychee-FD",
     brandSub: "原生端到端全双工语音大模型",
   },
