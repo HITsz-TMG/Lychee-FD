@@ -3013,6 +3013,29 @@ def _audio_output_to_wav_event(audio_out):
     }
 
 
+def _close_incremental_stream_session(stream_session, session_id: str, reason: str) -> None:
+    if stream_session is None:
+        return
+    close_fn = getattr(stream_session, "close", None)
+    if not callable(close_fn):
+        return
+    try:
+        result = close_fn()
+        logger.info(
+            "Realtime incremental stream session closed session_id=%s reason=%s result=%s",
+            session_id,
+            reason,
+            result,
+        )
+    except Exception:
+        logger.warning(
+            "Failed to close realtime incremental stream session session_id=%s reason=%s",
+            session_id,
+            reason,
+            exc_info=True,
+        )
+
+
 def _run_realtime_session_worker(session_id: str) -> None:
     with _realtime_sessions_lock:
         session = _realtime_sessions.get(session_id)
@@ -3681,10 +3704,17 @@ def _run_realtime_session_worker(session_id: str) -> None:
             err = traceback.format_exc()
             logger.error("Realtime session worker error (%s): %s", session_id, err)
             _push_session_event(session, {"type": "error", "error": err, "round_id": round_id})
+            stream_session_to_close = None
             with session.lock:
+                stream_session_to_close = session.incremental_stream_session
                 session.incremental_stream_session = None
                 session.finished = True
                 session.tts_bridge = None
+            _close_incremental_stream_session(
+                stream_session_to_close,
+                session_id,
+                reason="worker_error",
+            )
             try:
                 if session_tts_bridge is not None:
                     session_tts_bridge.stop(force_flush=False)
@@ -3719,10 +3749,17 @@ def _run_realtime_session_worker(session_id: str) -> None:
         except Exception:
             pass
 
+    stream_session_to_close = None
     with session.lock:
+        stream_session_to_close = session.incremental_stream_session
         session.incremental_stream_session = None
         session.tts_bridge = None
         session.finished = True
+    _close_incremental_stream_session(
+        stream_session_to_close,
+        session_id,
+        reason="session_finished",
+    )
     _push_session_event(session, {"type": "done", "session_id": session_id})
 
 

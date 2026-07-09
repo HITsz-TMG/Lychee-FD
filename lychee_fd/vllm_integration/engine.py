@@ -1712,6 +1712,22 @@ class _PatchedLycheeVLLMEngine:
         self._active_audio_ids = None
         self._active_text_sampling_key = None
 
+    def close_active_request(self) -> Dict[str, Any]:
+        """Abort and forget the current kept-alive request, if one exists."""
+        request_id = self._active_request_id
+        if request_id is None:
+            self._clear_active_request_state()
+            return {"ok": True, "request_id": None, "closed": False}
+
+        aborted = False
+        try:
+            if self.engine.has_unfinished_requests():
+                self._abort_request_compat(request_id)
+                aborted = True
+        finally:
+            self._clear_active_request_state()
+        return {"ok": True, "request_id": request_id, "closed": True, "aborted": aborted}
+
     @staticmethod
     def _tail_truncate_fail(reason: str, **extra) -> Dict[str, Any]:
         result: Dict[str, Any] = {

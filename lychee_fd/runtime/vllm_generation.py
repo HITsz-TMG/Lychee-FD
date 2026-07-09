@@ -1,5 +1,6 @@
 import argparse
 import copy
+import gc
 import json
 import math
 import os
@@ -2006,6 +2007,14 @@ class _VLLMModelAdapter:
             return {"ok": False, "reason": "vllm_truncate_api_unavailable"}
         return truncate_fn(**kwargs)
 
+    def close_active_request(self):
+        self._cached_audio_key = None
+        self._cached_audio_context = None
+        close_fn = getattr(self._engine, "close_active_request", None)
+        if callable(close_fn):
+            return close_fn()
+        return {"ok": True, "request_id": None, "closed": False}
+
     def multi_head_generate_stream(self, **kwargs):
         wavs = kwargs.get("wavs", None)
         wav_lens = kwargs.get("wav_lens", None)
@@ -2342,6 +2351,146 @@ class IncrementalChunkStreamSession:
         self._audio_embed_seq_cache: List[torch.Tensor] = []
         self._audio_embed_lens_cache: List[int] = []
         self._timeline_spans: List[Dict[str, object]] = []
+        self._closed = False
+
+    def _cuda_stats_device(self):
+        if not torch.cuda.is_available():
+            return None
+        fw = getattr(self, "fw", None)
+        fw_device = getattr(fw, "device", None)
+        if fw_device is None or not str(fw_device).startswith("cuda"):
+            return None
+        try:
+            return torch.device(fw_device)
+        except Exception:
+            return None
+
+    def _cuda_memory_stats(self, device=None) -> Dict[str, object]:
+        if not torch.cuda.is_available():
+            return {"cuda_available": False}
+        if device is None:
+            device = self._cuda_stats_device()
+        try:
+            allocated = torch.cuda.memory_allocated(device)
+            reserved = torch.cuda.memory_reserved(device)
+            max_allocated = torch.cuda.max_memory_allocated(device)
+            max_reserved = torch.cuda.max_memory_reserved(device)
+            return {
+                "cuda_available": True,
+                "device": str(device) if device is not None else "current",
+                "allocated_mib": round(float(allocated) / 1024.0 / 1024.0, 2),
+                "reserved_mib": round(float(reserved) / 1024.0 / 1024.0, 2),
+                "max_allocated_mib": round(float(max_allocated) / 1024.0 / 1024.0, 2),
+                "max_reserved_mib": round(float(max_reserved) / 1024.0 / 1024.0, 2),
+            }
+        except Exception as exc:
+            return {"cuda_available": True, "error": str(exc)}
+
+    @staticmethod
+    def _tensor_list_bytes(values) -> int:
+        total = 0
+        for value in list(values or []):
+            if torch.is_tensor(value):
+                total += int(value.numel()) * int(value.element_size())
+        return int(total)
+
+    def _audio_cache_stats(self) -> Dict[str, object]:
+        audio_feats = getattr(self, "_audio_feats_cache", []) or []
+        audio_embeds = getattr(self, "_audio_embed_seq_cache", []) or []
+        return {
+            "audio_input_tokens": int(len(getattr(self, "_audio_input_id_list", []) or [])),
+            "audio_windows": int(max(
+                len(getattr(self, "_audio_input_id_lens_cache", []) or []),
+                len(audio_feats),
+                len(audio_embeds),
+            )),
+            "audio_feats_tensors": int(len(audio_feats)),
+            "audio_embeds_tensors": int(len(audio_embeds)),
+            "audio_feats_mib": round(float(self._tensor_list_bytes(audio_feats)) / 1024.0 / 1024.0, 2),
+            "audio_embeds_mib": round(float(self._tensor_list_bytes(audio_embeds)) / 1024.0 / 1024.0, 2),
+        }
+
+    def close(self) -> Dict[str, object]:
+        """Release per-call streaming state held by this realtime session."""
+        if getattr(self, "_closed", False):
+            return {"ok": True, "closed": False, "reason": "already_closed"}
+        self._closed = True
+        stats_device = self._cuda_stats_device()
+        memory_before = self._cuda_memory_stats(stats_device)
+        cache_before = self._audio_cache_stats()
+
+        close_result = None
+        fw = getattr(self, "fw", None)
+        model = getattr(fw, "model", None)
+        close_active_request = getattr(model, "close_active_request", None)
+        if callable(close_active_request):
+            close_result = close_active_request()
+
+        if fw is not None:
+            try:
+                fw.last_ss_pos = None
+            except Exception:
+                pass
+
+        for attr in (
+            "prefix_input_ids",
+            "generated_input_ids",
+            "generated_control_ids",
+            "generated_stoken_ids",
+            "stoken_mapping",
+            "past_key_values",
+            "stoken_past_key_values",
+            "control_past_key_values",
+            "speaking_text_processor",
+            "speaking_stoken_processor",
+        ):
+            setattr(self, attr, None)
+
+        self._audio_tail = np.zeros(0, dtype=np.float32)
+        for attr in (
+            "_audio_input_id_list",
+            "_audio_input_id_lens_cache",
+            "_audio_feats_cache",
+            "_audio_feat_lens_cache",
+            "_audio_embed_seq_cache",
+            "_audio_embed_lens_cache",
+            "_timeline_spans",
+        ):
+            value = getattr(self, attr, None)
+            if isinstance(value, list):
+                value.clear()
+            else:
+                setattr(self, attr, [])
+
+        self.profile_model = {}
+        self.fw = None
+
+        gc.collect()
+        memory_after_gc = self._cuda_memory_stats(stats_device)
+        empty_cache_enabled = str(
+            os.getenv("STEPAUDIO_CUDA_EMPTY_CACHE_ON_SESSION_CLOSE", "0")
+        ).strip().lower() in {"1", "true", "yes", "on"}
+        memory_after_empty_cache = None
+        if empty_cache_enabled and torch.cuda.is_available():
+            try:
+                torch.cuda.empty_cache()
+                ipc_collect = getattr(torch.cuda, "ipc_collect", None)
+                if callable(ipc_collect):
+                    ipc_collect()
+            except Exception:
+                pass
+            memory_after_empty_cache = self._cuda_memory_stats(stats_device)
+
+        return {
+            "ok": True,
+            "closed": True,
+            "active_request": close_result,
+            "cache_before": cache_before,
+            "cuda_before": memory_before,
+            "cuda_after_gc": memory_after_gc,
+            "empty_cache_enabled": bool(empty_cache_enabled),
+            "cuda_after_empty_cache": memory_after_empty_cache,
+        }
 
     def _set_last_ss_pos(self, value):
         self.last_ss_pos = value
