@@ -78,15 +78,15 @@ cp .env.docker.example .env
 LYCHEE_FD_IMAGE=ghcr.io/idealistxy/lychee-fd:latest
 
 HOST_MODEL_ROOT=/path/to/model-root
-STEPAUDIO_MODEL_PATH=/models/lychee_full_duplex_v1.5
-STEPAUDIO_T2W_MODEL_PATH=/models/token2wav
+LYCHEEFD_MODEL_PATH=/models/lychee_full_duplex_v1.5
+LYCHEEFD_T2W_MODEL_PATH=/models/token2wav
 ```
 
 说明：
 
 - `HOST_MODEL_ROOT` 是宿主机真实模型根目录。
-- `STEPAUDIO_MODEL_PATH` 是容器内的 Lychee-FD checkpoint 路径。
-- `STEPAUDIO_T2W_MODEL_PATH` 是容器内的 token2wav 路径。
+- `LYCHEEFD_MODEL_PATH` 是容器内的 Lychee-FD checkpoint 路径。
+- `LYCHEEFD_T2W_MODEL_PATH` 是容器内的 token2wav 路径。
 
 拉取镜像：
 
@@ -134,11 +134,11 @@ BACKEND_CUDA_VISIBLE_DEVICES=0
 预分配给 KV cache 的显存占比：
 
 ```dotenv
-STEPAUDIO_VLLM_GPU_MEMORY_UTILIZATION=0.70
+LYCHEEFD_VLLM_GPU_MEMORY_UTILIZATION=0.70
 ```
 
 默认值是 `0.90`。调低后会给 token2wav、CUDA kernel 和临时 activation 留出更多显存，但会降低 vLLM 可用 KV cache 容量。显存仍然紧张时，也可以把
-`STEPAUDIO_VLLM_MAX_MODEL_LEN` 从 `16384` 降到 `8192`。
+`LYCHEEFD_VLLM_MAX_MODEL_LEN` 从 `16384` 降到 `8192`。
 
 启动前请确认 Docker 能访问 GPU：
 
@@ -223,7 +223,7 @@ python -m pip install --no-build-isolation "flash-attn==2.8.2"
 
 ```bash
 CUDA_VISIBLE_DEVICES=0 \
-STEPAUDIO_T2W_MODEL_PATH=/path/to/token2wav \
+LYCHEEFD_T2W_MODEL_PATH=/path/to/token2wav \
 ./scripts/start_token2wav_server.sh
 ```
 
@@ -231,26 +231,26 @@ STEPAUDIO_T2W_MODEL_PATH=/path/to/token2wav \
 
 ```bash
 CUDA_VISIBLE_DEVICES=1 \
-STEPAUDIO_CONDA_ENV_PATH=${CONDA_PREFIX} \
+LYCHEEFD_CONDA_ENV_PATH=${CONDA_PREFIX} \
 STEPAUDIO2_SOURCE_DIR=${PWD}/third_party/Step-Audio2 \
-STEPAUDIO_VLLM_SOURCE_DIR=${PWD}/third_party/vllm \
-STEPAUDIO_VLLM_SYNC_FLASH_ATTN=1 \
-STEPAUDIO_VLLM_FORCE_SYNC_FLASH_ATTN=1 \
+LYCHEEFD_VLLM_SOURCE_DIR=${PWD}/third_party/vllm \
+LYCHEEFD_VLLM_SYNC_FLASH_ATTN=1 \
+LYCHEEFD_VLLM_FORCE_SYNC_FLASH_ATTN=1 \
 ALLOWED_MODEL_ROOT=/path/to/model/root \
 AUTO_LOAD_DEFAULT=0 \
-STEPAUDIO_REALTIME_STRICT_INFER_WINDOW=1 \
-STEPAUDIO_STOKEN_DELAY_NUM=10 \
-STEPAUDIO_TTS_VOCODER_HOP_SIZE=10 \
-STEPAUDIO_T2W_STREAM_LOOKAHEAD_LEN=3 \
-STEPAUDIO_T2W_REMOTE_ENABLED=1 \
-STEPAUDIO_T2W_REMOTE_URL=http://127.0.0.1:8091 \
-STEPAUDIO_T2W_REMOTE_FALLBACK=0 \
-STEPAUDIO_USE_VLLM=1 \
-STEPAUDIO_VLLM_MAX_MODEL_LEN=16384 \
-STEPAUDIO_VLLM_GPU_MEMORY_UTILIZATION=0.90 \
-STEPAUDIO_REALTIME_DEBUG=0 \
+LYCHEEFD_REALTIME_STRICT_INFER_WINDOW=1 \
+LYCHEEFD_STOKEN_DELAY_NUM=10 \
+LYCHEEFD_TTS_VOCODER_HOP_SIZE=10 \
+LYCHEEFD_T2W_STREAM_LOOKAHEAD_LEN=3 \
+LYCHEEFD_T2W_REMOTE_ENABLED=1 \
+LYCHEEFD_T2W_REMOTE_URL=http://127.0.0.1:8091 \
+LYCHEEFD_T2W_REMOTE_FALLBACK=0 \
+LYCHEEFD_USE_VLLM=1 \
+LYCHEEFD_VLLM_MAX_MODEL_LEN=16384 \
+LYCHEEFD_VLLM_GPU_MEMORY_UTILIZATION=0.90 \
+LYCHEEFD_REALTIME_DEBUG=0 \
 VUE_APP_REALTIME_DEBUG=0 \
 ./scripts/start_frontend_dev.sh prod public
 ```
 
-源码方式使用 vLLM 后端时，需要同时满足两点：conda 环境中已安装兼容的 vLLM wheel，用于提供 CUDA native libraries；`STEPAUDIO_VLLM_SOURCE_DIR` 指向本仓库的 `third_party/vllm` patched source tree。启动脚本会把 patched source tree 放到 `PYTHONPATH` 前面，并把已安装 vLLM wheel 中的 native artifacts 同步到该源码树。
+源码方式使用 vLLM 后端时，需要同时满足两点：conda 环境中已安装兼容的 vLLM wheel，用于提供 CUDA native libraries；`LYCHEEFD_VLLM_SOURCE_DIR` 指向本仓库的 `third_party/vllm` patched source tree。启动脚本会把 patched source tree 放到 `PYTHONPATH` 前面，并把已安装 vLLM wheel 中的 native artifacts 同步到该源码树。

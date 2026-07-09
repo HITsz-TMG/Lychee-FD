@@ -7,9 +7,9 @@ cd "$ROOT_DIR"
 
 export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-1}"
 export NUMBA_CACHE_DIR="${NUMBA_CACHE_DIR:-/tmp/stepaudio_numba_cache}"
-export STEPAUDIO_T2W_SERVER_HOST="${STEPAUDIO_T2W_SERVER_HOST:-127.0.0.1}"
-export STEPAUDIO_T2W_SERVER_PORT="${STEPAUDIO_T2W_SERVER_PORT:-8091}"
-export STEPAUDIO_T2W_MODEL_PATH="${STEPAUDIO_T2W_MODEL_PATH:-${ROOT_DIR}/models/Step-Audio-2-mini/token2wav}"
+export LYCHEEFD_T2W_SERVER_HOST="${LYCHEEFD_T2W_SERVER_HOST:-127.0.0.1}"
+export LYCHEEFD_T2W_SERVER_PORT="${LYCHEEFD_T2W_SERVER_PORT:-8091}"
+export LYCHEEFD_T2W_MODEL_PATH="${LYCHEEFD_T2W_MODEL_PATH:-${ROOT_DIR}/models/Step-Audio-2-mini/token2wav}"
 export STEPAUDIO2_SOURCE_DIR="${STEPAUDIO2_SOURCE_DIR:-${ROOT_DIR}/third_party/Step-Audio2}"
 if [[ -d "${STEPAUDIO2_SOURCE_DIR}" ]]; then
   export PYTHONPATH="${STEPAUDIO2_SOURCE_DIR}${PYTHONPATH:+:${PYTHONPATH}}"
@@ -23,13 +23,13 @@ fi
 
 echo "[token2wav-server] CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES}"
 echo "[token2wav-server] python=${PYTHON_BIN}"
-echo "[token2wav-server] host=${STEPAUDIO_T2W_SERVER_HOST} port=${STEPAUDIO_T2W_SERVER_PORT}"
-echo "[token2wav-server] model=${STEPAUDIO_T2W_MODEL_PATH}"
+echo "[token2wav-server] host=${LYCHEEFD_T2W_SERVER_HOST} port=${LYCHEEFD_T2W_SERVER_PORT}"
+echo "[token2wav-server] model=${LYCHEEFD_T2W_MODEL_PATH}"
 echo "[token2wav-server] stepaudio2_source=${STEPAUDIO2_SOURCE_DIR}"
 
 export PYTHONPATH="${ROOT_DIR}${PYTHONPATH:+:${PYTHONPATH}}"
 
 exec "$PYTHON_BIN" -u -m lychee_fd.token2wav_server \
-  --host "$STEPAUDIO_T2W_SERVER_HOST" \
-  --port "$STEPAUDIO_T2W_SERVER_PORT" \
-  --model-path "$STEPAUDIO_T2W_MODEL_PATH"
+  --host "$LYCHEEFD_T2W_SERVER_HOST" \
+  --port "$LYCHEEFD_T2W_SERVER_PORT" \
+  --model-path "$LYCHEEFD_T2W_MODEL_PATH"

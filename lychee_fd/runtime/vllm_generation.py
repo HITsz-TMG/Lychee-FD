@@ -40,10 +40,10 @@ SUPPORTED_FULL_DUPLEX_MODEL_TYPES = {
 
 # logits 处理器的快速路径:
 # - 默认: 为降低时延，跳过逐 token 的整张量 sanitize 检查
-# - 设置 STEPAUDIO_LOGITS_SANITIZE=1: 重新启用更安全的 sanitize 路径
-_STEPAUDIO_LOGITS_SANITIZE = str(os.getenv("STEPAUDIO_LOGITS_SANITIZE", "0")).strip().lower() in {"1", "true", "yes", "on"}
-_STEPAUDIO_DEBUG_CONTROL_LOGITS = str(
-    os.getenv("STEPAUDIO_DEBUG_CONTROL_LOGITS", "0")
+# - 设置 LYCHEEFD_LOGITS_SANITIZE=1: 重新启用更安全的 sanitize 路径
+_LYCHEEFD_LOGITS_SANITIZE = str(os.getenv("LYCHEEFD_LOGITS_SANITIZE", "0")).strip().lower() in {"1", "true", "yes", "on"}
+_LYCHEEFD_DEBUG_CONTROL_LOGITS = str(
+    os.getenv("LYCHEEFD_DEBUG_CONTROL_LOGITS", "0")
 ).strip().lower() in {"1", "true", "yes", "on"}
 
 
@@ -74,20 +74,20 @@ def _load_stepaudio_config(model_path: str):
             return _to_attr_config(raw_config)
         with open(config_path, "r", encoding="utf-8") as f:
             return _to_attr_config(json.load(f))
-_STEPAUDIO_VERBOSE_STREAM_LOG = str(
-    os.getenv("STEPAUDIO_VERBOSE_STREAM_LOG", "0")
+_LYCHEEFD_VERBOSE_STREAM_LOG = str(
+    os.getenv("LYCHEEFD_VERBOSE_STREAM_LOG", "0")
 ).strip().lower() in {"1", "true", "yes", "on"}
-_STEPAUDIO_S2L_FILL_EOT_TTS_END = str(
-    os.getenv("STEPAUDIO_S2L_FILL_EOT_TTS_END", "0")
+_LYCHEEFD_S2L_FILL_EOT_TTS_END = str(
+    os.getenv("LYCHEEFD_S2L_FILL_EOT_TTS_END", "0")
 ).strip().lower() in {"1", "true", "yes", "on"}
-_STEPAUDIO_CONTROL_EARLY_EXIT_ENABLED = str(
-    os.getenv("STEPAUDIO_CONTROL_EARLY_EXIT_ENABLED", "1")
+_LYCHEEFD_CONTROL_EARLY_EXIT_ENABLED = str(
+    os.getenv("LYCHEEFD_CONTROL_EARLY_EXIT_ENABLED", "1")
 ).strip().lower() in {"1", "true", "yes", "on"}
-_STEPAUDIO_CONTROL_EARLY_DEBUG = str(
-    os.getenv("STEPAUDIO_CONTROL_EARLY_DEBUG", "0")
+_LYCHEEFD_CONTROL_EARLY_DEBUG = str(
+    os.getenv("LYCHEEFD_CONTROL_EARLY_DEBUG", "0")
 ).strip().lower() in {"1", "true", "yes", "on"}
-_STEPAUDIO_T2W_STRICT_STOKEN_RANGE = str(
-    os.getenv("STEPAUDIO_T2W_STRICT_STOKEN_RANGE", "0")
+_LYCHEEFD_T2W_STRICT_STOKEN_RANGE = str(
+    os.getenv("LYCHEEFD_T2W_STRICT_STOKEN_RANGE", "0")
 ).strip().lower() in {"1", "true", "yes", "on"}
 
 
@@ -98,13 +98,13 @@ def _get_env_int(name: str, default: int) -> int:
         return default
 
 
-_STEPAUDIO_T2W_CODEC_VOCAB_SIZE = max(
-    1, _get_env_int("STEPAUDIO_T2W_CODEC_VOCAB_SIZE", 6561)
+_LYCHEEFD_T2W_CODEC_VOCAB_SIZE = max(
+    1, _get_env_int("LYCHEEFD_T2W_CODEC_VOCAB_SIZE", 6561)
 )
 
 
 def _prepare_logits_scores(scores: torch.FloatTensor) -> torch.FloatTensor:
-    if not _STEPAUDIO_LOGITS_SANITIZE:
+    if not _LYCHEEFD_LOGITS_SANITIZE:
         return scores
     scores = scores.float()
     if not torch.isfinite(scores).all():
@@ -287,7 +287,7 @@ class ListeningControlLogitsProcessor(LogitsProcessor):
                 pass
 
         ListeningControlLogitsProcessor._call_count = next_call
-        if log_now and _STEPAUDIO_DEBUG_CONTROL_LOGITS:
+        if log_now and _LYCHEEFD_DEBUG_CONTROL_LOGITS:
             ss_raw = scores[0, self.ss_token_id].item()
             if self.start_speak_token_factor > 0:
                 ss_raw = ss_raw / self.start_speak_token_factor
@@ -634,7 +634,7 @@ class SingleTurnGenerationFramework:
         - default: legacy behavior, both tails are padded
         - env on: conditionally close non-pad tails with EOT/TTS_END
         """
-        if _STEPAUDIO_S2L_FILL_EOT_TTS_END:
+        if _LYCHEEFD_S2L_FILL_EOT_TTS_END:
             last_text_token = int(generated_input_ids[0, -1].item())
             last_stoken_token = int(generated_stoken_ids[0, -1].item())
             text_tail_token = (
@@ -735,9 +735,9 @@ class SingleTurnGenerationFramework:
         generated_stoken_ids = stoken_ids
         generated_control_ids = control_input_ids
         speaking_text_processor, speaking_stoken_processor = self.init_speaking_processor(end_speak_token_factor)
-        profile_latency = str(os.getenv("STEPAUDIO_PROFILE_LATENCY", "0")).strip().lower() in {"1", "true", "yes", "on"}
+        profile_latency = str(os.getenv("LYCHEEFD_PROFILE_LATENCY", "0")).strip().lower() in {"1", "true", "yes", "on"}
         try:
-            profile_every = max(1, int(os.getenv("STEPAUDIO_PROFILE_EVERY", "20")))
+            profile_every = max(1, int(os.getenv("LYCHEEFD_PROFILE_EVERY", "20")))
         except (TypeError, ValueError):
             profile_every = 20
         profile_model = {
@@ -1188,9 +1188,9 @@ class SingleTurnGenerationFramework:
         generated_stoken_ids = stoken_ids
         generated_control_ids = control_input_ids
         speaking_text_processor, speaking_stoken_processor = self.init_speaking_processor(end_speak_token_factor)
-        profile_latency = str(os.getenv("STEPAUDIO_PROFILE_LATENCY", "0")).strip().lower() in {"1", "true", "yes", "on"}
+        profile_latency = str(os.getenv("LYCHEEFD_PROFILE_LATENCY", "0")).strip().lower() in {"1", "true", "yes", "on"}
         try:
-            profile_every = max(1, int(os.getenv("STEPAUDIO_PROFILE_EVERY", "20")))
+            profile_every = max(1, int(os.getenv("LYCHEEFD_PROFILE_EVERY", "20")))
         except (TypeError, ValueError):
             profile_every = 20
         profile_model = {
@@ -1211,8 +1211,8 @@ class SingleTurnGenerationFramework:
             self.model.__class__.__name__ == "_VLLMModelAdapter"
             and hasattr(self.model, "_engine")
         )
-        keep_alive_env = str(os.getenv("STEPAUDIO_VLLM_KEEP_ALIVE_SPEAKING", "1")).strip().lower()
-        keep_alive_listen_env = str(os.getenv("STEPAUDIO_VLLM_KEEP_ALIVE_LISTENING", "1")).strip().lower()
+        keep_alive_env = str(os.getenv("LYCHEEFD_VLLM_KEEP_ALIVE_SPEAKING", "1")).strip().lower()
+        keep_alive_listen_env = str(os.getenv("LYCHEEFD_VLLM_KEEP_ALIVE_LISTENING", "1")).strip().lower()
         keep_alive_for_speaking = (
             is_vllm_backend
             and keep_alive_env not in {"0", "false", "no", "off"}
@@ -1260,7 +1260,7 @@ class SingleTurnGenerationFramework:
                 latest_ks_prob = fv
             return fv
 
-        if _STEPAUDIO_VERBOSE_STREAM_LOG:
+        if _LYCHEEFD_VERBOSE_STREAM_LOG:
             print(f"[STREAM_GEN] total_audio_tokens={total_len}, chunk_start={chunk_start}, "
                   f"chunk_end={chunk_end}, chunk_size={self.control_token_chunk_size}, "
                   f"total_chunks={total_chunks}, system_len={system_input_length}, "
@@ -1270,7 +1270,7 @@ class SingleTurnGenerationFramework:
             target_length = min(cn_e, total_len)
             current_len = generated_input_ids.shape[1] - system_input_length
             target_new_length = target_length - current_len
-            if _STEPAUDIO_VERBOSE_STREAM_LOG:
+            if _LYCHEEFD_VERBOSE_STREAM_LOG:
                 print(f"[STREAM_GEN] chunk cn_e={cn_e}, target_len={target_length}, "
                       f"current_len={current_len}, new_len={target_new_length}, state={listening_state}")
 
@@ -1382,7 +1382,7 @@ class SingleTurnGenerationFramework:
                         "pos": cn_e,
                         "chunk": cn_e,
                         "reason": "control_ss",
-                        "early_exit": bool(_STEPAUDIO_CONTROL_EARLY_EXIT_ENABLED),
+                        "early_exit": bool(_LYCHEEFD_CONTROL_EARLY_EXIT_ENABLED),
                         "interrupt": False,
                         "ss_prob": _safe_prob(listening_control_core, "ss"),
                         "sl_prob": _safe_prob(listening_control_core, "sl"),
@@ -2176,8 +2176,8 @@ class VLLMGenerationFramework(SingleTurnGenerationFramework):
         except Exception:
             self.stoken_audio_start_id = 151696
             self.stoken_audio_tokenizer_end_id = 158352
-        self.stoken_audio_t2w_end_id = self.stoken_audio_start_id + _STEPAUDIO_T2W_CODEC_VOCAB_SIZE
-        if _STEPAUDIO_T2W_STRICT_STOKEN_RANGE:
+        self.stoken_audio_t2w_end_id = self.stoken_audio_start_id + _LYCHEEFD_T2W_CODEC_VOCAB_SIZE
+        if _LYCHEEFD_T2W_STRICT_STOKEN_RANGE:
             self.stoken_audio_end_id = min(
                 self.stoken_audio_tokenizer_end_id,
                 self.stoken_audio_t2w_end_id,
@@ -2193,16 +2193,16 @@ class VLLMGenerationFramework(SingleTurnGenerationFramework):
         self.use_cache = True
 
         print(f"[VLLMGenerationFramework] Initialized with vLLM backend")
-        if _STEPAUDIO_VERBOSE_STREAM_LOG:
+        if _LYCHEEFD_VERBOSE_STREAM_LOG:
             print(f"[SETTING] stoken_delay_num={self.stoken_delay_num}")
             print(f"[SETTING] stoken_no_repeat_n_gram={self.stoken_no_repeat_n_gram}")
-        if _STEPAUDIO_VERBOSE_STREAM_LOG or _STEPAUDIO_T2W_STRICT_STOKEN_RANGE:
+        if _LYCHEEFD_VERBOSE_STREAM_LOG or _LYCHEEFD_T2W_STRICT_STOKEN_RANGE:
             print(
                 "[SETTING] t2w_strict_stoken_range="
-                f"{int(_STEPAUDIO_T2W_STRICT_STOKEN_RANGE)} "
+                f"{int(_LYCHEEFD_T2W_STRICT_STOKEN_RANGE)} "
                 f"audio_range=[{self.stoken_audio_start_id},{self.stoken_audio_end_id}) "
                 f"tokenizer_end={self.stoken_audio_tokenizer_end_id} "
-                f"t2w_vocab_size={_STEPAUDIO_T2W_CODEC_VOCAB_SIZE}"
+                f"t2w_vocab_size={_LYCHEEFD_T2W_CODEC_VOCAB_SIZE}"
             )
 
 
@@ -2274,14 +2274,14 @@ class IncrementalChunkStreamSession:
             self.end_speak_token_factor
         )
 
-        self.profile_latency = str(os.getenv("STEPAUDIO_PROFILE_LATENCY", "0")).strip().lower() in {
+        self.profile_latency = str(os.getenv("LYCHEEFD_PROFILE_LATENCY", "0")).strip().lower() in {
             "1",
             "true",
             "yes",
             "on",
         }
         try:
-            self.profile_every = max(1, int(os.getenv("STEPAUDIO_PROFILE_EVERY", "20")))
+            self.profile_every = max(1, int(os.getenv("LYCHEEFD_PROFILE_EVERY", "20")))
         except (TypeError, ValueError):
             self.profile_every = 20
         self.profile_model = {
@@ -2308,8 +2308,8 @@ class IncrementalChunkStreamSession:
             self.fw.model.__class__.__name__ == "_VLLMModelAdapter"
             and hasattr(self.fw.model, "_engine")
         )
-        keep_alive_env = str(os.getenv("STEPAUDIO_VLLM_KEEP_ALIVE_SPEAKING", "1")).strip().lower()
-        keep_alive_listen_env = str(os.getenv("STEPAUDIO_VLLM_KEEP_ALIVE_LISTENING", "1")).strip().lower()
+        keep_alive_env = str(os.getenv("LYCHEEFD_VLLM_KEEP_ALIVE_SPEAKING", "1")).strip().lower()
+        keep_alive_listen_env = str(os.getenv("LYCHEEFD_VLLM_KEEP_ALIVE_LISTENING", "1")).strip().lower()
         self.keep_alive_for_speaking = (
             is_vllm_backend
             and keep_alive_env not in {"0", "false", "no", "off"}
@@ -2572,7 +2572,7 @@ class IncrementalChunkStreamSession:
         gc.collect()
         memory_after_gc = self._cuda_memory_stats(stats_device)
         empty_cache_enabled = str(
-            os.getenv("STEPAUDIO_CUDA_EMPTY_CACHE_ON_SESSION_CLOSE", "0")
+            os.getenv("LYCHEEFD_CUDA_EMPTY_CACHE_ON_SESSION_CLOSE", "0")
         ).strip().lower() in {"1", "true", "yes", "on"}
         memory_after_empty_cache = None
         if empty_cache_enabled and torch.cuda.is_available():
@@ -3130,7 +3130,7 @@ class IncrementalChunkStreamSession:
 
         total_chunks = (chunk_end - chunk_start) // self.fw.control_token_chunk_size + 1
 
-        if _STEPAUDIO_VERBOSE_STREAM_LOG:
+        if _LYCHEEFD_VERBOSE_STREAM_LOG:
             print(
                 f"[STREAM_SESSION] total_audio_tokens={total_len}, chunk_start={chunk_start}, "
                 f"chunk_end={chunk_end}, chunk_size={self.fw.control_token_chunk_size}, total_chunks={total_chunks}, "
@@ -3744,12 +3744,12 @@ class IncrementalChunkStreamSession:
                     token_control = int(token_result["control_token"])
                     token_stoken = int(token_result["stoken_token"])
                     if (
-                        _STEPAUDIO_CONTROL_EARLY_EXIT_ENABLED
+                        _LYCHEEFD_CONTROL_EARLY_EXIT_ENABLED
                         and token_control == int(self.fw.sl_token_id)
                         and token_stoken != int(self.fw.tts_end_id)
                     ):
                         early_s2l_interrupt = True
-                        if _STEPAUDIO_CONTROL_EARLY_DEBUG:
+                        if _LYCHEEFD_CONTROL_EARLY_DEBUG:
                             print(
                                 "[CONTROL_EARLY_EXIT] S->L interrupt "
                                 f"chunk={cn_e} step={token_result.get('step')} "

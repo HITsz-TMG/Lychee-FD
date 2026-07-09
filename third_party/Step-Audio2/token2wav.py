@@ -60,7 +60,7 @@ class Token2wav():
         # Keep stream cache warmup length consistent with model config.
         self.stream_lookahead_len = int(
             os.environ.get(
-                "STEPAUDIO_T2W_STREAM_LOOKAHEAD_LEN",
+                "LYCHEEFD_T2W_STREAM_LOOKAHEAD_LEN",
                 str(getattr(self.flow, "pre_lookahead_len", 3)),
             ))
 

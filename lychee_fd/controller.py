@@ -168,7 +168,7 @@ class BackendSupervisor:
             raise ValueError(f"mode must be stable/aggressive, got {mode!r}")
 
         env = os.environ.copy()
-        env["STEPAUDIO_MODEL_PATH"] = model_path
+        env["LYCHEEFD_MODEL_PATH"] = model_path
         # Forward selected runtime env overrides, such as hop size or lookahead.
         for k, v in (extra_env or {}).items():
             if v is None:

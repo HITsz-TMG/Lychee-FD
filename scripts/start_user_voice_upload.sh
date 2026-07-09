@@ -13,7 +13,7 @@ HOST="${USER_VOICE_UPLOAD_HOST:-0.0.0.0}"
 PORT="${USER_VOICE_UPLOAD_PORT:-18092}"
 
 export USER_VOICE_ASR_MODEL_DIR="${USER_VOICE_ASR_MODEL_DIR:-${ROOT_DIR}/models/paraformer-zh}"
-export STEPAUDIO_CLONE_PROMPT_DIR="${STEPAUDIO_CLONE_PROMPT_DIR:-${ROOT_DIR}/frontend/public/clone_24k_mono}"
+export LYCHEEFD_CLONE_PROMPT_DIR="${LYCHEEFD_CLONE_PROMPT_DIR:-${ROOT_DIR}/frontend/public/clone_24k_mono}"
 export USER_VOICE_TMP_DIR="${USER_VOICE_TMP_DIR:-/tmp/lychee_user_voice_uploads}"
 
 if [[ -z "${PYTHON_BIN}" || ! -x "${PYTHON_BIN}" ]]; then
@@ -24,7 +24,7 @@ fi
 echo "[user-voice] python=${PYTHON_BIN}"
 echo "[user-voice] host=${HOST} port=${PORT}"
 echo "[user-voice] asr_model=${USER_VOICE_ASR_MODEL_DIR}"
-echo "[user-voice] clone_prompt_dir=${STEPAUDIO_CLONE_PROMPT_DIR}"
+echo "[user-voice] clone_prompt_dir=${LYCHEEFD_CLONE_PROMPT_DIR}"
 echo "[user-voice] tmp_dir=${USER_VOICE_TMP_DIR}"
 echo "[user-voice] open: http://127.0.0.1:${PORT}/"
 

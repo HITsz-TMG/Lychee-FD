@@ -18,10 +18,10 @@ COPY . /app
 
 RUN chmod +x /app/scripts/*.sh
 
-ENV STEPAUDIO_CONDA_ENV_PATH=/opt/conda/envs/fdmodel-demo
-ENV STEPAUDIO_VLLM_SOURCE_DIR=/app/third_party/vllm
-ENV STEPAUDIO_VLLM_SYNC_FLASH_ATTN=1
-ENV STEPAUDIO_VLLM_FORCE_SYNC_FLASH_ATTN=1
+ENV LYCHEEFD_CONDA_ENV_PATH=/opt/conda/envs/fdmodel-demo
+ENV LYCHEEFD_VLLM_SOURCE_DIR=/app/third_party/vllm
+ENV LYCHEEFD_VLLM_SYNC_FLASH_ATTN=1
+ENV LYCHEEFD_VLLM_FORCE_SYNC_FLASH_ATTN=1
 ENV STEPAUDIO2_SOURCE_DIR=/app/third_party/Step-Audio2
 ENV PYTHONPATH=/app:/app/third_party/Step-Audio2
 ENV PATH=/opt/conda/envs/fdmodel-demo/bin:/opt/conda/bin:${PATH}

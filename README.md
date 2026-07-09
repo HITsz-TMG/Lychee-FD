@@ -135,8 +135,8 @@ Edit `.env` and set the model paths:
 LYCHEE_FD_IMAGE=ghcr.io/idealistxy/lychee-fd:latest
 
 HOST_MODEL_ROOT=/path/to/model-root
-STEPAUDIO_MODEL_PATH=/models/lychee_full_duplex_v1.5
-STEPAUDIO_T2W_MODEL_PATH=/models/token2wav
+LYCHEEFD_MODEL_PATH=/models/lychee_full_duplex_v1.5
+LYCHEEFD_T2W_MODEL_PATH=/models/token2wav
 ```
 
 `HOST_MODEL_ROOT` is the model directory on your host machine. It is mounted into the container as `/models`.
@@ -208,12 +208,12 @@ If CUDA OOM occurs, especially when Token2Wav and the backend share one GPU,
 reduce the vLLM KV-cache memory budget:
 
 ```dotenv
-STEPAUDIO_VLLM_GPU_MEMORY_UTILIZATION=0.70
+LYCHEEFD_VLLM_GPU_MEMORY_UTILIZATION=0.70
 ```
 
 The default value is `0.90`. Lower values leave more free GPU memory for
 Token2Wav, CUDA kernels, and temporary activations, but reduce the available
-vLLM KV-cache capacity. You can also reduce `STEPAUDIO_VLLM_MAX_MODEL_LEN`
+vLLM KV-cache capacity. You can also reduce `LYCHEEFD_VLLM_MAX_MODEL_LEN`
 from `16384` to `8192` on memory-constrained GPUs.
 
 Check Docker GPU access:
@@ -283,14 +283,14 @@ Before launching from source, point the scripts to the conda environment and the
 patched vLLM source tree:
 
 ```bash
-export STEPAUDIO_CONDA_ENV_PATH="${CONDA_PREFIX}"
+export LYCHEEFD_CONDA_ENV_PATH="${CONDA_PREFIX}"
 export STEPAUDIO2_SOURCE_DIR="${PWD}/third_party/Step-Audio2"
-export STEPAUDIO_VLLM_SOURCE_DIR="${PWD}/third_party/vllm"
-export STEPAUDIO_VLLM_SYNC_FLASH_ATTN=1
-export STEPAUDIO_VLLM_FORCE_SYNC_FLASH_ATTN=1
+export LYCHEEFD_VLLM_SOURCE_DIR="${PWD}/third_party/vllm"
+export LYCHEEFD_VLLM_SYNC_FLASH_ATTN=1
+export LYCHEEFD_VLLM_FORCE_SYNC_FLASH_ATTN=1
 ```
 
-`scripts/start_backend.sh` will prepend `STEPAUDIO_VLLM_SOURCE_DIR` to
+`scripts/start_backend.sh` will prepend `LYCHEEFD_VLLM_SOURCE_DIR` to
 `PYTHONPATH` and synchronize the native vLLM/FlashAttention artifacts from the
 installed wheel into the patched source tree. This step is required; importing
 plain site-packages vLLM will not use the Lychee-FD serving implementation.

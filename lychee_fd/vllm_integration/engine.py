@@ -735,22 +735,22 @@ class _PatchedLycheeVLLMEngine:
         self._tail_truncate_enabled = True
         self._last_tail_truncate_result: Optional[Dict[str, Any]] = None
         self._unsafe_prefix_caching = str(
-            os.getenv("STEPAUDIO_VLLM_UNSAFE_PREFIX_CACHING", "0")
+            os.getenv("LYCHEEFD_VLLM_UNSAFE_PREFIX_CACHING", "0")
         ).strip().lower() in {"1", "true", "yes", "on"}
         self._ignore_text_eos = str(
-            os.getenv("STEPAUDIO_VLLM_IGNORE_TEXT_EOS", "1")
+            os.getenv("LYCHEEFD_VLLM_IGNORE_TEXT_EOS", "1")
         ).strip().lower() in {"1", "true", "yes", "on"}
         # Realtime StepAudio always keeps audio side-state across decode steps.
         # Clearing per-step breaks 400ms incremental chunk consistency.
         self._clear_audio_state_each_step = False
         strict_native_side_env = str(
-            os.getenv("STEPAUDIO_VLLM_STRICT_NATIVE_SIDE_TOKENS", "0")
+            os.getenv("LYCHEEFD_VLLM_STRICT_NATIVE_SIDE_TOKENS", "0")
         ).strip().lower()
         self._strict_native_side_tokens = strict_native_side_env in {
             "1", "true", "yes", "on"
         }
         token_trace_env = str(
-            os.getenv("STEPAUDIO_VLLM_TOKEN_TRACE", "")
+            os.getenv("LYCHEEFD_VLLM_TOKEN_TRACE", "")
         ).strip().lower()
         if token_trace_env:
             self._token_trace_enabled = token_trace_env in {
@@ -760,23 +760,23 @@ class _PatchedLycheeVLLMEngine:
             # Native mode is typically used for branch-token debugging; trace by default.
             self._token_trace_enabled = bool(self._strict_native_side_tokens)
         self._token_trace_decode_all = str(
-            os.getenv("STEPAUDIO_VLLM_TOKEN_TRACE_DECODE_ALL", "0")
+            os.getenv("LYCHEEFD_VLLM_TOKEN_TRACE_DECODE_ALL", "0")
         ).strip().lower() in {"1", "true", "yes", "on"}
         self._token_trace_path = str(
-            os.getenv("STEPAUDIO_VLLM_TOKEN_TRACE_PATH", "")
+            os.getenv("LYCHEEFD_VLLM_TOKEN_TRACE_PATH", "")
         ).strip()
         self._token_trace_dir = str(
-            os.getenv("STEPAUDIO_VLLM_TOKEN_TRACE_DIR", "runtime_logs")
+            os.getenv("LYCHEEFD_VLLM_TOKEN_TRACE_DIR", "runtime_logs")
         ).strip() or "runtime_logs"
         self._token_trace_keep_raw_final_ids = str(
-            os.getenv("STEPAUDIO_VLLM_TOKEN_TRACE_KEEP_RAW_FINAL_IDS", "0")
+            os.getenv("LYCHEEFD_VLLM_TOKEN_TRACE_KEEP_RAW_FINAL_IDS", "0")
         ).strip().lower() in {"1", "true", "yes", "on"}
         self._token_trace_keep_raw_special_hits = str(
-            os.getenv("STEPAUDIO_VLLM_TOKEN_TRACE_KEEP_RAW_SPECIAL_HITS", "0")
+            os.getenv("LYCHEEFD_VLLM_TOKEN_TRACE_KEEP_RAW_SPECIAL_HITS", "0")
         ).strip().lower() in {"1", "true", "yes", "on"}
         try:
             self._token_trace_compact_chunk_size = max(
-                4, int(os.getenv("STEPAUDIO_VLLM_TOKEN_TRACE_COMPACT_CHUNK", "24"))
+                4, int(os.getenv("LYCHEEFD_VLLM_TOKEN_TRACE_COMPACT_CHUNK", "24"))
             )
         except (TypeError, ValueError):
             self._token_trace_compact_chunk_size = 24
@@ -787,19 +787,19 @@ class _PatchedLycheeVLLMEngine:
             "stoken": {},
             "control": {},
         }
-        diag_env = str(os.getenv("STEPAUDIO_VLLM_DIAG", "0")).strip().lower()
+        diag_env = str(os.getenv("LYCHEEFD_VLLM_DIAG", "0")).strip().lower()
         self._diag_enabled = diag_env in {"1", "true", "yes", "on"}
         try:
-            self._diag_every = max(1, int(os.getenv("STEPAUDIO_VLLM_DIAG_EVERY", "1")))
+            self._diag_every = max(1, int(os.getenv("LYCHEEFD_VLLM_DIAG_EVERY", "1")))
         except (TypeError, ValueError):
             self._diag_every = 1
         if self._diag_enabled:
             logger.info(
-                "Lychee-FD vLLM diagnostics enabled (STEPAUDIO_VLLM_DIAG=1, every=%d)",
+                "Lychee-FD vLLM diagnostics enabled (LYCHEEFD_VLLM_DIAG=1, every=%d)",
                 self._diag_every,
             )
             logger.info(
-                "Lychee-FD side-token mode: %s (set STEPAUDIO_VLLM_STRICT_NATIVE_SIDE_TOKENS=1 to force native outputs)",
+                "Lychee-FD side-token mode: %s (set LYCHEEFD_VLLM_STRICT_NATIVE_SIDE_TOKENS=1 to force native outputs)",
                 "strict_native" if self._strict_native_side_tokens else "constrained_preferred",
             )
             logger.info(
@@ -827,7 +827,7 @@ class _PatchedLycheeVLLMEngine:
             logger.warning(
                 "enforce_eager=False requested, but Lychee-FD duplex uses Python-side "
                 "stoken/control sampling that is incompatible with vLLM CUDA graph capture. "
-                "Set STEPAUDIO_VLLM_ENFORCE_EAGER=1 to avoid capture-time failures."
+                "Set LYCHEEFD_VLLM_ENFORCE_EAGER=1 to avoid capture-time failures."
             )
         if "enforce_eager" in sig_params and enforce_eager is not None:
             engine_kwargs["enforce_eager"] = bool(enforce_eager)
@@ -843,7 +843,7 @@ class _PatchedLycheeVLLMEngine:
                 "Disabling vLLM prefix caching for Lychee-FD duplex. "
                 "This model's forward depends on stoken/control/audio side channels "
                 "outside text prompt ids, so prefix cache can reuse stale KV and "
-                "corrupt generation. Set STEPAUDIO_VLLM_UNSAFE_PREFIX_CACHING=1 to override."
+                "corrupt generation. Set LYCHEEFD_VLLM_UNSAFE_PREFIX_CACHING=1 to override."
             )
             self._effective_prefix_caching = False
         if "enable_prefix_caching" in sig_params:

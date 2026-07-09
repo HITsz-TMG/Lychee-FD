@@ -820,7 +820,7 @@ class HFRealtimeV9GenerationFramework(_BaseV9Framework):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.use_cache = _env_bool("STEPAUDIO_HF_USE_CACHE", True)
+        self.use_cache = _env_bool("LYCHEEFD_HF_USE_CACHE", True)
         self.model = _HFV9MultiHeadStreamAdapter(self.model)
 
     def init_listening_pad_processor(self):

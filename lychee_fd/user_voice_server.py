@@ -20,7 +20,7 @@ DEFAULT_ASR_MODEL_DIR = str(PROJECT_DIR / "models" / "paraformer-zh")
 ASR_MODEL_DIR = Path(os.environ.get("USER_VOICE_ASR_MODEL_DIR", DEFAULT_ASR_MODEL_DIR)).resolve()
 CLONE_PROMPT_DIR = Path(
     os.environ.get(
-        "STEPAUDIO_CLONE_PROMPT_DIR",
+        "LYCHEEFD_CLONE_PROMPT_DIR",
         str(PROJECT_DIR / "frontend" / "public" / "clone_24k_mono"),
     )
 ).resolve()

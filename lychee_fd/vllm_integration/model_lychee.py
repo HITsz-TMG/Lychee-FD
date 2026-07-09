@@ -474,35 +474,35 @@ class LycheeDuplexForVLLM(nn.Module):
         # sampling. This mirrors HF's plain nn.Linear projection semantics.
         self.side_lm_head = nn.Linear(self.hidden_size, self.vocab_size, bias=False)
         self._side_subset_enabled = str(
-            os.getenv("STEPAUDIO_VLLM_SIDE_SUBSET_PROJ", "1")
+            os.getenv("LYCHEEFD_VLLM_SIDE_SUBSET_PROJ", "1")
         ).strip().lower() in {"1", "true", "yes", "on"}
         self._side_subset_require_processor = str(
-            os.getenv("STEPAUDIO_VLLM_SIDE_SUBSET_REQUIRE_PROCESSOR", "1")
+            os.getenv("LYCHEEFD_VLLM_SIDE_SUBSET_REQUIRE_PROCESSOR", "1")
         ).strip().lower() in {"1", "true", "yes", "on"}
         self._side_parallel_enabled = str(
-            os.getenv("STEPAUDIO_VLLM_SIDE_PARALLEL_BRANCH", "0")
+            os.getenv("LYCHEEFD_VLLM_SIDE_PARALLEL_BRANCH", "0")
         ).strip().lower() in {"1", "true", "yes", "on"}
         # --- perf guards (default = optimized/off) ---
         # Per-layer torch.isfinite(...).all() forces a GPU->CPU sync every layer.
         # Default skip for speed; set =1 to restore the NaN/Inf safety net.
         self._forward_finite_check = str(
-            os.getenv("STEPAUDIO_VLLM_FORWARD_FINITE_CHECK", "0")
+            os.getenv("LYCHEEFD_VLLM_FORWARD_FINITE_CHECK", "0")
         ).strip().lower() in {"1", "true", "yes", "on"}
         # NaN/posinf pre-scan inside side _sample_token (two .any() syncs/step/branch).
         # Default skip; set =1 to restore.
         self._sample_nan_guard = str(
-            os.getenv("STEPAUDIO_VLLM_SAMPLE_NAN_GUARD", "0")
+            os.getenv("LYCHEEFD_VLLM_SAMPLE_NAN_GUARD", "0")
         ).strip().lower() in {"1", "true", "yes", "on"}
         # nan_to_num over the full vocab in compute_logits (one full-vocab kernel/step).
         # Default skip; set =1 to restore.
         self._logits_nan_guard = str(
-            os.getenv("STEPAUDIO_VLLM_LOGITS_NAN_GUARD", "0")
+            os.getenv("LYCHEEFD_VLLM_LOGITS_NAN_GUARD", "0")
         ).strip().lower() in {"1", "true", "yes", "on"}
         # Lightweight forward-internal profiler. Default off. When on, accumulates
         # per-section wall time into LycheeDuplexState.fwd_profile and the
         # engine can emit it. Uses torch.cuda.synchronize so numbers are real.
         self._forward_profile = str(
-            os.getenv("STEPAUDIO_VLLM_FORWARD_PROFILE", "0")
+            os.getenv("LYCHEEFD_VLLM_FORWARD_PROFILE", "0")
         ).strip().lower() in {"1", "true", "yes", "on"}
         stoken_min = int(_cfg_get(config, "stoken_token_ids_min", 151696) or 151696)
         stoken_max = int(_cfg_get(config, "stoken_token_ids_max", self.vocab_size) or self.vocab_size)
@@ -552,14 +552,14 @@ class LycheeDuplexForVLLM(nn.Module):
             float(_cfg_get(config, "logit_scale", 1.0)),
         )
         self.sampler = Sampler()
-        profile_latency_env = str(os.getenv("STEPAUDIO_PROFILE_LATENCY", "0")).strip().lower()
-        profile_side_env = str(os.getenv("STEPAUDIO_PROFILE_SIDE", "")).strip().lower()
+        profile_latency_env = str(os.getenv("LYCHEEFD_PROFILE_LATENCY", "0")).strip().lower()
+        profile_side_env = str(os.getenv("LYCHEEFD_PROFILE_SIDE", "")).strip().lower()
         if profile_side_env:
             self._side_profile_enabled = profile_side_env in {"1", "true", "yes", "on"}
         else:
             self._side_profile_enabled = profile_latency_env in {"1", "true", "yes", "on"}
         try:
-            profile_side_every_env = os.getenv("STEPAUDIO_PROFILE_SIDE_EVERY", os.getenv("STEPAUDIO_PROFILE_EVERY", "20"))
+            profile_side_every_env = os.getenv("LYCHEEFD_PROFILE_SIDE_EVERY", os.getenv("LYCHEEFD_PROFILE_EVERY", "20"))
             self._side_profile_every = max(1, int(profile_side_every_env))
         except (TypeError, ValueError):
             self._side_profile_every = 20
@@ -572,7 +572,7 @@ class LycheeDuplexForVLLM(nn.Module):
         self._side_profile_sample_sec = 0.0
         if self._side_profile_enabled:
             logger.info(
-                "Lychee-FD side-channel profiling enabled (STEPAUDIO_PROFILE_SIDE=1, every=%d)",
+                "Lychee-FD side-channel profiling enabled (LYCHEEFD_PROFILE_SIDE=1, every=%d)",
                 self._side_profile_every,
             )
         logger.info(
@@ -1005,7 +1005,7 @@ class LycheeDuplexForVLLM(nn.Module):
     def _prof_accum(name: str, dt: float) -> None:
         """Accumulate a forward-section wall time into the global profiler.
 
-        Only called when STEPAUDIO_VLLM_FORWARD_PROFILE=1. Stores
+        Only called when LYCHEEFD_VLLM_FORWARD_PROFILE=1. Stores
         {section: [total_sec, count]} on the global state for the engine to log.
         """
         store = LycheeDuplexState.fwd_profile

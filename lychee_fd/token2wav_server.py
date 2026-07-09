@@ -28,7 +28,7 @@ os.environ.setdefault("NUMBA_CACHE_DIR", "/tmp/stepaudio_numba_cache")
 os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib-cache")
 
 logging.basicConfig(
-    level=getattr(logging, os.environ.get("STEPAUDIO_T2W_SERVER_LOG_LEVEL", "INFO").upper(), logging.INFO),
+    level=getattr(logging, os.environ.get("LYCHEEFD_T2W_SERVER_LOG_LEVEL", "INFO").upper(), logging.INFO),
     format="[%(asctime)s] [%(levelname)s] %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
@@ -211,10 +211,10 @@ async def close_stream(request: Request):
 
 def main():
     parser = argparse.ArgumentParser(description="Run Token2Wav as a small HTTP service.")
-    parser.add_argument("--host", default=os.environ.get("STEPAUDIO_T2W_SERVER_HOST", "127.0.0.1"))
-    parser.add_argument("--port", type=int, default=int(os.environ.get("STEPAUDIO_T2W_SERVER_PORT", "8091")))
-    parser.add_argument("--model-path", default=os.environ.get("STEPAUDIO_T2W_MODEL_PATH", DEFAULT_TOKEN2WAV_MODEL_PATH))
-    parser.add_argument("--float16", action="store_true", default=os.environ.get("STEPAUDIO_T2W_FLOAT16", "0") == "1")
+    parser.add_argument("--host", default=os.environ.get("LYCHEEFD_T2W_SERVER_HOST", "127.0.0.1"))
+    parser.add_argument("--port", type=int, default=int(os.environ.get("LYCHEEFD_T2W_SERVER_PORT", "8091")))
+    parser.add_argument("--model-path", default=os.environ.get("LYCHEEFD_T2W_MODEL_PATH", DEFAULT_TOKEN2WAV_MODEL_PATH))
+    parser.add_argument("--float16", action="store_true", default=os.environ.get("LYCHEEFD_T2W_FLOAT16", "0") == "1")
     args = parser.parse_args()
 
     _load_model(args.model_path, float16=bool(args.float16))

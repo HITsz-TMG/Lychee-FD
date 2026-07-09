@@ -681,7 +681,7 @@ const applyPresetFrontendOverrides = (preset) => {
 
   const inferMs = clampPresetMs(
     frontendConfig.infer_window_ms
-      ?? extraEnv.STEPAUDIO_REALTIME_INFER_WINDOW_MS
+      ?? extraEnv.LYCHEEFD_REALTIME_INFER_WINDOW_MS
       ?? extraEnv.REALTIME_INFER_WINDOW_MS,
     160,
     2000
@@ -693,9 +693,9 @@ const applyPresetFrontendOverrides = (preset) => {
   const uploadMs = clampPresetMs(
     frontendConfig.upload_chunk_ms
       ?? frontendConfig.stream_chunk_ms
-      ?? extraEnv.STEPAUDIO_REALTIME_UPLOAD_CHUNK_MS
-      ?? extraEnv.STEPAUDIO_FRONTEND_UPLOAD_CHUNK_MS
-      ?? extraEnv.STEPAUDIO_STREAM_CHUNK_MS
+      ?? extraEnv.LYCHEEFD_REALTIME_UPLOAD_CHUNK_MS
+      ?? extraEnv.LYCHEEFD_FRONTEND_UPLOAD_CHUNK_MS
+      ?? extraEnv.LYCHEEFD_STREAM_CHUNK_MS
       ?? extraEnv.VUE_APP_REALTIME_STREAM_CHUNK_MS,
     50,
     2000
@@ -914,7 +914,6 @@ const showcaseCases = [
   { id: 'info_entropy', label: '信息论熵的解释', filename: '信息论熵的解释.wav' },
   { id: 'make_cake', label: '做蛋糕', filename: '做蛋糕.wav' },
   { id: 'write_email', label: '写邮件', filename: '写邮件.wav' },
-  { id: 'history_qa', label: '历史问答', filename: '历史问答.wav' },
   { id: 'travel_plan', label: '旅游规划', filename: '旅游规划.wav' },
   { id: 'shenzhen_travel', label: '深圳旅游', filename: '深圳旅游.wav' },
   { id: 'continuous_interrupt', label: '连续打断输入', filename: '连续打断输入.wav' },

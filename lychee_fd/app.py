@@ -45,7 +45,7 @@ STEPAUDIO2_SOURCE_DIR = os.environ.get(
 sys.path.append(STEPAUDIO2_SOURCE_DIR)
 
 # ==================== Logging ====================
-_log_level_name = os.environ.get("STEPAUDIO_LOG_LEVEL", "INFO").strip().upper()
+_log_level_name = os.environ.get("LYCHEEFD_LOG_LEVEL", "INFO").strip().upper()
 _log_level = getattr(logging, _log_level_name, logging.INFO)
 logging.basicConfig(
     level=_log_level,
@@ -84,16 +84,16 @@ def _import_streaming_decoder():
     return StreamingDecoder
 
 # ==================== Global Configuration ====================
-DEFAULT_MODEL_PATH = os.environ.get("STEPAUDIO_MODEL_PATH", "")
+DEFAULT_MODEL_PATH = os.environ.get("LYCHEEFD_MODEL_PATH", "")
 DEFAULT_TOKEN2WAV_PATH = os.environ.get(
-    "STEPAUDIO_TOKEN2WAV_PATH",
+    "LYCHEEFD_TOKEN2WAV_PATH",
     os.path.join(PROJECT_DIR, "models", "Step-Audio-2-mini", "token2wav"),
 )
-ASSETS_DIR = os.environ.get("STEPAUDIO_ASSETS_DIR", os.path.join(PROJECT_DIR, "assets"))
+ASSETS_DIR = os.environ.get("LYCHEEFD_ASSETS_DIR", os.path.join(PROJECT_DIR, "assets"))
 
 # Clone prompt voice directory containing WAV files and matching prompt text.
 CLONE_PROMPT_DIR = os.environ.get(
-    "STEPAUDIO_CLONE_PROMPT_DIR",
+    "LYCHEEFD_CLONE_PROMPT_DIR",
     os.path.join(PROJECT_DIR, "frontend", "public", "clone_24k_mono"),
 )
 
@@ -115,7 +115,7 @@ REALTIME_PROMPT_VOICE_OPTIONS = [
     {"id": "news_male", "label": "播音男声", "wav": "news_male_voice.wav", "text": "text.txt"},
     {"id": "user_voice", "label": "用户音色", "wav": "user_voice.wav", "text": "user_voice.txt"},
 ]
-DEFAULT_REALTIME_PROMPT_VOICE = os.environ.get("STEPAUDIO_DEFAULT_PROMPT_VOICE", "default_female")
+DEFAULT_REALTIME_PROMPT_VOICE = os.environ.get("LYCHEEFD_DEFAULT_PROMPT_VOICE", "default_female")
 
 ALLOWING_BACKCHANNEL = False
 
@@ -123,7 +123,7 @@ ALLOWING_BACKCHANNEL = False
 TEMP_DIR = "/tmp/lychee_fd_realtime_audio"
 os.makedirs(TEMP_DIR, exist_ok=True)
 REALTIME_ALIGNED_SAVE_DIR = os.getenv(
-    "STEPAUDIO_REALTIME_ALIGNED_SAVE_DIR",
+    "LYCHEEFD_REALTIME_ALIGNED_SAVE_DIR",
     os.path.join(PROJECT_DIR, "realtime_aligned_audio"),
 )
 os.makedirs(REALTIME_ALIGNED_SAVE_DIR, exist_ok=True)
@@ -133,7 +133,7 @@ TTS_CHUNK_SIZE = 25
 try:
     # Downstream token2wav hop size.
     TTS_VOCODER_HOP_SIZE = max(
-        1, int(os.environ.get("STEPAUDIO_TTS_VOCODER_HOP_SIZE", "25")))
+        1, int(os.environ.get("LYCHEEFD_TTS_VOCODER_HOP_SIZE", "25")))
 except ValueError:
     TTS_VOCODER_HOP_SIZE = 25
 TTS_SAMPLE_RATE = 24000
@@ -141,7 +141,7 @@ INPUT_SAMPLE_RATE = 16000
 TOKENS_PER_SECOND = 25
 try:
     REALTIME_TTS_CHUNK_SIZE_DEFAULT = max(
-        1, int(os.environ.get("STEPAUDIO_REALTIME_TTS_CHUNK_SIZE", "10")))
+        1, int(os.environ.get("LYCHEEFD_REALTIME_TTS_CHUNK_SIZE", "10")))
 except ValueError:
     REALTIME_TTS_CHUNK_SIZE_DEFAULT = 10
 
@@ -152,29 +152,29 @@ token2wav_model = None
 # Optional external token2wav service. Keep disabled by default so the legacy
 # single-process path remains the fallback behavior.
 REMOTE_TOKEN2WAV_ENABLED = str(
-    os.environ.get("STEPAUDIO_T2W_REMOTE_ENABLED", "0")
+    os.environ.get("LYCHEEFD_T2W_REMOTE_ENABLED", "0")
 ).strip().lower() in {"1", "true", "yes", "on"}
 REMOTE_TOKEN2WAV_URL = os.environ.get(
-    "STEPAUDIO_T2W_REMOTE_URL", "http://127.0.0.1:8091"
+    "LYCHEEFD_T2W_REMOTE_URL", "http://127.0.0.1:8091"
 ).strip().rstrip("/")
 REMOTE_TOKEN2WAV_FALLBACK = str(
-    os.environ.get("STEPAUDIO_T2W_REMOTE_FALLBACK", "1")
+    os.environ.get("LYCHEEFD_T2W_REMOTE_FALLBACK", "1")
 ).strip().lower() in {"1", "true", "yes", "on"}
 CONTROL_EARLY_EXIT_ENABLED = str(
-    os.environ.get("STEPAUDIO_CONTROL_EARLY_EXIT_ENABLED", "1")
+    os.environ.get("LYCHEEFD_CONTROL_EARLY_EXIT_ENABLED", "1")
 ).strip().lower() in {"1", "true", "yes", "on"}
 CONTROL_EARLY_STATE_SSE = str(
-    os.environ.get("STEPAUDIO_CONTROL_EARLY_STATE_SSE", "1")
+    os.environ.get("LYCHEEFD_CONTROL_EARLY_STATE_SSE", "1")
 ).strip().lower() in {"1", "true", "yes", "on"}
 CONTROL_EARLY_TTS_ABORT = str(
-    os.environ.get("STEPAUDIO_CONTROL_EARLY_TTS_ABORT", "1")
+    os.environ.get("LYCHEEFD_CONTROL_EARLY_TTS_ABORT", "1")
 ).strip().lower() in {"1", "true", "yes", "on"}
 CONTROL_EARLY_DEBUG = str(
-    os.environ.get("STEPAUDIO_CONTROL_EARLY_DEBUG", "0")
+    os.environ.get("LYCHEEFD_CONTROL_EARLY_DEBUG", "0")
 ).strip().lower() in {"1", "true", "yes", "on"}
 try:
     REMOTE_TOKEN2WAV_TIMEOUT_SEC = max(
-        0.1, float(os.environ.get("STEPAUDIO_T2W_REMOTE_TIMEOUT_SEC", "10.0"))
+        0.1, float(os.environ.get("LYCHEEFD_T2W_REMOTE_TIMEOUT_SEC", "10.0"))
     )
 except ValueError:
     REMOTE_TOKEN2WAV_TIMEOUT_SEC = 10.0
@@ -183,8 +183,8 @@ try:
         0,
         int(
             os.environ.get(
-                "STEPAUDIO_T2W_REMOTE_PRE_LOOKAHEAD_LEN",
-                os.environ.get("STEPAUDIO_T2W_STREAM_LOOKAHEAD_LEN", "3"),
+                "LYCHEEFD_T2W_REMOTE_PRE_LOOKAHEAD_LEN",
+                os.environ.get("LYCHEEFD_T2W_STREAM_LOOKAHEAD_LEN", "3"),
             )
         ),
     )
@@ -192,57 +192,57 @@ except ValueError:
     REMOTE_TOKEN2WAV_PRE_LOOKAHEAD_LEN = 3
 
 # Realtime session configuration.
-REALTIME_INFER_WINDOW_MS = int(os.environ.get("STEPAUDIO_REALTIME_INFER_WINDOW_MS", "400"))
-REALTIME_INFER_WINDOW_MIN_MS = int(os.environ.get("STEPAUDIO_REALTIME_INFER_WINDOW_MIN_MS", "160"))
+REALTIME_INFER_WINDOW_MS = int(os.environ.get("LYCHEEFD_REALTIME_INFER_WINDOW_MS", "400"))
+REALTIME_INFER_WINDOW_MIN_MS = int(os.environ.get("LYCHEEFD_REALTIME_INFER_WINDOW_MIN_MS", "160"))
 REALTIME_SESSION_POLL_SEC = 0.05
 REALTIME_SESSION_MAX_AUDIO_HASHES = 512
 try:
     REALTIME_AUDIO_EVENT_QUEUE_MAX = max(
-        64, int(os.environ.get("STEPAUDIO_REALTIME_AUDIO_EVENT_QUEUE_MAX", "4096"))
+        64, int(os.environ.get("LYCHEEFD_REALTIME_AUDIO_EVENT_QUEUE_MAX", "4096"))
     )
 except ValueError:
     REALTIME_AUDIO_EVENT_QUEUE_MAX = 1024
 try:
     REALTIME_CONTROL_EVENT_QUEUE_MAX = max(
-        64, int(os.environ.get("STEPAUDIO_REALTIME_CONTROL_EVENT_QUEUE_MAX", "4096"))
+        64, int(os.environ.get("LYCHEEFD_REALTIME_CONTROL_EVENT_QUEUE_MAX", "4096"))
     )
 except ValueError:
     REALTIME_CONTROL_EVENT_QUEUE_MAX = 1024
 REALTIME_UNIFIED_PROTOCOL_VERSION = "realtime_unified_v1"
 REALTIME_UNIFIED_TEXT_SNAPSHOT_ON_AUDIO = str(
-    os.environ.get("STEPAUDIO_REALTIME_TEXT_SNAPSHOT_ON_AUDIO", "1")
+    os.environ.get("LYCHEEFD_REALTIME_TEXT_SNAPSHOT_ON_AUDIO", "1")
 ).strip().lower() in {"1", "true", "yes", "on"}
 REALTIME_INCREMENTAL_BACKEND = str(
-    os.environ.get("STEPAUDIO_REALTIME_INCREMENTAL_BACKEND", "auto")
+    os.environ.get("LYCHEEFD_REALTIME_INCREMENTAL_BACKEND", "auto")
 ).strip().lower()
 if REALTIME_INCREMENTAL_BACKEND not in {"auto", "hf"}:
     logger.warning(
-        "Invalid STEPAUDIO_REALTIME_INCREMENTAL_BACKEND=%s, fallback to auto",
+        "Invalid LYCHEEFD_REALTIME_INCREMENTAL_BACKEND=%s, fallback to auto",
         REALTIME_INCREMENTAL_BACKEND,
     )
     REALTIME_INCREMENTAL_BACKEND = "auto"
 
 REALTIME_STRICT_INFER_WINDOW = str(
-    os.environ.get("STEPAUDIO_REALTIME_STRICT_INFER_WINDOW", "0")
+    os.environ.get("LYCHEEFD_REALTIME_STRICT_INFER_WINDOW", "0")
 ).strip().lower() in {"1", "true", "yes", "on"}
 INPUT_SILENCE_GATE_ENABLED = str(
-    os.environ.get("STEPAUDIO_INPUT_SILENCE_GATE", "0")
+    os.environ.get("LYCHEEFD_INPUT_SILENCE_GATE", "0")
 ).strip().lower() in {"1", "true", "yes", "on"}
 try:
     INPUT_SILENCE_GATE_FRAME_MS = max(
-        5, int(os.environ.get("STEPAUDIO_INPUT_GATE_FRAME_MS", "20"))
+        5, int(os.environ.get("LYCHEEFD_INPUT_GATE_FRAME_MS", "20"))
     )
 except ValueError:
     INPUT_SILENCE_GATE_FRAME_MS = 20
 try:
     INPUT_SILENCE_GATE_OPEN_DBFS = float(
-        os.environ.get("STEPAUDIO_INPUT_GATE_OPEN_DBFS", "-40")
+        os.environ.get("LYCHEEFD_INPUT_GATE_OPEN_DBFS", "-40")
     )
 except ValueError:
     INPUT_SILENCE_GATE_OPEN_DBFS = -40.0
 try:
     INPUT_SILENCE_GATE_CLOSE_DBFS = float(
-        os.environ.get("STEPAUDIO_INPUT_GATE_CLOSE_DBFS", "-46")
+        os.environ.get("LYCHEEFD_INPUT_GATE_CLOSE_DBFS", "-46")
     )
 except ValueError:
     INPUT_SILENCE_GATE_CLOSE_DBFS = -46.0
@@ -250,13 +250,13 @@ if INPUT_SILENCE_GATE_CLOSE_DBFS > INPUT_SILENCE_GATE_OPEN_DBFS:
     INPUT_SILENCE_GATE_CLOSE_DBFS = INPUT_SILENCE_GATE_OPEN_DBFS
 try:
     INPUT_SILENCE_GATE_HANGOVER_MS = max(
-        0, int(os.environ.get("STEPAUDIO_INPUT_GATE_HANGOVER_MS", "120"))
+        0, int(os.environ.get("LYCHEEFD_INPUT_GATE_HANGOVER_MS", "120"))
     )
 except ValueError:
     INPUT_SILENCE_GATE_HANGOVER_MS = 120
 try:
     INPUT_SILENCE_GATE_PREROLL_MS = max(
-        0, int(os.environ.get("STEPAUDIO_INPUT_GATE_PREROLL_MS", "60"))
+        0, int(os.environ.get("LYCHEEFD_INPUT_GATE_PREROLL_MS", "60"))
     )
 except ValueError:
     INPUT_SILENCE_GATE_PREROLL_MS = 60
@@ -272,33 +272,33 @@ INPUT_SILENCE_GATE_PREROLL_FRAMES = max(
     int(math.ceil(INPUT_SILENCE_GATE_PREROLL_MS / max(1, INPUT_SILENCE_GATE_FRAME_MS))),
 )
 REALTIME_STAGE_TIMING_LOG = str(
-    os.environ.get("STEPAUDIO_REALTIME_STAGE_TIMING_LOG", "0")
+    os.environ.get("LYCHEEFD_REALTIME_STAGE_TIMING_LOG", "0")
 ).strip().lower() in {"1", "true", "yes", "on"}
 REALTIME_STAGE_TIMING_LOG_DIR = os.environ.get(
-    "STEPAUDIO_REALTIME_STAGE_TIMING_LOG_DIR",
+    "LYCHEEFD_REALTIME_STAGE_TIMING_LOG_DIR",
     os.path.join(PROJECT_DIR, "runtime_logs", "realtime_stage_timing"),
 )
 REALTIME_CONTROL_PROB_TRACE_LOG = str(
-    os.environ.get("STEPAUDIO_REALTIME_CONTROL_PROB_TRACE_LOG", "0")
+    os.environ.get("LYCHEEFD_REALTIME_CONTROL_PROB_TRACE_LOG", "0")
 ).strip().lower() in {"1", "true", "yes", "on"}
 REALTIME_CONTROL_PROB_TRACE_LOG_DIR = os.environ.get(
-    "STEPAUDIO_REALTIME_CONTROL_PROB_TRACE_LOG_DIR",
+    "LYCHEEFD_REALTIME_CONTROL_PROB_TRACE_LOG_DIR",
     os.path.join(PROJECT_DIR, "runtime_logs", "realtime_control_prob"),
 )
 STARTUP_TOKEN2WAV_FIRST = str(
-    os.environ.get("STEPAUDIO_STARTUP_TOKEN2WAV_FIRST", "1")
+    os.environ.get("LYCHEEFD_STARTUP_TOKEN2WAV_FIRST", "1")
 ).strip().lower() in {"1", "true", "yes", "on"}
 STARTUP_WARMUP = str(
-    os.environ.get("STEPAUDIO_STARTUP_WARMUP", "1")
+    os.environ.get("LYCHEEFD_STARTUP_WARMUP", "1")
 ).strip().lower() in {"1", "true", "yes", "on"}
 STARTUP_WARMUP_PROMPT_VOICE = str(
-    os.environ.get("STEPAUDIO_STARTUP_WARMUP_PROMPT_VOICE", "male")
+    os.environ.get("LYCHEEFD_STARTUP_WARMUP_PROMPT_VOICE", "male")
 ).strip()
 STARTUP_WARMUP_TOKEN = max(
     0,
     min(
         6560,
-        int(os.environ.get("STEPAUDIO_STARTUP_WARMUP_TOKEN", "100")),
+        int(os.environ.get("LYCHEEFD_STARTUP_WARMUP_TOKEN", "100")),
     ),
 )
 if INPUT_SILENCE_GATE_ENABLED:
@@ -1025,7 +1025,7 @@ class RealtimeTTSPool:
                     logger.debug("Remote Token2Wav close failed", exc_info=True)
 
 # ==================== Model Loading ====================
-USE_VLLM_BACKEND = os.environ.get("STEPAUDIO_USE_VLLM", "0") == "1"
+USE_VLLM_BACKEND = os.environ.get("LYCHEEFD_USE_VLLM", "0") == "1"
 
 
 def _env_optional_bool(name, default=None):
@@ -1145,18 +1145,18 @@ def load_models(model_path, token2wav_path, attn_impl="eager"):
         t0 = time.time()
 
         if USE_VLLM_BACKEND:
-            logger.info("Using vLLM backend (STEPAUDIO_USE_VLLM=1)")
+            logger.info("Using vLLM backend (LYCHEEFD_USE_VLLM=1)")
             VLLMGenerationFramework = _import_vllm_generation_framework()
             model_type = _infer_model_type_legacy(model_path)
-            vllm_enforce_eager = _env_optional_bool("STEPAUDIO_VLLM_ENFORCE_EAGER", True)
-            vllm_enable_chunked_prefill = _env_optional_bool("STEPAUDIO_VLLM_ENABLE_CHUNKED_PREFILL", True)
-            vllm_enable_prefix_caching = _env_optional_bool("STEPAUDIO_VLLM_ENABLE_PREFIX_CACHING", True)
-            vllm_max_num_seqs = _env_optional_int("STEPAUDIO_VLLM_MAX_NUM_SEQS", None)
-            vllm_max_num_batched_tokens = _env_optional_int("STEPAUDIO_VLLM_MAX_NUM_BATCHED_TOKENS", None)
-            vllm_tensor_parallel_size = _env_optional_int("STEPAUDIO_VLLM_TENSOR_PARALLEL_SIZE", 1)
-            vllm_pipeline_parallel_size = _env_optional_int("STEPAUDIO_VLLM_PIPELINE_PARALLEL_SIZE", 1)
-            vllm_gpu_memory_utilization = _env_optional_float("STEPAUDIO_VLLM_GPU_MEMORY_UTILIZATION", 0.85)
-            vllm_max_model_len = _env_optional_int("STEPAUDIO_VLLM_MAX_MODEL_LEN", 8192)
+            vllm_enforce_eager = _env_optional_bool("LYCHEEFD_VLLM_ENFORCE_EAGER", True)
+            vllm_enable_chunked_prefill = _env_optional_bool("LYCHEEFD_VLLM_ENABLE_CHUNKED_PREFILL", True)
+            vllm_enable_prefix_caching = _env_optional_bool("LYCHEEFD_VLLM_ENABLE_PREFIX_CACHING", True)
+            vllm_max_num_seqs = _env_optional_int("LYCHEEFD_VLLM_MAX_NUM_SEQS", None)
+            vllm_max_num_batched_tokens = _env_optional_int("LYCHEEFD_VLLM_MAX_NUM_BATCHED_TOKENS", None)
+            vllm_tensor_parallel_size = _env_optional_int("LYCHEEFD_VLLM_TENSOR_PARALLEL_SIZE", 1)
+            vllm_pipeline_parallel_size = _env_optional_int("LYCHEEFD_VLLM_PIPELINE_PARALLEL_SIZE", 1)
+            vllm_gpu_memory_utilization = _env_optional_float("LYCHEEFD_VLLM_GPU_MEMORY_UTILIZATION", 0.85)
+            vllm_max_model_len = _env_optional_int("LYCHEEFD_VLLM_MAX_MODEL_LEN", 8192)
             generator = VLLMGenerationFramework(
                 model_type=model_type,
                 model_path=model_path,
@@ -1190,7 +1190,7 @@ def load_models(model_path, token2wav_path, attn_impl="eager"):
         else:
             model_type = _infer_model_type(model_path)
             if _should_use_hf_v9(model_path, model_type):
-                logger.info("Using HuggingFace V9 realtime backend (STEPAUDIO_USE_VLLM=0)")
+                logger.info("Using HuggingFace V9 realtime backend (LYCHEEFD_USE_VLLM=0)")
                 HFRealtimeV9GenerationFramework = _import_hf_v9_generation_framework()
                 generator = HFRealtimeV9GenerationFramework(
                     model_type="V9",
@@ -1250,7 +1250,7 @@ def load_models(model_path, token2wav_path, attn_impl="eager"):
     elif STARTUP_WARMUP and REMOTE_TOKEN2WAV_ENABLED:
         status_msgs.append("Token2Wav warmup skipped in backend process because remote Token2Wav is enabled.")
     else:
-        status_msgs.append("Token2Wav warmup skipped by env (STEPAUDIO_STARTUP_WARMUP=0).")
+        status_msgs.append("Token2Wav warmup skipped by env (LYCHEEFD_STARTUP_WARMUP=0).")
 
     return "\n".join(status_msgs)
 
@@ -1317,15 +1317,15 @@ def run_chunk_dialogue_inference(
     logger.info(f"========== Streaming inference run_id={run_id} ==========")
 
     try:
-        profile_latency = bool(_env_optional_bool("STEPAUDIO_PROFILE_LATENCY", False))
-        profile_every = _env_optional_int("STEPAUDIO_PROFILE_EVERY", 20)
+        profile_latency = bool(_env_optional_bool("LYCHEEFD_PROFILE_LATENCY", False))
+        profile_every = _env_optional_int("LYCHEEFD_PROFILE_EVERY", 20)
         try:
             profile_every = max(1, int(profile_every) if profile_every is not None else 20)
         except (TypeError, ValueError):
             profile_every = 20
         if profile_latency:
             logger.info(
-                "[LAT] profiling enabled (STEPAUDIO_PROFILE_LATENCY=1, every=%d)",
+                "[LAT] profiling enabled (LYCHEEFD_PROFILE_LATENCY=1, every=%d)",
                 profile_every,
             )
         t_call_start_perf = time.perf_counter()
@@ -2223,13 +2223,12 @@ def run_chunk_dialogue_inference(
                             f"{_lat_value('audio_chunk'):.4f}s" if _lat_value("audio_chunk") is not None else "None",
                             f"{_lat_value('pcm_out'):.4f}s" if _lat_value("pcm_out") is not None else "None",
                         )
-                    if token_delta != 0:
-                        logger.warning(
-                            "  [EVENT TTS MISMATCH] kind=%s has token delta=%d; "
-                            "check StreamingDecoder output and token2wav buffer handling.",
-                            kind,
-                            token_delta,
-                        )
+                    # Do not warn on token count mismatches here. In realtime
+                    # persistent TTS mode, StreamingDecoder may report only the
+                    # current resumed round while the Token2Wav worker keeps
+                    # cumulative counters for the open speech event. Interrupted
+                    # events also skip the final TTS flush, so this comparison is
+                    # useful as a trace field but not as an error signal.
                     finished_events.append({
                         "type": kind,
                         "event_id": current_event_id,
