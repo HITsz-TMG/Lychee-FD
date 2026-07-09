@@ -27,7 +27,7 @@ If you appreciate our project, please consider giving us a star ⭐ on GitHub fo
 ## 🔥 News
 
 - [2026/07/10] 🎉 We release the Lychee-FD codebase, paper, and web demo.
-- [2026/07/07] 🏆 Our paper has been selected as an [**Outstanding Paper**](https://aclanthology.org/2026.acl-long.419) at **ACL 2026**!
+- [2026/07/07] 🏆 Our paper has been selected as an [**Outstanding Paper**](https://2026.aclweb.org/program/best_papers/#outstanding-papers) at **ACL 2026**!
 
 
 ## 📌 Introduction
