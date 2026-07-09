@@ -1,0 +1,164 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1900" height="880" viewBox="0 0 1900 880" text-rendering="geometricPrecision" shape-rendering="geometricPrecision">
+<defs>
+  <linearGradient id="pageBg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbfdff"/><stop offset="0.55" stop-color="#eef7ff"/><stop offset="1" stop-color="#f9fcff"/></linearGradient>
+  <linearGradient id="cardBg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity="0.985"/><stop offset="0.60" stop-color="#f8fcff" stop-opacity="0.96"/><stop offset="1" stop-color="#edf7ff" stop-opacity="0.88"/></linearGradient>
+  <linearGradient id="surfaceBg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.64" stop-color="#f9fcff"/><stop offset="1" stop-color="#f1f8ff"/></linearGradient>
+  <linearGradient id="headBg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e4f4ff"/><stop offset="1" stop-color="#f7fbff"/></linearGradient>
+  <filter id="softShadow" x="-4%" y="-5%" width="108%" height="114%"><feDropShadow dx="0" dy="24" stdDeviation="22" flood-color="#1f5e9c" flood-opacity="0.085"/></filter>
+  <style><![CDATA[
+    text { font-family: Arial, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, DejaVu Sans, sans-serif; }
+    .num { font-family: Arial, DejaVu Sans, sans-serif; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  ]]></style>
+</defs>
+
+<rect x="0" y="0" width="1900" height="880" rx="0" fill="url(#pageBg)" stroke="none" stroke-width="1" />
+<rect x="24" y="22" width="1852" height="834" rx="46" fill="url(#cardBg)" stroke="#c9dff4" stroke-width="1.05" filter="url(#softShadow)"/>
+<text x="72" y="76" font-size="38.5" font-weight="820" fill="#08284a" text-anchor="start" dominant-baseline="middle" >Performance on Full-Duplex Interaction Capabilities and Efficiency</text>
+<text x="72" y="122" font-size="23" font-weight="500" fill="#5c7188" text-anchor="start" dominant-baseline="middle" >Interaction behavior metrics and efficiency metrics are redrawn as a static visual table.</text>
+<rect x="1474" y="58" width="158" height="46" rx="23.0" fill="#eeebff" stroke="#bfb9ff" stroke-width="1.25" /><circle cx="1499" cy="81.0" r="5.8" fill="#6b55ff" opacity=".94"/><text x="1565.0" y="81.0" font-size="18.8" font-weight="830" fill="#5140e9" text-anchor="middle" dominant-baseline="middle" >Best</text>
+<rect x="1646" y="58" width="224" height="46" rx="23.0" fill="#fff6e3" stroke="#e4c77e" stroke-width="1.25" /><circle cx="1671" cy="81.0" r="5.8" fill="#d29b2c" opacity=".94"/><text x="1770.0" y="81.0" font-size="18.8" font-weight="830" fill="#9b6817" text-anchor="middle" dominant-baseline="middle" >Second Best</text>
+<rect x="50" y="144" width="1800" height="660" rx="36" fill="url(#surfaceBg)" stroke="#c8def3" stroke-width="1.05" />
+<rect x="64" y="170" width="1772" height="118" rx="26" fill="url(#headBg)" stroke="#d7e9f8" stroke-width="1" />
+<line x1="64" y1="170" x2="64" y2="648" stroke="#d5e7f7" stroke-width="1" opacity="0.62" />
+<line x1="304" y1="170" x2="304" y2="648" stroke="#d5e7f7" stroke-width="1" opacity="0.62" />
+<line x1="878.5" y1="170" x2="878.5" y2="648" stroke="#d5e7f7" stroke-width="1" opacity="0.62" />
+<line x1="1453.0" y1="170" x2="1453.0" y2="648" stroke="#d5e7f7" stroke-width="1" opacity="0.62" />
+<line x1="1836.0" y1="170" x2="1836.0" y2="648" stroke="#d5e7f7" stroke-width="1" opacity="0.62" />
+<text x="90" y="230" font-size="26" font-weight="820" fill="#122f4c" text-anchor="start" dominant-baseline="middle" >Model</text>
+<text x="591.25" y="200" font-size="24" font-weight="820" fill="#122f4c" text-anchor="middle" dominant-baseline="middle" >FDBench</text>
+<text x="1165.75" y="200" font-size="24" font-weight="820" fill="#122f4c" text-anchor="middle" dominant-baseline="middle" >FullDuplexBench 1.0</text>
+<text x="1644.5" y="200" font-size="24" font-weight="820" fill="#122f4c" text-anchor="middle" dominant-baseline="middle" >FullDuplexBench 1.5</text>
+<text x="351.875" y="258" font-size="18.5" font-weight="740" fill="#5f7891" text-anchor="middle" dominant-baseline="middle" >SRR↑</text>
+<text x="447.625" y="258" font-size="18.5" font-weight="740" fill="#5f7891" text-anchor="middle" dominant-baseline="middle" >SIR↑</text>
+<text x="543.375" y="258" font-size="18.5" font-weight="740" fill="#5f7891" text-anchor="middle" dominant-baseline="middle" >EIR↓</text>
+<text x="639.125" y="258" font-size="18.5" font-weight="740" fill="#5f7891" text-anchor="middle" dominant-baseline="middle" >SRIR↑</text>
+<text x="734.875" y="258" font-size="18.5" font-weight="740" fill="#5f7891" text-anchor="middle" dominant-baseline="middle" >FSED↓</text>
+<text x="830.625" y="258" font-size="18.5" font-weight="740" fill="#5f7891" text-anchor="middle" dominant-baseline="middle" >IRD↓</text>
+<text x="926.375" y="258" font-size="18.5" font-weight="740" fill="#5f7891" text-anchor="middle" dominant-baseline="middle" >I-TOR↑</text>
+<text x="1022.125" y="258" font-size="18.5" font-weight="740" fill="#5f7891" text-anchor="middle" dominant-baseline="middle" >B-Freq↑</text>
+<text x="1117.875" y="258" font-size="18.5" font-weight="740" fill="#5f7891" text-anchor="middle" dominant-baseline="middle" >B-TOR↓</text>
+<text x="1213.625" y="258" font-size="18.5" font-weight="740" fill="#5f7891" text-anchor="middle" dominant-baseline="middle" >T-TOR↑</text>
+<text x="1309.375" y="258" font-size="18.5" font-weight="740" fill="#5f7891" text-anchor="middle" dominant-baseline="middle" >P-TOR↓</text>
+<text x="1405.125" y="258" font-size="18.5" font-weight="740" fill="#5f7891" text-anchor="middle" dominant-baseline="middle" >Stop↓</text>
+<text x="1500.875" y="258" font-size="18.5" font-weight="740" fill="#5f7891" text-anchor="middle" dominant-baseline="middle" >IRR↑</text>
+<text x="1596.625" y="258" font-size="18.5" font-weight="740" fill="#5f7891" text-anchor="middle" dominant-baseline="middle" >BRR↑</text>
+<text x="1692.375" y="258" font-size="18.5" font-weight="740" fill="#5f7891" text-anchor="middle" dominant-baseline="middle" >Stop↓</text>
+<text x="1788.125" y="258" font-size="18.5" font-weight="740" fill="#5f7891" text-anchor="middle" dominant-baseline="middle" >Lat.↓</text>
+<line x1="64" y1="288" x2="1836" y2="288" stroke="#a7c9e8" stroke-width="1.8" opacity="0.9" />
+<line x1="74" y1="288" x2="1826" y2="288" stroke="#e4f0fa" stroke-width="1" opacity="0.86" />
+<line x1="74" y1="288" x2="1826" y2="288" stroke="#e4f0fa" stroke-width="1" opacity="0.86" />
+<rect x="66" y="349" width="1768" height="59" rx="0" fill="#f8fbff" stroke="none" stroke-width="1" opacity="0.3" />
+<line x1="74" y1="348" x2="1826" y2="348" stroke="#e4f0fa" stroke-width="1" opacity="0.86" />
+<line x1="74" y1="408" x2="1826" y2="408" stroke="#e4f0fa" stroke-width="1" opacity="0.86" />
+<rect x="66" y="469" width="1768" height="59" rx="0" fill="#f8fbff" stroke="none" stroke-width="1" opacity="0.3" />
+<line x1="74" y1="468" x2="1826" y2="468" stroke="#e4f0fa" stroke-width="1" opacity="0.86" />
+<line x1="74" y1="528" x2="1826" y2="528" stroke="#e4f0fa" stroke-width="1" opacity="0.86" />
+<rect x="64" y="590" width="1772" height="56" rx="14" fill="#ffffff" stroke="#85c9ff" stroke-width="1.65" />
+<rect x="64" y="591" width="5" height="54" rx="3" fill="#72c7ff" stroke="none" stroke-width="1" />
+<line x1="74" y1="588" x2="1826" y2="588" stroke="#e4f0fa" stroke-width="1" opacity="0.86" />
+<line x1="74" y1="648" x2="1826" y2="648" stroke="#bdd8ef" stroke-width="1.25" opacity="0.9" />
+<text x="90" y="318.0" font-size="23.2" font-weight="650" fill="#09284a" text-anchor="start" dominant-baseline="middle" >dGSLM</text>
+<text x="351.875" y="318.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >–</text>
+<text x="447.625" y="318.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >–</text>
+<text x="543.375" y="318.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >–</text>
+<text x="639.125" y="318.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >–</text>
+<text x="734.875" y="318.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >–</text>
+<text x="830.625" y="318.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >–</text>
+<text x="926.375" y="318.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >91.7</text>
+<text x="1022.125" y="318.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >1.5</text>
+<text x="1117.875" y="318.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >69.1</text>
+<text x="1213.625" y="318.0" font-size="22.599999999999998" font-weight="760" fill="#9b6817" text-anchor="middle" dominant-baseline="middle" class="num" >97.5</text><line x1="1192.625" y1="332.5" x2="1234.625" y2="332.5" stroke="#e1bd72" stroke-width="1.45" opacity="0.82" />
+<text x="1309.375" y="318.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >93.5</text>
+<text x="1405.125" y="318.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >2523</text>
+<text x="1500.875" y="318.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >–</text>
+<text x="1596.625" y="318.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >–</text>
+<text x="1692.375" y="318.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >–</text>
+<text x="1788.125" y="318.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >–</text>
+<text x="90" y="378.0" font-size="23.2" font-weight="650" fill="#09284a" text-anchor="start" dominant-baseline="middle" >Freeze-Omni</text>
+<text x="351.875" y="378.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >12.9</text>
+<text x="447.625" y="378.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >57.2</text>
+<text x="543.375" y="378.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >25.7</text>
+<text x="639.125" y="378.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >29.5</text>
+<text x="734.875" y="378.0" font-size="22.599999999999998" font-weight="760" fill="#9b6817" text-anchor="middle" dominant-baseline="middle" class="num" >667</text><line x1="719.125" y1="392.5" x2="750.625" y2="392.5" stroke="#e1bd72" stroke-width="1.45" opacity="0.82" />
+<text x="830.625" y="378.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >5413</text>
+<text x="926.375" y="378.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >77.5</text>
+<text x="1022.125" y="378.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >0.1</text>
+<text x="1117.875" y="378.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >63.6</text>
+<text x="1213.625" y="378.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >33.6</text>
+<text x="1309.375" y="378.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >46.3</text>
+<text x="1405.125" y="378.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >1380</text>
+<text x="1500.875" y="378.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >27.0</text>
+<text x="1596.625" y="378.0" font-size="22.599999999999998" font-weight="760" fill="#9b6817" text-anchor="middle" dominant-baseline="middle" class="num" >63.0</text><line x1="1575.625" y1="392.5" x2="1617.625" y2="392.5" stroke="#e1bd72" stroke-width="1.45" opacity="0.82" />
+<text x="1692.375" y="378.0" font-size="22.599999999999998" font-weight="760" fill="#9b6817" text-anchor="middle" dominant-baseline="middle" class="num" >660</text><line x1="1676.625" y1="392.5" x2="1708.125" y2="392.5" stroke="#e1bd72" stroke-width="1.45" opacity="0.82" />
+<text x="1788.125" y="378.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >2066</text>
+<text x="90" y="438.0" font-size="23.2" font-weight="650" fill="#09284a" text-anchor="start" dominant-baseline="middle" >VITA 1.5</text>
+<text x="351.875" y="438.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >21.0</text>
+<text x="447.625" y="438.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >46.1</text>
+<text x="543.375" y="438.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >16.3</text>
+<text x="639.125" y="438.0" font-size="22.599999999999998" font-weight="760" fill="#9b6817" text-anchor="middle" dominant-baseline="middle" class="num" >78.3</text><line x1="618.125" y1="452.5" x2="660.125" y2="452.5" stroke="#e1bd72" stroke-width="1.45" opacity="0.82" />
+<text x="734.875" y="438.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >3036</text>
+<text x="830.625" y="438.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >9925</text>
+<text x="926.375" y="438.0" font-size="23.599999999999998" font-weight="900" fill="#5b45ff" text-anchor="middle" dominant-baseline="middle" class="num" >99.5</text>
+<text x="1022.125" y="438.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >2.5</text>
+<text x="1117.875" y="438.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >81.8</text>
+<text x="1213.625" y="438.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >58.8</text>
+<text x="1309.375" y="438.0" font-size="22.599999999999998" font-weight="760" fill="#9b6817" text-anchor="middle" dominant-baseline="middle" class="num" >88.8</text><line x1="1288.375" y1="452.5" x2="1330.375" y2="452.5" stroke="#e1bd72" stroke-width="1.45" opacity="0.82" />
+<text x="1405.125" y="438.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >1523</text>
+<text x="1500.875" y="438.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >6.0</text>
+<text x="1596.625" y="438.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >38.0</text>
+<text x="1692.375" y="438.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >1222</text>
+<text x="1788.125" y="438.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >2140</text>
+<text x="90" y="498.0" font-size="23.2" font-weight="650" fill="#09284a" text-anchor="start" dominant-baseline="middle" >FLM-audio</text>
+<text x="351.875" y="498.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >7.5</text>
+<text x="447.625" y="498.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >69.4</text>
+<text x="543.375" y="498.0" font-size="22.599999999999998" font-weight="760" fill="#9b6817" text-anchor="middle" dominant-baseline="middle" class="num" >1.0</text><line x1="527.625" y1="512.5" x2="559.125" y2="512.5" stroke="#e1bd72" stroke-width="1.45" opacity="0.82" />
+<text x="639.125" y="498.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >0.9</text>
+<text x="734.875" y="498.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >989</text>
+<text x="830.625" y="498.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >3408</text>
+<text x="926.375" y="498.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >91.0</text>
+<text x="1022.125" y="498.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >0.3</text>
+<text x="1117.875" y="498.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >61.8</text>
+<text x="1213.625" y="498.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >96.6</text>
+<text x="1309.375" y="498.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >56.5</text>
+<text x="1405.125" y="498.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >4579</text>
+<text x="1500.875" y="498.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >10.0</text>
+<text x="1596.625" y="498.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >43.0</text>
+<text x="1692.375" y="498.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >2439</text>
+<text x="1788.125" y="498.0" font-size="22.599999999999998" font-weight="760" fill="#9b6817" text-anchor="middle" dominant-baseline="middle" class="num" >983</text><line x1="1772.375" y1="512.5" x2="1803.875" y2="512.5" stroke="#e1bd72" stroke-width="1.45" opacity="0.82" />
+<text x="90" y="558.0" font-size="23.2" font-weight="650" fill="#09284a" text-anchor="start" dominant-baseline="middle" >Moshi</text>
+<text x="351.875" y="558.0" font-size="22.599999999999998" font-weight="760" fill="#9b6817" text-anchor="middle" dominant-baseline="middle" class="num" >41.4</text><line x1="330.875" y1="572.5" x2="372.875" y2="572.5" stroke="#e1bd72" stroke-width="1.45" opacity="0.82" />
+<text x="447.625" y="558.0" font-size="22.599999999999998" font-weight="760" fill="#9b6817" text-anchor="middle" dominant-baseline="middle" class="num" >78.8</text><line x1="426.625" y1="572.5" x2="468.625" y2="572.5" stroke="#e1bd72" stroke-width="1.45" opacity="0.82" />
+<text x="543.375" y="558.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >22.1</text>
+<text x="639.125" y="558.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >73.9</text>
+<text x="734.875" y="558.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >1895</text>
+<text x="830.625" y="558.0" font-size="22.599999999999998" font-weight="760" fill="#9b6817" text-anchor="middle" dominant-baseline="middle" class="num" >1421</text><line x1="809.625" y1="572.5" x2="851.625" y2="572.5" stroke="#e1bd72" stroke-width="1.45" opacity="0.82" />
+<text x="926.375" y="558.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >87.5</text>
+<text x="1022.125" y="558.0" font-size="22.599999999999998" font-weight="760" fill="#9b6817" text-anchor="middle" dominant-baseline="middle" class="num" >5.1</text><line x1="1006.375" y1="572.5" x2="1037.875" y2="572.5" stroke="#e1bd72" stroke-width="1.45" opacity="0.82" />
+<text x="1117.875" y="558.0" font-size="22.599999999999998" font-weight="760" fill="#9b6817" text-anchor="middle" dominant-baseline="middle" class="num" >36.4</text><line x1="1096.875" y1="572.5" x2="1138.875" y2="572.5" stroke="#e1bd72" stroke-width="1.45" opacity="0.82" />
+<text x="1213.625" y="558.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >76.4</text>
+<text x="1309.375" y="558.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >54.1</text>
+<text x="1405.125" y="558.0" font-size="22.599999999999998" font-weight="760" fill="#9b6817" text-anchor="middle" dominant-baseline="middle" class="num" >885</text><line x1="1389.375" y1="572.5" x2="1420.875" y2="572.5" stroke="#e1bd72" stroke-width="1.45" opacity="0.82" />
+<text x="1500.875" y="558.0" font-size="22.599999999999998" font-weight="760" fill="#9b6817" text-anchor="middle" dominant-baseline="middle" class="num" >61.0</text><line x1="1479.875" y1="572.5" x2="1521.875" y2="572.5" stroke="#e1bd72" stroke-width="1.45" opacity="0.82" />
+<text x="1596.625" y="558.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >26.0</text>
+<text x="1692.375" y="558.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >1071</text>
+<text x="1788.125" y="558.0" font-size="22.4" font-weight="520" fill="#263f57" text-anchor="middle" dominant-baseline="middle" class="num" >3034</text>
+<text x="90" y="618.0" font-size="25.2" font-weight="850" fill="#09284a" text-anchor="start" dominant-baseline="middle" >Lychee-FD</text>
+<rect x="244.0" y="600.5" width="68" height="35" rx="17.5" fill="#eaf6ff" stroke="#a9d3f5" stroke-width="1" /><text x="278" y="618.0" font-size="15.8" font-weight="750" fill="#196aa8" text-anchor="middle" dominant-baseline="middle" >Ours</text>
+<text x="351.875" y="618.0" font-size="23.599999999999998" font-weight="900" fill="#5b45ff" text-anchor="middle" dominant-baseline="middle" class="num" >86.3</text>
+<text x="447.625" y="618.0" font-size="23.599999999999998" font-weight="900" fill="#5b45ff" text-anchor="middle" dominant-baseline="middle" class="num" >99.7</text>
+<text x="543.375" y="618.0" font-size="23.599999999999998" font-weight="900" fill="#5b45ff" text-anchor="middle" dominant-baseline="middle" class="num" >0.4</text>
+<text x="639.125" y="618.0" font-size="23.599999999999998" font-weight="900" fill="#5b45ff" text-anchor="middle" dominant-baseline="middle" class="num" >95.8</text>
+<text x="734.875" y="618.0" font-size="23.599999999999998" font-weight="900" fill="#5b45ff" text-anchor="middle" dominant-baseline="middle" class="num" >637</text>
+<text x="830.625" y="618.0" font-size="23.599999999999998" font-weight="900" fill="#5b45ff" text-anchor="middle" dominant-baseline="middle" class="num" >1210</text>
+<text x="926.375" y="618.0" font-size="22.599999999999998" font-weight="760" fill="#9b6817" text-anchor="middle" dominant-baseline="middle" class="num" >94.5</text><line x1="905.375" y1="632.5" x2="947.375" y2="632.5" stroke="#e1bd72" stroke-width="1.45" opacity="0.82" />
+<text x="1022.125" y="618.0" font-size="23.599999999999998" font-weight="900" fill="#5b45ff" text-anchor="middle" dominant-baseline="middle" class="num" >14.6</text>
+<text x="1117.875" y="618.0" font-size="23.599999999999998" font-weight="900" fill="#5b45ff" text-anchor="middle" dominant-baseline="middle" class="num" >23.4</text>
+<text x="1213.625" y="618.0" font-size="23.599999999999998" font-weight="900" fill="#5b45ff" text-anchor="middle" dominant-baseline="middle" class="num" >98.3</text>
+<text x="1309.375" y="618.0" font-size="23.599999999999998" font-weight="900" fill="#5b45ff" text-anchor="middle" dominant-baseline="middle" class="num" >10.0</text>
+<text x="1405.125" y="618.0" font-size="23.599999999999998" font-weight="900" fill="#5b45ff" text-anchor="middle" dominant-baseline="middle" class="num" >840</text>
+<text x="1500.875" y="618.0" font-size="23.599999999999998" font-weight="900" fill="#5b45ff" text-anchor="middle" dominant-baseline="middle" class="num" >78.0</text>
+<text x="1596.625" y="618.0" font-size="23.599999999999998" font-weight="900" fill="#5b45ff" text-anchor="middle" dominant-baseline="middle" class="num" >69.0</text>
+<text x="1692.375" y="618.0" font-size="23.599999999999998" font-weight="900" fill="#5b45ff" text-anchor="middle" dominant-baseline="middle" class="num" >570</text>
+<text x="1788.125" y="618.0" font-size="23.599999999999998" font-weight="900" fill="#5b45ff" text-anchor="middle" dominant-baseline="middle" class="num" >826</text>
+<text x="72" y="828" font-size="18.5" font-weight="500" fill="#61778d" text-anchor="start" dominant-baseline="middle" >Best is shown in blue-violet; second best is amber underlined. Efficiency metrics use the arrow direction shown in each column.</text>
+</svg>
