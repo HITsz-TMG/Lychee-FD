@@ -93,6 +93,41 @@ We compare the Hugging Face online backend with the vLLM online backend on an ev
 
 `window RTF = round_compute_ms / 400 ms`; values below 1.0 indicate that the backend finishes processing the current audio window before the next window arrives.
 
+## Model Weights
+
+The Docker image contains the runtime environment and demo code, but it does not
+include model weights. Download the required checkpoints before starting the
+demo.
+
+| Component | Source | Expected directory under model root |
+| --- | --- | --- |
+| Lychee-FD full-duplex model | [HIT-TMG/Lychee-FD](https://huggingface.co/HIT-TMG/Lychee-FD), folder `lychee_full_duplex_v1.5/` | `lychee_full_duplex_v1.5/` |
+| Token2Wav vocoder | [stepfun-ai/Step-Audio-2-mini](https://huggingface.co/stepfun-ai/Step-Audio-2-mini), folder `token2wav/` | `token2wav/` |
+
+Create one local model root:
+
+```text
+/path/to/model-root/
+  lychee_full_duplex_v1.5/
+  token2wav/
+```
+
+Download the Lychee-FD checkpoint:
+
+```bash
+huggingface-cli download HIT-TMG/Lychee-FD \
+  --include "lychee_full_duplex_v1.5/*" \
+  --local-dir /path/to/model-root
+```
+
+Download Token2Wav from Step-Audio-2-mini:
+
+```bash
+huggingface-cli download stepfun-ai/Step-Audio-2-mini \
+  --include "token2wav/*" \
+  --local-dir /path/to/model-root
+```
+
 ## 🚀 Docker Quick Start
 
 Clone the repository:
@@ -114,7 +149,7 @@ Edit `.env` and set the model paths:
 LYCHEE_FD_IMAGE=ghcr.io/idealistxy/lychee-fd:latest
 
 HOST_MODEL_ROOT=/path/to/model-root
-STEPAUDIO_MODEL_PATH=/models/path/to/your-lychee-fd-checkpoint
+STEPAUDIO_MODEL_PATH=/models/lychee_full_duplex_v1.5
 STEPAUDIO_T2W_MODEL_PATH=/models/token2wav
 ```
 
@@ -133,7 +168,14 @@ Open:
 http://127.0.0.1:8084
 ```
 
-For a remote server, replace `127.0.0.1` with the server IP.
+For a remote server, open `http://<server-ip>:8084`. The browser frontend will
+connect to the backend API at `http://<server-ip>:7860`, so both ports `8084`
+and `7860` must be reachable from the browser. If you access the server through
+SSH port forwarding, forward both ports, for example:
+
+```bash
+ssh -L 8084:127.0.0.1:8084 -L 7860:127.0.0.1:7860 user@server
+```
 
 ## Model Presets
 
@@ -147,8 +189,8 @@ Update the preset path to the container-side model path:
 
 ```json
 {
-  "name": "my-lychee-fd-checkpoint",
-  "model_path": "/models/path/to/your-lychee-fd-checkpoint",
+  "name": "lychee_full_duplex_v1.5",
+  "model_path": "/models/lychee_full_duplex_v1.5",
   "backend_type": "vllm",
   "mode": "stable"
 }
@@ -175,6 +217,18 @@ For a single-GPU machine:
 TOKEN2WAV_CUDA_VISIBLE_DEVICES=0
 BACKEND_CUDA_VISIBLE_DEVICES=0
 ```
+
+If CUDA OOM occurs, especially when Token2Wav and the backend share one GPU,
+reduce the vLLM KV-cache memory budget:
+
+```dotenv
+STEPAUDIO_VLLM_GPU_MEMORY_UTILIZATION=0.70
+```
+
+The default value is `0.90`. Lower values leave more free GPU memory for
+Token2Wav, CUDA kernels, and temporary activations, but reduce the available
+vLLM KV-cache capacity. You can also reduce `STEPAUDIO_VLLM_MAX_MODEL_LEN`
+from `16384` to `8192` on memory-constrained GPUs.
 
 Check Docker GPU access:
 
@@ -208,6 +262,62 @@ Pull the latest image:
 docker compose pull
 docker compose up -d
 ```
+
+## Source Installation (Advanced)
+
+Docker is the recommended and reproducible deployment path. Source-based
+installation is mainly intended for development or debugging, because the vLLM
+and FlashAttention wheels must match the local CUDA/PyTorch stack.
+
+Create the backend Python environment from the provided lock files:
+
+```bash
+conda env create -f environment.yml
+conda activate lychee-fd
+python -m pip install -r requirements.txt
+python -m pip install --no-build-isolation "flash-attn==2.8.2"
+```
+
+The environment files reproduce the backend stack used by the released Docker
+image, including Python 3.10, PyTorch 2.5.1, CUDA 12.x runtime packages,
+vLLM 0.6.5, and the remaining serving dependencies. `flash-attn` is installed
+separately because it is sensitive to the local CUDA/PyTorch build; if building
+from source is slow or unavailable, install a prebuilt wheel that matches your
+machine.
+
+The online vLLM backend requires two pieces at the same time:
+
+- an installed vLLM wheel in the conda environment, which provides compiled
+  native libraries such as `_C.abi3.so`, `_moe_C.abi3.so`, and
+  `vllm_flash_attn_c.abi3.so`;
+- the patched source tree in `third_party/vllm`, which implements the
+  Lychee-FD multi-stream serving path.
+
+Before launching from source, point the scripts to the conda environment and the
+patched vLLM source tree:
+
+```bash
+export STEPAUDIO_CONDA_ENV_PATH="${CONDA_PREFIX}"
+export STEPAUDIO2_SOURCE_DIR="${PWD}/third_party/Step-Audio2"
+export STEPAUDIO_VLLM_SOURCE_DIR="${PWD}/third_party/vllm"
+export STEPAUDIO_VLLM_SYNC_FLASH_ATTN=1
+export STEPAUDIO_VLLM_FORCE_SYNC_FLASH_ATTN=1
+```
+
+`scripts/start_backend.sh` will prepend `STEPAUDIO_VLLM_SOURCE_DIR` to
+`PYTHONPATH` and synchronize the native vLLM/FlashAttention artifacts from the
+installed wheel into the patched source tree. This step is required; importing
+plain site-packages vLLM will not use the Lychee-FD serving implementation.
+
+Install frontend dependencies once:
+
+```bash
+cd frontend
+npm ci
+cd ..
+```
+
+Then follow the source launch commands in [启动指南.md](启动指南.md).
 
 ## Third-Party Code
 
