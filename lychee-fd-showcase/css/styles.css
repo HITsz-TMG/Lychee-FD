@@ -4312,3 +4312,57 @@ h1 {
     grid-template-columns: 1fr;
   }
 }
+
+/* Fix demo video blank state before actual playback */
+.lychee-video-player video {
+  z-index: 2 !important;
+  opacity: 0 !important;
+  background: #f8fbff !important;
+}
+
+/* Keep poster / first frame visible before playback */
+.lychee-video-player .video-poster,
+.lychee-video-player .video-first-frame {
+  z-index: 3 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: none !important;
+}
+
+/* Keep play button on top */
+.lychee-video-player .video-play-button {
+  z-index: 4 !important;
+}
+
+/* Only show real video after it is actually playing */
+.lychee-video-player.is-playing video {
+  opacity: 1 !important;
+}
+
+/* Only hide poster / first frame after actual playback starts */
+.lychee-video-player.is-playing .video-poster,
+.lychee-video-player.is-playing .video-first-frame {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Do not hide play button just because the video is ready */
+.lychee-video-player.is-ready:not(.is-playing) .video-play-button {
+  opacity: .96 !important;
+  pointer-events: auto !important;
+}
+
+/* Do not hide fallback visual before actual playback */
+.lychee-video-player.is-ready:not(.is-playing) .video-poster,
+.lychee-video-player.is-ready:not(.is-playing) .video-first-frame {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Keep video / poster / first-frame scaling consistent */
+.lychee-video-player video,
+.lychee-video-player .video-poster,
+.lychee-video-player .video-first-frame {
+  object-fit: var(--demo-video-fit, contain) !important;
+}
