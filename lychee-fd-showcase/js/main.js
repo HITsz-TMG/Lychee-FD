@@ -697,12 +697,14 @@
   function renderDemoList() {
     const grid = $("#demoGrid");
     if (!grid) return;
+  
     const cases = CONFIG.demoCases || [];
     grid.innerHTML = cases.length
       ? cases.map((item, index) => renderDemoCard(item, index)).join("")
-      : placeholderHTML("当前暂未配置 Demo", "在 js/config.js 的 demoCases 中新增 case 即可。新增视频时只需要改配置。"
+      : placeholderHTML(
+          "当前暂未配置 Demo",
+          "在 js/config.js 的 demoCases 中新增 case 即可。新增视频时只需要改配置。"
         );
-    initLazyDemoVideos(grid);
   }
 
   function attachImageErrorHandlers(root = document) {
@@ -720,8 +722,6 @@
     $$('[data-asset-id]').forEach(mountAsset);
     $$('[data-asset-list]').forEach(mountAssetList);
     attachImageErrorHandlers();
-    const embodiedSection = $("#embodied");
-    if (embodiedSection) initLazyDemoVideos(embodiedSection);
   }
 
   function enableRevealAnimation() {
@@ -1027,7 +1027,9 @@
     renderResearchPath();
     renderAssets();
     renderDemoList();
+  
     initLazyDemoVideos(document);
+  
     enableRevealAnimation();
     animateMetricCounters();
     enableActiveNav();
