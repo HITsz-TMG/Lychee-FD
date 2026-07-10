@@ -70,13 +70,21 @@
     const enabled = asset.enabled !== false;
     const hasSrc = Boolean(asset.src && asset.src.trim());
     const tags = tagHTML(asset.tags || []);
-    const caption = `
-      <div class="asset-caption">
-        ${tags ? `<div class="asset-tags">${tags}</div>` : ""}
-        <h3>${escapeHTML(asset.title)}</h3>
-        <p>${escapeHTML(asset.description || "")}</p>
-      </div>
-    `;
+    const resultNotes = Array.isArray(asset.resultNotes) ? asset.resultNotes : [];
+    const caption = resultNotes.length
+      ? `
+        <div class="result-table-notes">
+          ${asset.noteTitle ? `<h3>${escapeHTML(asset.noteTitle)}</h3>` : ""}
+          ${resultNotes.map((note) => `<p>${escapeHTML(note)}</p>`).join("")}
+        </div>
+      `
+      : `
+        <div class="asset-caption">
+          ${tags ? `<div class="asset-tags">${tags}</div>` : ""}
+          <h3>${escapeHTML(asset.title)}</h3>
+          <p>${escapeHTML(asset.description || "")}</p>
+        </div>
+      `;
 
     if (asset.type === "reservedVideo") {
       card.classList.add("asset-reserved-video");
@@ -272,18 +280,23 @@
     const detailHTML = renderResearchDetail(group.detail || {});
     const noteHTML = group.note ? `<p class="research-solution-note">${escapeHTML(group.note)}</p>` : "";
     const figureHTML = renderResearchFigure(group.figure || {});
+    const engineeringFigureHTML = group.engineeringFigure ? renderResearchFigure(group.engineeringFigure) : "";
+    const engineeringCaption = group.engineeringFigure?.caption
+      ? `<p class="engineering-figure-caption">${escapeHTML(group.engineeringFigure.caption)}</p>`
+      : "";
 
     return `
+      <div class="section-head reveal method-section-head">
+        <p class="section-index">${escapeHTML(group.kicker || "")}</p>
+        <h2>${escapeHTML(group.title || "")}</h2>
+        ${renderTextBlocks(leadBlocks)}
+      </div>
       <div class="research-solution-card research-solution-card-wide reveal ${escapeHTML(delayClass)}">
-        <div class="research-solution-copy">
-          <span class="research-kicker">${escapeHTML(group.kicker || "")}</span>
-          <h3>${escapeHTML(group.title || "")}</h3>
-          <div class="research-solution-lead-list">${renderTextBlocks(leadBlocks, "research-solution-lead")}</div>
-          ${points ? `<div class="research-solution-points">${points}</div>` : ""}
-        </div>
+        ${points ? `<div class="research-solution-copy method-points-only"><div class="research-solution-points">${points}</div></div>` : ""}
         <div class="research-solution-figure-row">
           ${figureHTML}
         </div>
+        ${engineeringFigureHTML ? `<div class="research-solution-figure-row engineering-figure-row">${engineeringFigureHTML}${engineeringCaption}</div>` : ""}
         ${(detailHTML || noteHTML) ? `<div class="research-solution-bottom">${detailHTML}${noteHTML}</div>` : ""}
       </div>
     `;
@@ -497,21 +510,13 @@
   }
 
   function renderDemoCard(item, index = 0) {
-    const tags = tagHTML((item.tags || item.ability || []).slice(0, 3));
-    const displayIndex = item.displayIndex || String(index + 1).padStart(2, "0");
     return `
       <article class="demo-video-card type-${escapeHTML(item.type || "standard")}" data-case-id="${escapeHTML(item.id)}" data-demo-video-card>
-        <div class="demo-card-head">
-          <span class="demo-index">Demo ${escapeHTML(displayIndex)}</span>
-          <span class="demo-scene">${escapeHTML(item.scene || item.category || "Demo")}</span>
-        </div>
         <h3>${escapeHTML(item.title)}</h3>
         <p class="demo-subtitle">${escapeHTML(item.subtitle || item.description || item.summary || "")}</p>
         <div class="demo-video-slot">
           ${renderVideoPlayer(item)}
         </div>
-        <div class="demo-ability demo-tags">${tags}</div>
-        <p class="demo-highlight">${escapeHTML(item.highlight || item.description || "")}</p>
       </article>
     `;
   }
