@@ -4227,7 +4227,7 @@ h1 {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: clamp(18px, 2vw, 24px);
-  align-items: stretch;
+  align-items: start;
 }
 
 .demo-section .asset-reserved-video {
@@ -4236,7 +4236,7 @@ h1 {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  height: 100%;
+  height: auto;
   overflow: hidden;
   border-radius: 28px;
   background: linear-gradient(145deg, rgba(255, 255, 255, .92), rgba(237, 248, 255, .74));
@@ -4248,22 +4248,45 @@ h1 {
   position: relative;
   inset: auto;
   display: block;
-  padding: clamp(10px, 1.1vw, 14px);
+  padding: 0;
+  overflow: hidden;
+  border-radius: 28px 28px 22px 22px;
   border-right: 0;
-  border-bottom: 1px solid rgba(187, 212, 236, .60);
-  background: linear-gradient(145deg, rgba(239, 248, 255, .82), rgba(255, 255, 255, .62));
+  border-bottom: 0;
+  background: transparent;
 }
 
 .demo-section .asset-reserved-video .reserved-demo-player {
+  position: relative;
+  display: block;
+  box-sizing: border-box;
   width: 100%;
   height: auto;
   min-height: 0;
   max-height: none;
   aspect-ratio: var(--demo-video-ratio, 9 / 16) !important;
-  border-radius: 22px;
-  border: 1px solid rgba(91, 142, 196, .24);
-  background: #f8fbff;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .68) !important;
+  border-radius: inherit;
+  overflow: hidden;
+  isolation: isolate;
+  border: 0;
+  background: #111827;
+  box-shadow: none !important;
+}
+
+.demo-section .asset-reserved-video .avatar-demo-player video,
+.demo-section .asset-reserved-video .avatar-demo-player .video-poster,
+.demo-section .asset-reserved-video .avatar-demo-player .video-first-frame {
+  position: absolute !important;
+  inset: 0 !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  object-position: center top !important;
+  border-radius: inherit !important;
+  background: #111827 !important;
 }
 
 .demo-section .asset-reserved-video .asset-caption {
@@ -4276,10 +4299,10 @@ h1 {
   width: auto;
   transform: none;
   display: flex;
-  flex: 1;
+  flex: 0 0 auto;
   flex-direction: column;
   justify-content: flex-start;
-  padding: 16px 18px 20px;
+  padding: 14px 18px 20px;
   border: 0;
   border-radius: 0;
   background: transparent;
