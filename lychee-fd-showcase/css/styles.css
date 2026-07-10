@@ -4390,6 +4390,31 @@ h1 {
   object-fit: var(--demo-video-fit, contain) !important;
 }
 
+/* ===== v60: stabilize avatar/robot demo playback state and frame ratio ===== */
+.demo-section .embodied-video-gallery .reserved-demo-media-frame,
+.demo-section .embodied-video-gallery .avatar-demo-player {
+  aspect-ratio: 9 / 16 !important;
+  width: 100% !important;
+  height: auto !important;
+}
+
+.demo-section .embodied-video-gallery .avatar-demo-player {
+  --demo-video-ratio: 9 / 16 !important;
+  --demo-video-fit: cover !important;
+}
+
+.demo-section .embodied-video-gallery .avatar-demo-player video,
+.demo-section .embodied-video-gallery .avatar-demo-player .video-poster,
+.demo-section .embodied-video-gallery .avatar-demo-player .video-first-frame {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: cover !important;
+  object-position: center center !important;
+  background: transparent !important;
+}
+
 /* ===== v59: final polish for hero copy, section labels, and avatar demo framing ===== */
 .hero-static h1 {
   line-height: 1.08 !important;
