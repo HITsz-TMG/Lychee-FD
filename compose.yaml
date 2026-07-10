@@ -1,6 +1,6 @@
 services:
   token2wav:
-    image: "${LYCHEE_FD_IMAGE:-ghcr.io/idealistxy/lychee-fd:latest}"
+    image: "${LYCHEE_FD_IMAGE:-ghcr.io/hitsz-tmg/lychee-fd:latest}"
     runtime: nvidia
     entrypoint: ["/app/scripts/start_token2wav_server.sh"]
     ports:
@@ -19,7 +19,7 @@ services:
       LYCHEEFD_T2W_MODEL_PATH: "${LYCHEEFD_T2W_MODEL_PATH:-/models/token2wav}"
 
   frontend:
-    image: "${LYCHEE_FD_IMAGE:-ghcr.io/idealistxy/lychee-fd:latest}"
+    image: "${LYCHEE_FD_IMAGE:-ghcr.io/hitsz-tmg/lychee-fd:latest}"
     runtime: nvidia
     depends_on:
       - token2wav
@@ -69,7 +69,7 @@ services:
       VUE_APP_REALTIME_DEBUG: "${VUE_APP_REALTIME_DEBUG:-0}"
 
   backend:
-    image: "${LYCHEE_FD_IMAGE:-ghcr.io/idealistxy/lychee-fd:latest}"
+    image: "${LYCHEE_FD_IMAGE:-ghcr.io/hitsz-tmg/lychee-fd:latest}"
     runtime: nvidia
     profiles: ["direct-backend"]
     depends_on:

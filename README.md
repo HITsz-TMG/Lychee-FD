@@ -128,7 +128,7 @@ cp .env.docker.example .env
 Edit `.env` and set the model paths:
 
 ```dotenv
-LYCHEE_FD_IMAGE=ghcr.io/idealistxy/lychee-fd:latest
+LYCHEE_FD_IMAGE=ghcr.io/hitsz-tmg/lychee-fd:latest
 
 HOST_MODEL_ROOT=/path/to/model-root
 LYCHEEFD_MODEL_PATH=/models/lychee_full_duplex_v1.5

@@ -5,7 +5,7 @@
 预构建镜像：
 
 ```text
-ghcr.io/idealistxy/lychee-fd:latest
+ghcr.io/hitsz-tmg/lychee-fd:latest
 ```
 
 ## 准备模型
@@ -75,7 +75,7 @@ cp .env.docker.example .env
 编辑 `.env`，至少修改这几项：
 
 ```dotenv
-LYCHEE_FD_IMAGE=ghcr.io/idealistxy/lychee-fd:latest
+LYCHEE_FD_IMAGE=ghcr.io/hitsz-tmg/lychee-fd:latest
 
 HOST_MODEL_ROOT=/path/to/model-root
 LYCHEEFD_MODEL_PATH=/models/lychee_full_duplex_v1.5
