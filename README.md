@@ -349,3 +349,39 @@ for upstream sources, license notices, and local integration notes.
 Lychee-FD is released under the [Apache License 2.0](LICENSE).
 
 Copyright 2026 HITsz-TMG and Lychee-FD authors.
+
+## 📚 Citation
+
+If you find Lychee-FD useful, please cite our paper:
+
+```bibtex
+@inproceedings{liu-etal-2026-hierarchical,
+    title = "Hierarchical Acoustic-Semantic Modeling: Modality Separation and Semantic Coherence for Full-Duplex {SLM}s",
+    author = "Liu, Zhenyu  and
+      Zhang, Xuanyu  and
+      Li, Yunxin  and
+      Teng, Qixun  and
+      Jiang, Shenyuan  and
+      Chen, Haolan  and
+      Zhao, Mingjun  and
+      Meng, Fanbo  and
+      Xu, Yu  and
+      He, Yancheng  and
+      Hu, Baotian  and
+      Li, Haizhou  and
+      Zhang, Min",
+    editor = "Liakata, Maria  and
+      Moreira, Viviane P.  and
+      Zhang, Jiajun  and
+      Jurgens, David",
+    booktitle = "Proceedings of the 64th Annual Meeting of the {A}ssociation for {C}omputational {L}inguistics (Volume 1: Long Papers)",
+    month = jul,
+    year = "2026",
+    address = "San Diego, California, United States",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2026.acl-long.419/",
+    doi = "10.18653/v1/2026.acl-long.419",
+    pages = "9264--9280",
+    ISBN = "979-8-89176-390-6"
+}
+```
