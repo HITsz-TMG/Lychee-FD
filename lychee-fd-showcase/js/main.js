@@ -1027,6 +1027,7 @@
     renderResearchPath();
     renderAssets();
     renderDemoList();
+    initLazyDemoVideos(document);
     enableRevealAnimation();
     animateMetricCounters();
     enableActiveNav();
