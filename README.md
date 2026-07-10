@@ -32,13 +32,14 @@ If you appreciate our project, please consider giving us a star ⭐ on GitHub fo
 
 ## 📌 Introduction
 
-**Lychee-FD** is a full-duplex realtime speech interaction system designed for low-latency spoken dialogue. Unlike conventional turn-based speech systems, Lychee-FD supports simultaneous listening and speaking, enabling more natural interactive behaviors such as realtime response generation, interruption handling, and streaming speech output.
+**Lychee-FD** is a native end-to-end full-duplex spoken language model designed for real-time speech interaction. Unlike turn-based or system-level full-duplex speech pipelines, Lychee-FD internalizes continuous listening, semantic understanding, speech generation, and interaction control within a unified multi-stream model.
+
+The project is motivated by a key observation: native full-duplex SLMs often suffer from modality interference and semantic dilution, which make it difficult to preserve both speech intelligence and interaction fluency. Lychee-FD addresses these issues through hierarchical acoustic-semantic modeling and a semantic alignment channel, while providing a customized multi-stream vLLM serving pipeline for online interaction.
 
 This repository provides:
 
 - Source code for the Lychee-FD online serving pipeline.
 - A browser-based realtime speech interaction frontend.
-- Docker Compose configuration for quick deployment.
 - vLLM-optimized backend support for low-latency online inference.
 - Runtime integration notes and third-party license notices.
 
