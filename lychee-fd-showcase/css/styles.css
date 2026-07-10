@@ -3887,3 +3887,428 @@ h1 {
     grid-template-columns: 1fr;
   }
 }
+
+/* ===== v51：Full-duplex motivation section refinement ===== */
+.concept-head-wide {
+  max-width: 1120px !important;
+}
+
+.concept-head-wide p {
+  max-width: 1080px;
+}
+
+.concept-compare-boxes {
+  margin: clamp(22px, 3vw, 34px) 0 clamp(18px, 2.5vw, 28px) !important;
+}
+
+.concept-compare-boxes .before-box,
+.concept-compare-boxes .after-box {
+  min-height: 188px;
+}
+
+.concept-compare-boxes h3 {
+  line-height: 1.22;
+}
+
+.concept-compare-boxes p {
+  line-height: 1.7;
+}
+
+@media (max-width: 980px) {
+  .concept-compare-boxes .before-box,
+  .concept-compare-boxes .after-box {
+    min-height: 0;
+  }
+}
+
+/* ===== v50：Hero without promo video + centered technical landing ===== */
+.hero-static.section {
+  min-height: auto !important;
+  padding: clamp(48px, 7vh, 86px) 0 clamp(46px, 6vh, 72px) !important;
+}
+
+.hero-layout {
+  min-height: auto !important;
+  grid-template-columns: 1fr !important;
+  grid-template-areas:
+    "copy"
+    "metrics" !important;
+  gap: clamp(26px, 3.2vw, 42px) !important;
+  align-items: center !important;
+}
+
+.hero-static .hero-copy {
+  grid-area: copy !important;
+  max-width: 980px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.hero-static .hero-stage,
+.hero-video-stage,
+[data-hero-promo] {
+  display: none !important;
+}
+
+.hero-static h1 {
+  max-width: none !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  font-size: clamp(70px, 9vw, 136px) !important;
+  line-height: .92 !important;
+  letter-spacing: -2.6px !important;
+}
+
+.hero-static .hero-slogan {
+  max-width: 960px;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  font-size: clamp(32px, 4.1vw, 58px) !important;
+  line-height: 1.1 !important;
+}
+
+.hero-static .hero-desc {
+  max-width: 860px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.hero-static .hero-actions {
+  justify-content: center;
+}
+
+.hero-static .hero-metrics {
+  grid-area: metrics !important;
+  margin-top: 0 !important;
+}
+
+.technology-intro-section {
+  padding-top: clamp(36px, 4.6vw, 60px) !important;
+}
+
+.concept-section {
+  margin-top: 0 !important;
+  padding-top: clamp(24px, 3.2vw, 42px) !important;
+}
+
+.concept-section .problem-main-figure {
+  margin-top: clamp(18px, 2.4vw, 28px);
+}
+
+@media (max-width: 760px) {
+  .hero-static h1 {
+    font-size: clamp(56px, 16vw, 88px) !important;
+    letter-spacing: -1.8px !important;
+  }
+
+  .hero-static .hero-slogan {
+    font-size: clamp(27px, 8vw, 38px) !important;
+  }
+}
+
+/* ===== v52：Scientific insight cards equalized ===== */
+.research-figure-pair {
+  align-items: stretch !important;
+}
+
+.research-figure-card {
+  grid-template-rows: auto 1fr !important;
+  height: 100%;
+}
+
+.research-figure-card .research-copy {
+  min-height: 210px;
+}
+
+.research-figure-card .research-image-slot {
+  min-height: 450px !important;
+  height: 450px !important;
+  display: grid !important;
+  place-items: center !important;
+}
+
+.research-figure-card .research-image-slot.has-image img {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  object-position: center !important;
+}
+
+@media (max-width: 1080px) {
+  .research-figure-card .research-copy {
+    min-height: 0;
+  }
+
+  .research-figure-card .research-image-slot {
+    height: auto !important;
+    min-height: clamp(340px, 58vw, 500px) !important;
+  }
+}
+
+/* ===== v53：Wider technical headers + safe contained research figures ===== */
+.concept-head-wide,
+.research-path-section .section-head {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+.concept-head-wide p,
+.research-path-section .section-head p {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+.research-figure-card .research-image-slot {
+  overflow: hidden !important;
+  box-sizing: border-box;
+}
+
+.research-figure-card .research-image-slot.has-image img {
+  width: auto !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  object-position: center !important;
+}
+
+/* ===== v54：Method section header outside solution card ===== */
+.method-section-head {
+  width: 100% !important;
+  max-width: none !important;
+  margin-top: clamp(40px, 5vw, 70px) !important;
+  margin-bottom: clamp(18px, 2.4vw, 28px) !important;
+}
+
+.method-section-head p:not(.section-index) {
+  width: 100% !important;
+  max-width: 1040px !important;
+}
+
+.method-points-only {
+  max-width: none !important;
+}
+
+.method-points-only .research-solution-points {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  margin-top: 0 !important;
+}
+
+.research-solution-card-wide .research-solution-bottom:empty {
+  display: none !important;
+}
+
+@media (max-width: 1180px) {
+  .method-points-only .research-solution-points {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .method-points-only .research-solution-points {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ===== v56：Engineering speedup figure under method architecture ===== */
+.engineering-figure-row {
+  display: grid;
+  gap: clamp(12px, 1.5vw, 18px);
+  margin-top: clamp(12px, 1.8vw, 22px);
+}
+
+.engineering-figure-row .research-image-slot {
+  min-height: clamp(300px, 34vw, 460px) !important;
+  padding: clamp(12px, 1.5vw, 18px) !important;
+}
+
+.engineering-figure-row .research-image-slot.has-image img {
+  width: min(100%, 980px) !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: clamp(280px, 32vw, 430px) !important;
+  object-fit: contain !important;
+}
+
+.engineering-figure-caption {
+  margin: 0;
+  padding: clamp(16px, 1.8vw, 22px);
+  border: 1px solid rgba(70, 138, 220, .22);
+  border-radius: 20px;
+  color: #24456b;
+  background: linear-gradient(145deg, rgba(236, 247, 255, .82), rgba(255,255,255,.72));
+  box-shadow: inset 3px 0 0 rgba(29, 142, 255, .50);
+  font-size: clamp(14.5px, 1.05vw, 16px);
+  line-height: 1.72;
+  font-weight: 720;
+}
+
+/* ===== v55：Results section uses table-first analysis, not metric cards ===== */
+.results-head-wide {
+  width: 100% !important;
+  max-width: none !important;
+  margin-bottom: clamp(18px, 2.4vw, 28px) !important;
+}
+
+.results-section .result-gallery {
+  grid-template-columns: 1fr !important;
+  gap: clamp(34px, 4vw, 52px) !important;
+}
+
+.results-section .asset-chart {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.results-section .asset-chart .media-frame {
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.results-section .asset-chart .media-frame img {
+  width: 100% !important;
+  max-height: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.result-table-notes {
+  margin-top: clamp(14px, 1.8vw, 22px);
+  padding: clamp(18px, 2vw, 24px);
+  border: 1px solid rgba(112, 156, 207, .24);
+  border-radius: 24px;
+  background: linear-gradient(145deg, rgba(255,255,255,.88), rgba(239,248,255,.66));
+  box-shadow: 0 12px 34px rgba(31, 74, 128, .06);
+}
+
+.result-table-notes h3 {
+  margin: 0 0 10px;
+  color: var(--heading);
+  font-size: clamp(20px, 1.7vw, 26px);
+  letter-spacing: -.25px;
+}
+
+.result-table-notes p {
+  margin: 0;
+  color: #465d76;
+  font-size: clamp(14.5px, 1.05vw, 16px);
+  line-height: 1.75;
+}
+
+.result-table-notes p + p {
+  margin-top: 8px;
+}
+
+/* ===== v57：Demos are grouped into web, avatar, and robot subsections ===== */
+.demo-subsection {
+  margin-top: clamp(54px, 6vw, 86px);
+}
+
+.demo-subsection-head {
+  margin-bottom: clamp(20px, 2.6vw, 34px);
+}
+
+.demo-subsection-head h3 {
+  margin: 0;
+  color: var(--heading);
+  font-size: clamp(30px, 4vw, 52px);
+  line-height: 1.08;
+  letter-spacing: -1.2px;
+}
+
+.demo-section .embodied-video-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(18px, 2vw, 24px);
+  align-items: stretch;
+}
+
+.demo-section .asset-reserved-video {
+  grid-column: auto;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 28px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, .92), rgba(237, 248, 255, .74));
+  border: 1px solid rgba(104, 153, 205, .28);
+  box-shadow: 0 18px 52px rgba(31, 74, 128, .085);
+}
+
+.demo-section .asset-reserved-video .reserved-demo-media-frame {
+  position: relative;
+  inset: auto;
+  display: block;
+  padding: clamp(10px, 1.1vw, 14px);
+  border-right: 0;
+  border-bottom: 1px solid rgba(187, 212, 236, .60);
+  background: linear-gradient(145deg, rgba(239, 248, 255, .82), rgba(255, 255, 255, .62));
+}
+
+.demo-section .asset-reserved-video .reserved-demo-player {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  aspect-ratio: var(--demo-video-ratio, 9 / 16) !important;
+  border-radius: 22px;
+  border: 1px solid rgba(91, 142, 196, .24);
+  background: #f8fbff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .68) !important;
+}
+
+.demo-section .asset-reserved-video .asset-caption {
+  position: relative;
+  left: auto;
+  right: auto;
+  top: auto;
+  bottom: auto;
+  z-index: 1;
+  width: auto;
+  transform: none;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 16px 18px 20px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.demo-section .asset-reserved-video .asset-tags {
+  display: none !important;
+}
+
+.demo-section .asset-reserved-video .asset-caption h3 {
+  margin: 0 0 8px;
+  font-size: clamp(18px, 1.55vw, 22px);
+  line-height: 1.25;
+  letter-spacing: -.2px;
+}
+
+.demo-section .asset-reserved-video .asset-caption p {
+  display: none !important;
+}
+
+@media (max-width: 1040px) {
+  .demo-section .embodied-video-gallery {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .demo-section .embodied-video-gallery {
+    grid-template-columns: 1fr;
+  }
+}
