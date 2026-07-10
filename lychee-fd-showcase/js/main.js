@@ -635,16 +635,23 @@
       hydrateVideo(video);
       pauseOtherDemoVideos(video);
       player?.classList.add("is-playing");
-      player?.classList.remove("is-paused", "is-poster-only");
+      player?.classList.remove("is-loading", "is-paused", "is-poster-only");
+    });
+
+    video.addEventListener("playing", () => {
+      player?.classList.add("is-playing");
+      player?.classList.remove("is-loading", "is-paused", "is-poster-only");
     });
 
     video.addEventListener("pause", () => {
-      player?.classList.remove("is-playing");
+      player?.classList.remove("is-loading", "is-playing");
       player?.classList.add("is-paused");
     });
 
     video.addEventListener("loadedmetadata", () => {
-      applyDemoVideoRatio(player, video.videoWidth, video.videoHeight);
+      if (!player?.classList.contains("avatar-demo-player")) {
+        applyDemoVideoRatio(player, video.videoWidth, video.videoHeight);
+      }
       player?.classList.add("is-ready");
       player?.classList.remove("is-loading", "is-poster-only");
     });
