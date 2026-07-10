@@ -3,25 +3,24 @@
 window.LYCHEE_CONFIG = {
   site: {
     title: "Lychee-FD",
-    subtitle: "原生端到端全双工语音大模型",
-    slogan: "实时、自然、类人的全双工语音交互。",
-    description: "Lychee-FD 是一个原生端到端全双工语音大模型，面向实时语音交互设计。它通过层次化语义-声学建模，缓解原生全双工模型中的模态干扰与语义稀释问题，并进一步支持低时延在线推理、数字人和机器人交互展示。",
+    subtitle: "",
+    slogan: "Native end-to-end full-duplex spoken language model for real-time speech interaction.",
+    description: "Lychee-FD is a native end-to-end full-duplex spoken language model. It addresses modality interference and semantic dilution through hierarchical acoustic-semantic modeling, and supports low-latency online inference, digital avatar demos, and robot interaction demos.",
     brand: "Lychee-FD",
-    brandSub: "原生端到端全双工语音大模型",
+    brandSub: "Native full-duplex SLM",
   },
 
   navigation: [
-    { label: "首页", target: "hero" },
-    { label: "技术介绍", target: "technology" },
-    { label: "评测效果", target: "results" },
-    { label: "Demo 演示", target: "demo" },
-    { label: "全双工驱动数字人", target: "embodied" },
+    { label: "Overview", target: "hero" },
+    { label: "Technical blog", target: "technology" },
+    { label: "Results", target: "results" },
+    { label: "Demos", target: "demo" },
   ],
 
   heroPills: [],
 
   heroPromoVideo: {
-    title: "Lychee-FD 交互演示",
+    title: "Lychee-FD interaction demo",
     video: "assets/videos/xuanchuan.mp4",
     poster: "assets/images/demo/xuanchuan-poster.jpg",
     preload: "none",
@@ -32,10 +31,10 @@ window.LYCHEE_CONFIG = {
   },
 
   metrics: [
-    { value: "7.4%", label: "语音问答准确率提升", note: "语音智能" },
-    { value: "28.5%", label: "打断与附和拒识指标提升", note: "自然交互" },
-    { value: "11.2%", label: "打断响应延迟降低", note: "及时响应" },
-    { value: "2.96×", label: "多通道并行推理加速", note: "工程优化" },
+    { value: "+7.4%", label: "Spoken QA average improvement", note: "Speech intelligence" },
+    { value: "+28.5%", label: "FullDuplexBench 1.5 improvement", note: "Interaction fluency" },
+    { value: "-11.2%", label: "Interruption response latency reduction", note: "Timely response" },
+    { value: "2.96×", label: "RTF speedup with multi-stream inference", note: "Engineering efficiency" },
   ],
 
   problemSection: {
@@ -59,7 +58,7 @@ window.LYCHEE_CONFIG = {
     ],
     figure: {
       title: "三类语音交互路线对比",
-      src: "assets/images/paper/full_duplex_route_compare.png",
+      src: "assets/images/paper/full_duplex_route_compare_en.png",
       width: 1130,
       height: 624,
       alt: "半双工语音 AI、系统级全双工与原生端到端全双工的对比图",
@@ -104,41 +103,40 @@ window.LYCHEE_CONFIG = {
   },
 
   researchPath: {
-    sectionIndex: "技术介绍 03 / 架构创新与工程实现",
-    title: "从科学洞察，到可在线交互的 Lychee-FD 解法",
-    description: "这一部分先用两张研究图说明原生全双工为何难做，再用架构主图解释 Lychee-FD 如何把语义、声学和控制能力放到更合适的位置，并进一步落到在线推理系统。",
-    summary: "从科学洞察，到架构创新，再到在线推理引擎优化，Lychee-FD 完成了理论突破、算法创新和工程实现的全链闭环。",
+    sectionIndex: "Technical blog 02 / Scientific insight",
+    title: "Why native full-duplex is hard",
+    description: "Native full-duplex SLMs must listen and speak at the same time while preserving semantic reasoning. Lychee-FD first demonstrates that the root cause is the inherent gradient conflict between acoustic rendering and semantic modeling within a shared parameter space.",
     groups: [
       {
         id: "scienceProblems",
         type: "figurePair",
         modules: [
           {
-            kicker: "01 科学洞察 / 梯度冲突",
-            title: "语音建模与语义推理在深层发生冲突",
-            description: "当声学建模和语义建模被迫共享同一套深层参数时，浅层还能形成协同，进入深层后优化方向开始分化，甚至相互牵制。这解释了为什么原生全双工模型长期难以同时做到“聪明、自然、低时延”。",
+            kicker: "01 ",
+            title: "Modality Conflict",
+            description: "When acoustic generation and semantic modeling share the same deep parameter space, shallow layers can still be synergistic, but deeper layers show conflicting optimization directions. This explains why native full-duplex models struggle to be intelligent, natural, and low-latency at the same time.",
             figure: {
-              title: "模态冲突图",
+              title: "Modality interference",
               slotLabel: "Original Figure Slot",
-              placeholder: "后续替换为你已有的模态冲突原图",
+              placeholder: "Replace this slot with the modality interference figure.",
               src: "assets/images/paper/modality_layer_conflict.png",
               width: 1746,
               height: 1153,
-              alt: "模态冲突图",
+              alt: "Modality interference figure",
             },
           },
           {
-            kicker: "02 科学洞察 / 语义稀释",
-            title: "高频语音流会稀释文本语义线索",
-            description: "语音信号频率远高于文本语义信号，传统对齐方式会让稀疏的文本监督被高频声学信号淹没，导致模型逐渐偏向“复现声音”，而削弱对话语义和逻辑保持能力。",
+            kicker: "02 ",
+            title: "Semantic Dilution",
+            description: "Speech tokens are much denser than text tokens. Conventional alignment can dilute sparse textual supervision with high-frequency acoustic frames, making the model biased toward reproducing speech while weakening semantic reasoning.",
             figure: {
-              title: "语义稀释图",
+              title: "Semantic dilution",
               slotLabel: "Original Figure Slot",
-              placeholder: "后续替换为你已有的语义稀释原图",
+              placeholder: "Replace this slot with the semantic dilution figure.",
               src: "assets/images/paper/semantic_layer_sparsity.png",
               width: 1745,
               height: 1452,
-              alt: "语义稀释图",
+              alt: "Semantic dilution figure",
             },
           },
         ],
@@ -146,68 +144,47 @@ window.LYCHEE_CONFIG = {
       {
         id: "architectureSolution",
         type: "solutionPlaceholder",
-        kicker: "03 架构创新 / Lychee-FD 解法",
-        title: "把全双工能力内化到模型架构与在线推理系统",
+        kicker: "Technical blog 03 / Method",
+        title: "Hierarchical acoustic-semantic modeling",
         leadParagraphs: [
           {
             segments: [
-              { text: "找到问题之后，Lychee-FD 的方法不是简单增加外部打断模块，也不是继续堆叠级联系统里的流程调度，而是在模型架构上做对应设计。" },
-            ],
-          },
-          {
-            segments: [
-              { text: "它以共享 Transformer 主干保留端到端实时性，在深层将" },
-              { text: "语义、声学与交互控制", strong: true },
-              { text: "拆分为不同专门通道，让它们各自完成最适合自己的建模任务。" },
+              { text: "Guided by the two findings above, Lychee-FD is designed around a simple principle: unify the interaction streams when possible, separate conflicting objectives when necessary, and keep the system efficient enough for real-time full-duplex speech interaction." },
             ],
           },
         ],
         points: [
           {
-            label: "Shared",
-            title: "共享主干保留底层表征",
-            text: "浅层负责共同理解输入，让语音和语义先共享感知基础，避免一开始就把实时语音流切碎成孤立模块。",
+            label: "Native",
+            title: "Native end-to-end full-duplex architecture",
+            text: "Instead of a cascaded ASR-LLM-TTS pipeline, Lychee-FD unifies text, speech, and control channels for efficient inference and native conversational behavior.",
           },
           {
-            label: "Decouple",
-            title: "深层解耦不同任务目标",
-            text: "深层把文本语义、语音生成和对话控制交给专门通道，减少声学目标与语义推理之间的深层冲突。",
+            label: "Separate",
+            title: "Hierarchical acoustic-semantic parameter separation",
+            text: "Deep semantic and acoustic parameters are physically decoupled to remove modality gradient conflicts while preserving inference efficiency and representational robustness.",
           },
           {
-            label: "Parallel",
-            title: "并行多流推理框架",
-            text: "在线系统中，多个专门通道并行执行并分别管理多流 KV cache，减少串行排队带来的额外时延。",
+            label: "Align",
+            title: "Dense semantic alignment channel",
+            text: "Frame-level dense text streams serve as explicit semantic anchors, counteracting semantic dilution and preserving logical coherence and semantic consistency.",
           },
           {
-            label: "Fast Control",
-            title: "控制头早退降低反应延迟",
-            text: "打断、停说、转入倾听等行为优先依赖控制信号，控制 token 更早产出，为打断响应提供快速通道。",
+            label: "Accelerate",
+            title: "Real-time inference acceleration",
+            text: "Multi-channel streaming generation is supported by customized vLLM inference, KV-cache reuse, and context management to reduce full-duplex interaction latency.",
           },
         ],
-        detail: {
-          title: "从论文模型到在线交互系统",
-          paragraphs: [
-            {
-              segments: [
-                { text: "真正的全双工交互最终必须落到实时系统里。传统单路径推理或串行多通道推理，会让多个专门通道按顺序执行，带来额外排队和响应延迟。" },
-              ],
-            },
-            {
-              segments: [
-                { text: "因此，团队围绕 Lychee-FD 的层次化多通道架构做了推理框架优化：共享主干完成计算后，语义、声学和控制通道并行推进，并独立维护各自的缓存状态。" },
-              ],
-            },
-          ],
-        },
-        note: "并行多流推理解决“跑得慢”，控制头早退解决“反应慢”。这让 Lychee-FD 不只是论文里的模型结构，而是可以真正支撑数字人与机器人在线交互的系统能力。",
+        detail: {},
+        note: "",
         figure: {
-          title: "Lychee-FD 架构创新图",
+          title: "Lychee-FD architecture",
           slotLabel: "Architecture Figure Slot",
-          placeholder: "请将你的架构创新图放入 assets/images/architecture/，并在 config.js 中填写 figure.src。",
+          placeholder: "Place the Lychee-FD architecture figure under assets/images/architecture/ and set figure.src in config.js.",
           src: "assets/images/architecture/lychee_fd_architecture.png",
           width: 1436,
           height: 807,
-          alt: "Lychee-FD 共享主干与语义、声学、控制通道解耦架构图",
+          alt: "Lychee-FD architecture with shared backbone and semantic, acoustic, and control heads",
         },
       },
     ],
@@ -216,27 +193,56 @@ window.LYCHEE_CONFIG = {
   imageAssets: {
     spokenQATable: {
       id: "spokenQATable",
-      title: "语音问答基准对比",
+      title: "Spoken QA benchmark",
       src: "assets/images/charts/lychee_spoken_qa_table.svg",
       width: 1900,
       height: 1120,
       type: "image",
-      section: "评测效果",
-      tags: ["Spoken QA", "S→T / S→S"],
+      section: "Results",
+      tags: [],
       enabled: true,
-      description: "重绘语音问答基准结果，展示 Lychee-FD 在语音到文本与语音到语音两种设置下的综合表现。",
+      description: "",
+      noteTitle: "Spoken question answering",
+      resultNotes: [
+        "Lychee-FD achieves the best average speech-to-speech accuracy among native full-duplex models, reaching 46.2 on S-S Avg. and outperforming the half-duplex StepAudio-2-mini baseline by 5.3 points.",
+        "The ablations verify the design: removing the semantic alignment channel weakens knowledge retention, while removing hierarchical parameter separation causes a large drop in speech-to-speech accuracy.",
+        "Overall, Lychee-FD improves Spoken QA performance by 7.4% while preserving the native full-duplex interaction setting."
+      ],
     },
     duplexBenchTable: {
       id: "duplexBenchTable",
-      title: "全双工交互能力对比",
+      title: "Full-duplex interaction benchmark",
       src: "assets/images/charts/lychee_duplex_bench_table.svg",
       width: 1900,
       height: 880,
       type: "image",
-      section: "评测效果",
-      tags: ["FullDuplexBench", "交互指标"],
+      section: "Results",
+      tags: [],
       enabled: true,
-      description: "重绘全双工交互能力与效率结果，突出 Lychee-FD 在打断响应、反馈触达和延迟指标上的优势。",
+      description: "",
+      noteTitle: "Full-duplex interaction",
+      resultNotes: [
+        "Lychee-FD achieves strong performance across interruption, backchannel, turn-taking, and latency metrics, showing that native full-duplex modeling improves interaction fluency rather than only answering accuracy.",
+        "On FullDuplexBench 1.5, Lychee-FD improves the overall interaction capability by 28.5%, while also reducing interruption response latency by 11.2%.",
+        "These results show that Lychee-FD improves real-time full-duplex interaction quality across both behavior metrics and latency-sensitive settings."
+      ],
+    },
+    onlineMultistreamInference: {
+      id: "onlineMultistreamInference",
+      title: "Online multi-stream inference speedup",
+      src: "assets/images/architecture/online_multistream_inference.png",
+      width: 1080,
+      height: 612,
+      type: "image",
+      section: "Results",
+      tags: [],
+      enabled: true,
+      description: "",
+      noteTitle: "Online multi-stream inference",
+      resultNotes: [
+        "Compared with the HuggingFace baseline, the customized multi-stream vLLM inference framework reduces RTF from 1.94 to 0.65, achieving about 2.96× speedup.",
+        "The same inference framework reduces GPU memory usage from 100% to 77%, saving approximately 23% memory and improving deployment efficiency for online full-duplex interaction."
+      ],
     },
     avatarStatic: {
       id: "avatarStatic",
@@ -276,10 +282,10 @@ window.LYCHEE_CONFIG = {
     },
     avatarDigitalDialogue: {
       id: "avatarDigitalDialogue",
-      title: "数字人对话 Demo 01",
+      title: "Digital avatar demo 01",
       type: "reservedVideo",
-      section: "Lychee-FD 驱动数字人素材",
-      tags: ["Digital Avatar", "对话演示"],
+      section: "Digital avatar demos",
+      tags: [],
       enabled: true,
       posterMode: "firstFrame",
       previewPreload: "metadata",
@@ -290,10 +296,10 @@ window.LYCHEE_CONFIG = {
     },
     avatarDigitalFeedback: {
       id: "avatarDigitalFeedback",
-      title: "数字人对话 Demo 02",
+      title: "Digital avatar demo 02",
       type: "reservedVideo",
-      section: "Lychee-FD 驱动数字人素材",
-      tags: ["Digital Avatar", "反馈响应"],
+      section: "Digital avatar demos",
+      tags: [],
       enabled: true,
       posterMode: "firstFrame",
       previewPreload: "metadata",
@@ -304,10 +310,10 @@ window.LYCHEE_CONFIG = {
     },
     avatarDigitalExpression: {
       id: "avatarDigitalExpression",
-      title: "数字人表情 Demo 03",
+      title: "Digital avatar demo 03",
       type: "reservedVideo",
-      section: "Lychee-FD 驱动数字人素材",
-      tags: ["Digital Avatar", "口型表情"],
+      section: "Digital avatar demos",
+      tags: [],
       enabled: true,
       posterMode: "firstFrame",
       previewPreload: "metadata",
@@ -318,10 +324,10 @@ window.LYCHEE_CONFIG = {
     },
     avatarRobotShennie: {
       id: "avatarRobotShennie",
-      title: "机器人展示 Demo 01",
+      title: "Shennie robot demo 01",
       type: "reservedVideo",
-      section: "Lychee-FD 驱动机器人素材",
-      tags: ["Robot Demo", "Shennie"],
+      section: "Robot demos",
+      tags: [],
       enabled: true,
       posterMode: "firstFrame",
       previewPreload: "metadata",
@@ -332,10 +338,10 @@ window.LYCHEE_CONFIG = {
     },
     avatarRobotResponse: {
       id: "avatarRobotResponse",
-      title: "机器人展示 Demo 02",
+      title: "Shennie robot demo 02",
       type: "reservedVideo",
-      section: "Lychee-FD 驱动机器人素材",
-      tags: ["Robot Demo", "实时响应"],
+      section: "Robot demos",
+      tags: [],
       enabled: true,
       posterMode: "firstFrame",
       previewPreload: "metadata",
@@ -346,10 +352,10 @@ window.LYCHEE_CONFIG = {
     },
     avatarRobotInteraction: {
       id: "avatarRobotInteraction",
-      title: "机器人展示 Demo 03",
+      title: "Shennie robot demo 03",
       type: "reservedVideo",
-      section: "Lychee-FD 驱动机器人素材",
-      tags: ["Robot Demo", "交互控制"],
+      section: "Robot demos",
+      tags: [],
       enabled: true,
       posterMode: "firstFrame",
       previewPreload: "metadata",
@@ -361,11 +367,21 @@ window.LYCHEE_CONFIG = {
   },
 
   assetGroups: {
-    results: ["spokenQATable", "duplexBenchTable"],
+    results: ["spokenQATable", "duplexBenchTable", "onlineMultistreamInference"],
     embodiedShowcase: [
       "avatarStatic",
       "avatarSpeaking",
       "shennieRobot",
+    ],
+    digitalAvatarVideos: [
+      "avatarDigitalDialogue",
+      "avatarDigitalFeedback",
+      "avatarDigitalExpression",
+    ],
+    robotVideos: [
+      "avatarRobotShennie",
+      "avatarRobotResponse",
+      "avatarRobotInteraction",
     ],
     embodiedVideos: [
       "avatarDigitalDialogue",
