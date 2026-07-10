@@ -11,6 +11,7 @@ __pycache__/
 *.log
 .DS_Store
 HUGGINGFACE_README.md
+DOCKER_PUBLISH.md
 reference.md
 docs/vllm_memory_growth_analysis.md
 tools/

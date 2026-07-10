@@ -24,6 +24,10 @@ Lychee-FD is a native end-to-end full-duplex spoken language model for real-time
 If you appreciate our project, please consider giving us a star ⭐ on GitHub for latest updates.
 </h4>
 
+<p align="center">
+  <a href="README_CN.md">中文文档</a>
+</p>
+
 ## 🔥 News
 
 - [2026/07/10] 🎉 We release the Lychee-FD codebase, paper, and web demo.
@@ -300,7 +304,39 @@ npm ci
 cd ..
 ```
 
-Then follow the source launch commands in [QUICKSTART.zh-CN.md](QUICKSTART.zh-CN.md).
+Start the Token2Wav sidecar:
+
+```bash
+CUDA_VISIBLE_DEVICES=0 \
+LYCHEEFD_T2W_MODEL_PATH=/path/to/token2wav \
+./scripts/start_token2wav_server.sh
+```
+
+Start the frontend and realtime backend controller:
+
+```bash
+CUDA_VISIBLE_DEVICES=1 \
+LYCHEEFD_CONDA_ENV_PATH=${CONDA_PREFIX} \
+STEPAUDIO2_SOURCE_DIR=${PWD}/third_party/Step-Audio2 \
+LYCHEEFD_VLLM_SOURCE_DIR=${PWD}/third_party/vllm \
+LYCHEEFD_VLLM_SYNC_FLASH_ATTN=1 \
+LYCHEEFD_VLLM_FORCE_SYNC_FLASH_ATTN=1 \
+ALLOWED_MODEL_ROOT=/path/to/model/root \
+AUTO_LOAD_DEFAULT=0 \
+LYCHEEFD_REALTIME_STRICT_INFER_WINDOW=1 \
+LYCHEEFD_STOKEN_DELAY_NUM=10 \
+LYCHEEFD_TTS_VOCODER_HOP_SIZE=10 \
+LYCHEEFD_T2W_STREAM_LOOKAHEAD_LEN=3 \
+LYCHEEFD_T2W_REMOTE_ENABLED=1 \
+LYCHEEFD_T2W_REMOTE_URL=http://127.0.0.1:8091 \
+LYCHEEFD_T2W_REMOTE_FALLBACK=0 \
+LYCHEEFD_USE_VLLM=1 \
+LYCHEEFD_VLLM_MAX_MODEL_LEN=16384 \
+LYCHEEFD_VLLM_GPU_MEMORY_UTILIZATION=0.90 \
+./scripts/start_frontend_dev.sh prod public
+```
+
+Open `http://127.0.0.1:8084` after both services are ready.
 
 ## Third-Party Code
 
@@ -313,7 +349,3 @@ for upstream sources, license notices, and local integration notes.
 Lychee-FD is released under the [Apache License 2.0](LICENSE).
 
 Copyright 2026 HITsz-TMG and Lychee-FD authors.
-
-## Detailed Guide
-
-See [QUICKSTART.zh-CN.md](QUICKSTART.zh-CN.md) for more startup details and optional source-based launch commands.
