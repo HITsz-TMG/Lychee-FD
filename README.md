@@ -5,7 +5,7 @@
 </p>
 
 <h4 align="center">
-Lychee-FD is a full-duplex realtime speech interaction system designed for low-latency spoken dialogue.
+Lychee-FD is a native end-to-end full-duplex spoken language model for real-time speech interaction.
 </h4>
 
 <p align="center">
