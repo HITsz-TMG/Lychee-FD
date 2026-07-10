@@ -250,7 +250,7 @@ docker compose pull
 docker compose up -d
 ```
 
-## Source Installation (Advanced)
+## Source Installation
 
 Docker is the recommended and reproducible deployment path. Source-based
 installation is mainly intended for development or debugging, because the vLLM

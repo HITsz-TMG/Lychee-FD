@@ -239,7 +239,7 @@ docker compose pull
 docker compose up -d
 ```
 
-## 源码安装（高级）
+## 源码安装
 
 Docker 是推荐且可复现的部署方式。源码安装主要用于开发或调试，因为 vLLM 和 FlashAttention wheel 必须匹配本机 CUDA/PyTorch 环境。
 
