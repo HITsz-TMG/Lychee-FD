@@ -170,8 +170,8 @@ window.LYCHEE_CONFIG = {
             text: "Frame-level dense text streams serve as explicit semantic anchors, counteracting semantic dilution and preserving logical coherence and semantic consistency.",
           },
           {
-            label: "Accelerate",
-            title: "Real-time inference acceleration",
+            label: "Inference",
+            title: "Real-time inference",
             text: "Multi-channel streaming generation is supported by customized vLLM inference, KV-cache reuse, and context management to reduce full-duplex interaction latency.",
           },
         ],
