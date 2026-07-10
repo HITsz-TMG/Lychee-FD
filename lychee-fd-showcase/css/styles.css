@@ -4389,3 +4389,43 @@ h1 {
 .lychee-video-player .video-first-frame {
   object-fit: var(--demo-video-fit, contain) !important;
 }
+
+/* ===== v59: final polish for hero copy, section labels, and avatar demo framing ===== */
+.hero-static h1 {
+  line-height: 1.08 !important;
+  padding-bottom: 0.08em !important;
+  overflow: visible !important;
+}
+
+.hero-static .hero-copy {
+  overflow: visible !important;
+}
+
+.hero-static .hero-slogan {
+  max-width: 1040px !important;
+}
+
+.demo-section .embodied-video-gallery {
+  align-items: stretch !important;
+}
+
+.demo-section .embodied-video-gallery .asset-card.asset-reserved-video {
+  height: 100% !important;
+}
+
+.demo-section .embodied-video-gallery .reserved-demo-media-frame,
+.demo-section .embodied-video-gallery .avatar-demo-player {
+  aspect-ratio: 9 / 16 !important;
+  width: 100% !important;
+}
+
+.demo-section .embodied-video-gallery .avatar-demo-player {
+  --demo-video-ratio: 9 / 16 !important;
+  --demo-video-fit: cover !important;
+}
+
+.demo-section .embodied-video-gallery .avatar-demo-player video,
+.demo-section .embodied-video-gallery .avatar-demo-player .video-poster,
+.demo-section .embodied-video-gallery .avatar-demo-player .video-first-frame {
+  object-fit: cover !important;
+}
