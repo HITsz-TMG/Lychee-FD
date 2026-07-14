@@ -88,14 +88,14 @@ demo.
 
 | Component | Source | Expected directory under model root |
 | --- | --- | --- |
-| Lychee-FD full-duplex model | [HIT-TMG/Lychee-FD](https://huggingface.co/HIT-TMG/Lychee-FD), folder `lychee_full_duplex_v1.5/` | `lychee_full_duplex_v1.5/` |
+| Lychee-FD full-duplex model | [HIT-TMG/Lychee-FD](https://huggingface.co/HIT-TMG/Lychee-FD), folder `lychee_full_duplex/` | `lychee_full_duplex/` |
 | Token2Wav vocoder | [stepfun-ai/Step-Audio-2-mini](https://huggingface.co/stepfun-ai/Step-Audio-2-mini), folder `token2wav/` | `token2wav/` |
 
 Create one local model root:
 
 ```text
 /path/to/model-root/
-  lychee_full_duplex_v1.5/
+  lychee_full_duplex/
   token2wav/
 ```
 
@@ -103,7 +103,7 @@ Download the Lychee-FD checkpoint:
 
 ```bash
 huggingface-cli download HIT-TMG/Lychee-FD \
-  --include "lychee_full_duplex_v1.5/*" \
+  --include "lychee_full_duplex/*" \
   --local-dir /path/to/model-root
 ```
 
@@ -136,7 +136,7 @@ Edit `.env` and set the model paths:
 LYCHEE_FD_IMAGE=ghcr.io/hitsz-tmg/lychee-fd:latest
 
 HOST_MODEL_ROOT=/path/to/model-root
-LYCHEEFD_MODEL_PATH=/models/lychee_full_duplex_v1.5
+LYCHEEFD_MODEL_PATH=/models/lychee_full_duplex
 LYCHEEFD_T2W_MODEL_PATH=/models/token2wav
 ```
 
@@ -176,8 +176,8 @@ Update the preset path to the container-side model path:
 
 ```json
 {
-  "name": "lychee_full_duplex_v1.5",
-  "model_path": "/models/lychee_full_duplex_v1.5",
+  "name": "lychee_full_duplex",
+  "model_path": "/models/lychee_full_duplex",
   "backend_type": "vllm",
   "mode": "stable"
 }

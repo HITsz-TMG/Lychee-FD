@@ -84,14 +84,14 @@ Docker 镜像包含运行环境和 demo 代码，但不包含模型权重。启�
 
 | 组件 | 来源 | 模型根目录下的预期目录 |
 | --- | --- | --- |
-| Lychee-FD full-duplex model | [HIT-TMG/Lychee-FD](https://huggingface.co/HIT-TMG/Lychee-FD)，目录 `lychee_full_duplex_v1.5/` | `lychee_full_duplex_v1.5/` |
+| Lychee-FD full-duplex model | [HIT-TMG/Lychee-FD](https://huggingface.co/HIT-TMG/Lychee-FD)，目录 `lychee_full_duplex/` | `lychee_full_duplex/` |
 | Token2Wav vocoder | [stepfun-ai/Step-Audio-2-mini](https://huggingface.co/stepfun-ai/Step-Audio-2-mini)，目录 `token2wav/` | `token2wav/` |
 
 创建一个本地模型根目录：
 
 ```text
 /path/to/model-root/
-  lychee_full_duplex_v1.5/
+  lychee_full_duplex/
   token2wav/
 ```
 
@@ -99,7 +99,7 @@ Docker 镜像包含运行环境和 demo 代码，但不包含模型权重。启�
 
 ```bash
 huggingface-cli download HIT-TMG/Lychee-FD \
-  --include "lychee_full_duplex_v1.5/*" \
+  --include "lychee_full_duplex/*" \
   --local-dir /path/to/model-root
 ```
 
@@ -132,7 +132,7 @@ cp .env.docker.example .env
 LYCHEE_FD_IMAGE=ghcr.io/hitsz-tmg/lychee-fd:latest
 
 HOST_MODEL_ROOT=/path/to/model-root
-LYCHEEFD_MODEL_PATH=/models/lychee_full_duplex_v1.5
+LYCHEEFD_MODEL_PATH=/models/lychee_full_duplex
 LYCHEEFD_T2W_MODEL_PATH=/models/token2wav
 ```
 
@@ -169,8 +169,8 @@ model_presets_dev.json
 
 ```json
 {
-  "name": "lychee_full_duplex_v1.5",
-  "model_path": "/models/lychee_full_duplex_v1.5",
+  "name": "lychee_full_duplex",
+  "model_path": "/models/lychee_full_duplex",
   "backend_type": "vllm",
   "mode": "stable"
 }
