@@ -574,7 +574,6 @@ class SingleTurnGenerationFramework:
         )
 
     def init_speaking_processor(self, end_speak_token_factor):
-        # 璇寸殑鏃跺€欙紝闄愬埗 Text 閫氶亾 (澶勭悊 EOS 绛?
         speaking_text_processor = LogitsProcessorList([
             SpeakingLogitsProcessor(
                 text_start=None, 
@@ -588,7 +587,6 @@ class SingleTurnGenerationFramework:
             )
         ])
 
-        # 璇寸殑鏃跺€欙紝闄愬埗 Stoken 閫氶亾 (澶勭悊 EOS 绛?
         speaking_stoken_processor = LogitsProcessorList([
             SpeakingLogitsProcessor(
                 text_start=self.stoken_audio_start_id,
@@ -691,11 +689,9 @@ class SingleTurnGenerationFramework:
         bc_speak_token_factor=1,
         end_speak_token_factor=1,
     ):
-        # 1. 鍩虹杈撳叆鍑嗗
         prefix_input_ids = self.tokenizer([SYSTEM_MESSAGE_PREFIX], add_special_tokens=False).input_ids[0]
         system_input_length = len(prefix_input_ids)
 
-        # 鏋勯€犲垵濮嬬殑 Prompt
         if prefix is not None:
             input_ids = torch.tensor(prefix_input_ids + prefix['input_ids'], dtype=torch.long, device=self.model.device).unsqueeze(0)
             control_input_ids = torch.tensor(prefix["control_input_ids"], dtype=torch.long, device=self.model.device).unsqueeze(0)
@@ -707,7 +703,6 @@ class SingleTurnGenerationFramework:
         prefix_input_ids = torch.tensor(prefix_input_ids, dtype=torch.long, device=self.model.device).unsqueeze(0)
         stoken_mapping = torch.tensor([-1] * (prefix_input_ids.shape[1] + stoken_ids.shape[1]), dtype=torch.long, device=self.model.device).unsqueeze(0)
 
-        # 2. 闊抽澶勭悊
         model_inputs = self.stepaudio_audio_prepreocess(audio)
         feats, feats_lengths = model_inputs["feats"], model_inputs["feats_lengths"]
         wavs = torch.nn.utils.rnn.pad_sequence(
@@ -716,22 +711,18 @@ class SingleTurnGenerationFramework:
             padding_value=0).transpose(1, 2).to(self.device)
         wav_lens = torch.tensor(feats_lengths, dtype=torch.int32).to(self.device)
         
-        # 闊抽鎬婚暱搴﹀搴旂殑 token 鏁?(鐢ㄤ簬璁＄畻 chunk)
-        audio_input_ids = torch.tensor(model_inputs["input_ids"]).unsqueeze(0).to(self.device) # 娉ㄦ剰锛氳繖閲屽亣璁?preprocess 杩斿洖鐨勬槸 token 闀垮害
-        
-        # 3. 鍒濆鍖栫姸鎬?        past_key_values = None # 缁熶竴鐨?KV Cache
-        stoken_past_key_values = None # 缁熶竴鐨?KV Cache
-        control_past_key_values = None # 缁熶竴鐨?KV Cache
+        audio_input_ids = torch.tensor(model_inputs["input_ids"]).unsqueeze(0).to(self.device)
+
+        past_key_values = None
+        stoken_past_key_values = None
+        control_past_key_values = None
         listening_state = initial_listening_state
         
-
-        # 璁＄畻 Chunk 鑼冨洿
-        # 娉ㄦ剰锛歮odel_inputs["input_ids"] 鏄煶棰戝搴旂殑鏂囨湰闀垮害妯℃嫙
         total_len = len(model_inputs["input_ids"])
         chunk_start = math.ceil((input_ids.shape[1] - system_input_length + 1) / self.control_token_chunk_size) * self.control_token_chunk_size
         chunk_end = math.ceil(total_len / self.control_token_chunk_size) * self.control_token_chunk_size
 
-        # 缁存姢鐢熸垚鐨勫巻鍙插簭鍒?        generated_input_ids = input_ids
+        generated_input_ids = input_ids
         generated_stoken_ids = stoken_ids
         generated_control_ids = control_input_ids
         speaking_text_processor, speaking_stoken_processor = self.init_speaking_processor(end_speak_token_factor)
@@ -762,8 +753,6 @@ class SingleTurnGenerationFramework:
             target_new_length = target_length - current_len
 
             if listening_state == 'l':
-                # === 鍚殑鐘舵€?===
-                # 鏋勯€?Padding 杈撳叆
                 # Text: Pad, Stoken: Pad, Control: Sleep...Detect
                 listening_control_processor = LogitsProcessorList([
                     ListeningControlLogitsProcessor(
@@ -786,7 +775,6 @@ class SingleTurnGenerationFramework:
                     dim=1,
                 )
 
-                # 璋冪敤 Generate
                 outputs = self.model.multi_head_generate(
                     input_ids=generated_input_ids,
                     stoken_ids=generated_stoken_ids,
@@ -804,7 +792,7 @@ class SingleTurnGenerationFramework:
                     control_logits_processor=listening_control_processor,
                     logits_processor=listening_text_processor,
                     stoken_logits_processor=listening_stoken_processor,
-                    temperature=1.0, # 鍚殑鏃跺€欓€氬父璐┆閲囨牱
+                    temperature=1.0,
                     top_k=0,
                     eos_token_id=None,                 
                     pad_token_id=None,
@@ -816,7 +804,6 @@ class SingleTurnGenerationFramework:
                 generated_stoken_ids = outputs["stoken_ids"]
                 generated_control_ids = outputs["control_ids"]
                 
-                # 鑾峰彇鐢熸垚鐨?1 涓?token
                 pred_control_token = generated_control_ids[0, -1]
 
                 if pred_control_token == self.ss_token_id:
@@ -833,7 +820,6 @@ class SingleTurnGenerationFramework:
                     assert pred_control_token == self.kl_token_id or cn_e == chunk_end
 
             elif listening_state == 'b':
-                # 璁＄畻stoken_mapping
                 stoken_mapping_len = stoken_mapping.shape[1] - self.last_ss_pos
                 if stoken_mapping_len <= self.stoken_delay_num + 1:
                     warmup_len = max(0, min(target_new_length, self.stoken_delay_num + 1 - stoken_mapping_len))
@@ -860,8 +846,6 @@ class SingleTurnGenerationFramework:
                     )
                 ])
 
-                # 璋冪敤 Generate
-                # 鐩爣锛氱敓鎴?target_new_length 涓?token
                 outputs = self.model.multi_head_generate(
                     input_ids=generated_input_ids,
                     stoken_ids=generated_stoken_ids,
@@ -880,7 +864,8 @@ class SingleTurnGenerationFramework:
                     logits_processor=speaking_text_processor, 
                     stoken_logits_processor=speaking_stoken_processor, 
                     do_sample=True,
-                    temperature=0.7, # 璇磋瘽鏃堕渶瑕侀噰鏍?                    top_p=1,
+                    temperature=0.7,
+                    top_p=1,
                     eos_token_id=None,
                     stoken_eos_token_id=self.tts_end_id
                 )
@@ -968,8 +953,6 @@ class SingleTurnGenerationFramework:
                             )
                         ])
 
-                        # 璋冪敤 Generate
-                        # 鐩爣锛氱敓鎴?target_new_length 涓?token
                         outputs = self.model.multi_head_generate(
                             input_ids=generated_input_ids,
                             stoken_ids=generated_stoken_ids,
@@ -1005,14 +988,13 @@ class SingleTurnGenerationFramework:
                             print("[BC]->[S]")
                             listening_state = 's'
                             speaking_text_processor, speaking_stoken_processor = self.init_speaking_processor(end_speak_token_factor)
-                            self.last_ss_pos = generated_input_ids.shape[1] + 1 # 杩欓噷瑕佺畻鍚庨潰cat鐨?
+                            self.last_ss_pos = generated_input_ids.shape[1] + 1
                         padding_input_ids       = self.text_pad_token_id     * torch.ones((generated_input_ids.shape[0], 1), dtype=generated_input_ids.dtype, device=generated_input_ids.device)
                         padding_stoken_ids      = self.stoken_pad_token_id   * torch.ones((generated_input_ids.shape[0], 1), dtype=generated_input_ids.dtype, device=generated_input_ids.device)
                         generated_input_ids     = torch.cat((generated_input_ids, padding_input_ids[:,:-1]), dim=1)
                         generated_stoken_ids    = torch.cat((generated_stoken_ids, padding_stoken_ids[:,:-1]), dim=1)
 
             else:
-                # 璁＄畻stoken_mapping
                 stoken_mapping_len = stoken_mapping.shape[1] - self.last_ss_pos
                 if stoken_mapping_len <= self.stoken_delay_num + 1:
                     warmup_len = max(0, min(target_new_length, self.stoken_delay_num + 1 - stoken_mapping_len))
@@ -1039,8 +1021,6 @@ class SingleTurnGenerationFramework:
                     )
                 ])
 
-                # 璋冪敤 Generate
-                # 鐩爣锛氱敓鎴?target_new_length 涓?token
                 outputs = self.model.multi_head_generate(
                     input_ids=generated_input_ids,
                     stoken_ids=generated_stoken_ids,
@@ -1059,7 +1039,8 @@ class SingleTurnGenerationFramework:
                     logits_processor=speaking_text_processor, 
                     stoken_logits_processor=speaking_stoken_processor, 
                     do_sample=True,
-                    temperature=0.7, # 璇磋瘽鏃堕渶瑕侀噰鏍?                    top_p=1,
+                    temperature=0.7,
+                    top_p=1,
                     eos_token_id=None,
                     stoken_eos_token_id=self.tts_end_id
                 )
@@ -1071,7 +1052,6 @@ class SingleTurnGenerationFramework:
                 generated_stoken_ids    = outputs["stoken_ids"]
                 generated_control_ids   = outputs["control_ids"]
 
-                # 鎻愬墠鐢熸垚缁撴潫, 寮哄埗鍔燬-L
                 if generated_stoken_ids[0,-1] == self.tts_end_id:
                     print("stop talking...")
                     if target_length > generated_input_ids.shape[1] - system_input_length:
@@ -1119,8 +1099,7 @@ class SingleTurnGenerationFramework:
                     else:
                         assert pred_control_token == self.ks_token_id or cn_e == chunk_end, f"pred_control_token:{pred_control_token}, {self.tokenizer.decode(pred_control_token)}"
 
-        # 5. 鍚庡鐞嗕笌瑙ｇ爜
-        # 鎻愬彇 System Prompt 涔嬪悗鐨勫唴瀹?        generated_input_ids = generated_input_ids[:, system_input_length:][0].cpu().tolist()
+        generated_input_ids = generated_input_ids[:, system_input_length:][0].cpu().tolist()
         generated_control_ids = generated_control_ids[0].cpu().tolist()
         generated_stoken_ids = generated_stoken_ids[0].cpu().tolist()
 
@@ -1919,7 +1898,6 @@ class SingleTurnGenerationFramework:
             }
 
 
-        # 澶勭悊妯″瀷鐢熸垚鐨?B_model 浜嬩欢 (鐜板湪鏈夊娈?
         for pos, (token_id, stoken_id, control_token_id) in enumerate(zip(text, stoken, control)):
             if control_token_id == self.bc_token_id:
                 if listening_state == 'l':
