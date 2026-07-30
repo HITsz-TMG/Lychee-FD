@@ -45,6 +45,8 @@ This repository provides:
 - Source code for the Lychee-FD online serving pipeline.
 - A browser-based realtime speech interaction frontend.
 - vLLM-optimized backend support for low-latency online inference.
+- `Training_package/` with reference training scripts, data loaders, model
+  code, and a DeepSpeed launch example.
 - Runtime integration notes and third-party license notices.
 
 ## 🌟 Model Structure
