@@ -1,8 +1,8 @@
 {
   "presets": [
     {
-      "name": "lychee_fd_v9_example",
-      "model_path": "/path/to/lychee-fd/checkpoint",
+      "name": "lychee_full_duplex",
+      "model_path": "/hbt_share/hbt/lzx_workspace/models/lychee_full_duplex",
       "backend_type": "vllm",
       "mode": "stable",
       "extra_env": {
@@ -11,7 +11,7 @@
         "LYCHEEFD_REALTIME_INFER_WINDOW_MIN_MS": "200",
         "LYCHEEFD_STOKEN_DELAY_NUM": "10"
       },
-      "note": "Replace this path with a local Lychee-FD checkpoint before starting the backend."
+      "note": "Lychee-FD checkpoint in the shared model directory."
     }
   ]
 }

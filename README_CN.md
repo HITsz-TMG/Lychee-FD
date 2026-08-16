@@ -317,6 +317,50 @@ LYCHEEFD_VLLM_GPU_MEMORY_UTILIZATION=0.90 \
 http://127.0.0.1:8084
 ```
 
+## 接入 LiveAct 流式数字人
+
+LiveAct 数字人服务及其运行源码已经集成在本仓库的 `liveact_avatar/` 和
+`liveact_runtime/` 中。数字人仍以独立常驻 sidecar 进程运行，通过 HTTP 接收
+Token2Wav 输出的实时 PCM。四卡机器建议将 GPU 0、1 分配给双卡 LiveAct，GPU 2
+分配给 Lychee-FD，GPU 3 分配给 Token2Wav。
+
+安装数字人侧依赖时建议使用独立 Python 环境：
+
+```bash
+pip install -r requirements-avatar.txt
+```
+
+复制配置模板，并填写本机的环境与模型路径：
+
+```bash
+cp .env.avatar.example .env.avatar
+```
+
+`.env.avatar` 仅用于本机且已被 Git 忽略。配置完成后，可用一个脚本启动完整服务：
+
+```bash
+./scripts/start_full_avatar_demo.sh
+```
+
+也可以不创建配置文件，直接导出 `MODEL_ROOT`、`LIVEACT_ENV` 和 `FD_ENV`。
+
+也可以分别启动三个进程：
+
+```bash
+./scripts/start_avatar_server.sh
+./scripts/start_avatar_token2wav.sh
+./scripts/start_lychee_avatar_fd.sh
+```
+
+默认参考图为 `assets/avatar/default.png`，可通过
+`LYCHEEFD_AVATAR_IMAGE_PATH` 和 `LIVEACT_AVATAR_PRELOAD_IMAGE_PATH` 覆盖。
+
+Token2Wav 产生的 PCM 会逐块异步写入数字人队列，不等待完整回复。模型没有
+说话、用户正在提问以及数字人首块尚未生成时，前端显示固定参考图。只有明确收到
+本轮回复结束信号后，LiveAct 才允许给最后不足窗口补静音。打断会同时轮换
+Token2Wav generation、删除尚未处理的旧 PCM、重置 LiveAct 本轮状态并清空浏览器
+中的旧 HLS/音频播放缓存。
+
 ## 第三方代码
 
 本仓库为 demo 和在线服务 pipeline vendored 了部分第三方组件。上游来源、许可证声明和本地集成说明见 [third_party/THIRD_PARTY_NOTICES.md](third_party/THIRD_PARTY_NOTICES.md)。

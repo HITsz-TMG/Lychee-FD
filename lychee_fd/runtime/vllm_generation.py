@@ -81,6 +81,9 @@ _LYCHEEFD_S2L_FILL_EOT_TTS_END = str(
     os.getenv("LYCHEEFD_S2L_FILL_EOT_TTS_END", "0")
 ).strip().lower() in {"1", "true", "yes", "on"}
 _LYCHEEFD_CONTROL_EARLY_EXIT_ENABLED = str(
+    # Match the original Lychee-FD state machine: an S->L control token before
+    # <tts_end> is the model's barge-in/interrupt signal.  A natural response
+    # must emit <tts_end> first and therefore takes the speaking_done path.
     os.getenv("LYCHEEFD_CONTROL_EARLY_EXIT_ENABLED", "1")
 ).strip().lower() in {"1", "true", "yes", "on"}
 _LYCHEEFD_CONTROL_EARLY_DEBUG = str(

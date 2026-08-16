@@ -21,6 +21,7 @@ import threading
 import time
 import traceback
 import urllib.error
+import urllib.parse
 import urllib.request
 import uuid
 from dataclasses import dataclass, field
@@ -32,7 +33,10 @@ import numpy as np
 import soundfile as sf
 import torch
 from fastapi import HTTPException, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
+from starlette.background import BackgroundTask
+
+from lychee_fd.avatar_bridge import RealtimeAvatarBridge
 
 PACKAGE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(PACKAGE_DIR)
@@ -161,6 +165,9 @@ REMOTE_TOKEN2WAV_FALLBACK = str(
     os.environ.get("LYCHEEFD_T2W_REMOTE_FALLBACK", "1")
 ).strip().lower() in {"1", "true", "yes", "on"}
 CONTROL_EARLY_EXIT_ENABLED = str(
+    # Match the original Lychee-FD state machine.  A pre-<tts_end> S->L
+    # transition is an interrupt; a natural response reaches event_end through
+    # speaking_done and is flushed instead of aborted.
     os.environ.get("LYCHEEFD_CONTROL_EARLY_EXIT_ENABLED", "1")
 ).strip().lower() in {"1", "true", "yes", "on"}
 CONTROL_EARLY_STATE_SSE = str(
@@ -190,6 +197,42 @@ try:
     )
 except ValueError:
     REMOTE_TOKEN2WAV_PRE_LOOKAHEAD_LEN = 3
+
+# Optional LiveAct avatar sidecar. The backend URL is internal; HLS is proxied
+# through Lychee-FD so remote browsers never receive a 127.0.0.1 URL.
+AVATAR_ENABLED_DEFAULT = str(
+    os.environ.get("LYCHEEFD_AVATAR_ENABLED", "0")
+).strip().lower() in {"1", "true", "yes", "on"}
+AVATAR_URL = os.environ.get(
+    "LYCHEEFD_AVATAR_URL", "http://127.0.0.1:8092"
+).strip().rstrip("/")
+AVATAR_IMAGE_PATH = os.environ.get(
+    "LYCHEEFD_AVATAR_IMAGE_PATH",
+    os.path.abspath(os.path.join(PROJECT_DIR, "..", "assets", "avatar", "default.png")),
+).strip()
+AVATAR_IDLE_VIDEO_PATH = os.environ.get(
+    "LYCHEEFD_AVATAR_IDLE_VIDEO_PATH", ""
+).strip()
+AVATAR_PROMPT = os.environ.get(
+    "LYCHEEFD_AVATAR_PROMPT",
+    "A person is having a natural conversation with the user.",
+).strip()
+try:
+    AVATAR_FPS = max(1, int(os.environ.get("LYCHEEFD_AVATAR_FPS", "13")))
+except ValueError:
+    AVATAR_FPS = 13
+try:
+    AVATAR_TIMEOUT_SEC = max(
+        1.0, float(os.environ.get("LYCHEEFD_AVATAR_TIMEOUT_SEC", "120.0"))
+    )
+except ValueError:
+    AVATAR_TIMEOUT_SEC = 120.0
+try:
+    AVATAR_PLAYBACK_BUFFER_SEC = max(
+        0.0, float(os.environ.get("LYCHEEFD_AVATAR_PLAYBACK_BUFFER_SEC", "2.5"))
+    )
+except ValueError:
+    AVATAR_PLAYBACK_BUFFER_SEC = 2.5
 
 # Realtime session configuration.
 REALTIME_INFER_WINDOW_MS = int(os.environ.get("LYCHEEFD_REALTIME_INFER_WINDOW_MS", "400"))
@@ -754,10 +797,12 @@ class RealtimeTTSPool:
         worker_unique_tokens = 0
         worker_calls = 0
         worker_synth_total = 0.0
+        worker_emitted_pcm = False
 
         def _reset_event_state(clear_cache: bool = True) -> None:
             nonlocal tts_initialized, tts_token_buf
             nonlocal worker_raw_tokens, worker_unique_tokens, worker_calls, worker_synth_total
+            nonlocal worker_emitted_pcm
             if clear_cache:
                 tts_initialized = False
                 tts_token_buf = []
@@ -765,6 +810,7 @@ class RealtimeTTSPool:
             worker_unique_tokens = 0
             worker_calls = 0
             worker_synth_total = 0.0
+            worker_emitted_pcm = False
 
         def _remote_available() -> bool:
             return bool(self._use_remote_t2w) and not bool(self._remote_t2w_disabled)
@@ -796,6 +842,7 @@ class RealtimeTTSPool:
 
         def _emit_tts(tokens: List[int], is_last: bool, advance_tokens: int) -> None:
             nonlocal worker_raw_tokens, worker_unique_tokens, worker_calls, worker_synth_total
+            nonlocal worker_emitted_pcm
             if not tokens:
                 return
             emit_generation_id = self._current_generation_id()
@@ -854,6 +901,7 @@ class RealtimeTTSPool:
                     }
                 )
                 return
+            worker_emitted_pcm = worker_emitted_pcm or bool(pcm)
             pcm_msg = {
                 "type": "pcm",
                 "pcm_bytes": bytes(pcm),
@@ -890,8 +938,50 @@ class RealtimeTTSPool:
                         {"type": "error", "detail": f"TTS pcm callback failed:\n{cb_err}"}
                     )
 
+            pcm_msg["callback_emitted"] = bool(callback_ok)
             should_queue_pcm = bool(self._queue_pcm_messages) or not bool(callback_ok)
             if should_queue_pcm:
+                if self._pcm_emit_callback is not None and not callback_ok and not self._queue_pcm_messages:
+                    pcm_msg["callback_fallback"] = True
+                self._out_queue.put(pcm_msg)
+
+        def _emit_empty_pcm_eos() -> None:
+            """Close an already-streaming response with no residual PCM.
+
+            The final real PCM may have been emitted by a previous Token2Wav
+            call.  This zero-byte control packet is intentionally not exposed
+            as browser audio, but it tells the Avatar sidecar that it may pad
+            and drain the final short LiveAct attention window.
+            """
+
+            generation_id = self._current_generation_id()
+            pcm_msg = {
+                "type": "pcm",
+                "pcm_bytes": b"",
+                "tokens": 0,
+                "advance_tokens": 0,
+                "is_last": True,
+                "synth_sec": 0.0,
+                "synth_start_epoch_ms": int(time.time() * 1000),
+                "synth_end_epoch_ms": int(time.time() * 1000),
+                "synth_duration_ms": 0.0,
+                "t2w_backend": "control",
+                "generation_id": int(generation_id),
+                "stream_id": self._get_stream_id(),
+            }
+            callback_ok = False
+            if self._pcm_emit_callback is not None:
+                try:
+                    self._pcm_emit_callback(dict(pcm_msg))
+                    callback_ok = True
+                except Exception:
+                    cb_err = traceback.format_exc()
+                    logger.error("RealtimeTTSPool PCM EOS callback failed: %s", cb_err)
+                    self._out_queue.put(
+                        {"type": "error", "detail": f"TTS PCM EOS callback failed:\n{cb_err}"}
+                    )
+            pcm_msg["callback_emitted"] = bool(callback_ok)
+            if self._queue_pcm_messages or not callback_ok:
                 if self._pcm_emit_callback is not None and not callback_ok and not self._queue_pcm_messages:
                     pcm_msg["callback_fallback"] = True
                 self._out_queue.put(pcm_msg)
@@ -927,6 +1017,8 @@ class RealtimeTTSPool:
                     flush_tokens = list(tts_token_buf)
                     _emit_tts(flush_tokens, is_last=True, advance_tokens=len(flush_tokens))
                     tts_token_buf = []
+                elif worker_emitted_pcm:
+                    _emit_empty_pcm_eos()
                 tts_initialized = False
 
             self._out_queue.put(
@@ -2574,6 +2666,12 @@ class RealtimeSessionState:
     realtime_listening_state: str = "l"
     infer_round: int = 0
     tts_bridge: Optional[RealtimeTTSPool] = None
+    avatar_enabled: bool = False
+    avatar_image_path: str = ""
+    avatar_prompt: str = ""
+    avatar_fps: int = 18
+    avatar_bridge: Optional[RealtimeAvatarBridge] = None
+    avatar_media_cursor_samples: int = 0
     audio_hashes: set = field(default_factory=set)
     audio_hash_order: List[str] = field(default_factory=list)
     audio_event_queue: queue.Queue = field(
@@ -3163,7 +3261,19 @@ def _run_realtime_session_worker(session_id: str) -> None:
             return
         if msg.get("type") != "pcm":
             return
-        _emit_pcm_bytes_direct(msg.get("pcm_bytes", b""), t2w_meta=msg)
+        pcm_bytes = msg.get("pcm_bytes", b"")
+        is_last = bool(msg.get("is_last", False))
+        if pcm_bytes:
+            _emit_pcm_bytes_direct(pcm_bytes, t2w_meta=msg)
+        avatar_bridge = session.avatar_bridge
+        if avatar_bridge is None or (not pcm_bytes and not is_last):
+            return
+        avatar_bridge.submit_pcm(
+            pcm_bytes,
+            is_last=is_last,
+            generation_id=msg.get("generation_id"),
+            stream_id=msg.get("stream_id"),
+        )
 
     def _peek_audio_prefix(chunks: List[np.ndarray], target_samples: int) -> tuple[List[np.ndarray], int]:
         remaining = max(0, int(target_samples))
@@ -3468,6 +3578,15 @@ def _run_realtime_session_worker(session_id: str) -> None:
                             abort_meta = session_tts_bridge.submit_event_abort(reason=reason)
                     except Exception:
                         logger.exception("Failed to abort TTS bridge on early interrupt")
+                    if session.avatar_bridge is not None:
+                        session.avatar_bridge.submit_abort(
+                            reason=reason,
+                            generation_id=(
+                                abort_meta.get("generation_id")
+                                if isinstance(abort_meta, dict)
+                                else None
+                            ),
+                        )
                     dropped_audio_events = 0
                     while True:
                         try:
@@ -3719,6 +3838,14 @@ def _run_realtime_session_worker(session_id: str) -> None:
                     session_tts_bridge.stop(force_flush=False)
             except Exception:
                 pass
+            try:
+                if session.avatar_bridge is not None:
+                    session.avatar_bridge.stop()
+            except Exception:
+                pass
+            _clear_realtime_session_runtime_buffers(session)
+            _push_session_event(session, {"type": "error", "error": err, "round_id": round_id})
+            _schedule_realtime_session_eviction(session_id)
             return
 
     try:
@@ -3738,7 +3865,13 @@ def _run_realtime_session_worker(session_id: str) -> None:
                 pcm_bytes = msg.get("pcm_bytes", b"")
                 if not pcm_bytes:
                     continue
-                _emit_pcm_event(pcm_bytes, round_id=int(session.infer_round))
+                # The normal direct callback has already emitted this PCM to
+                # both SSE and Avatar.  The queued copy exists for timing and
+                # stats only; replaying it here would duplicate the final
+                # audio in the saved Avatar timeline.
+                if bool(msg.get("callback_emitted", False)):
+                    continue
+                _on_tts_pcm_message(msg)
     except Exception:
         logger.error("Failed to flush session TTS bridge on stop: %s", traceback.format_exc())
     finally:
@@ -3747,6 +3880,11 @@ def _run_realtime_session_worker(session_id: str) -> None:
                 session_tts_bridge.stop(force_flush=False)
         except Exception:
             pass
+        try:
+            if session.avatar_bridge is not None:
+                session.avatar_bridge.stop()
+        except Exception:
+            logger.exception("Failed to stop avatar bridge for session %s", session_id)
 
     stream_session_to_close = None
     with session.lock:
@@ -3759,7 +3897,9 @@ def _run_realtime_session_worker(session_id: str) -> None:
         session_id,
         reason="session_finished",
     )
+    _clear_realtime_session_runtime_buffers(session)
     _push_session_event(session, {"type": "done", "session_id": session_id})
+    _schedule_realtime_session_eviction(session_id)
 
 
 def _get_realtime_session_or_404(session_id: str) -> RealtimeSessionState:
@@ -3768,6 +3908,87 @@ def _get_realtime_session_or_404(session_id: str) -> RealtimeSessionState:
     if session is None:
         raise HTTPException(status_code=404, detail=f"Session not found: {session_id}")
     return session
+
+
+def _drain_queue(q: queue.Queue) -> None:
+    while True:
+        try:
+            q.get_nowait()
+        except queue.Empty:
+            return
+
+
+def _clear_realtime_session_runtime_buffers(session: RealtimeSessionState) -> None:
+    """Release per-call audio/runtime state while retaining short-lived traces."""
+    with session.lock:
+        session.all_audio_chunks.clear()
+        session.pending_audio_chunks.clear()
+        session.pending_samples = 0
+        session.realtime_prefix = None
+        session.realtime_stream_audio_cache_snapshot = None
+        session.audio_hashes.clear()
+        session.audio_hash_order.clear()
+        session.round_timing.clear()
+        session.worker = None
+    # The worker has finished producing events.  Discard queued PCM/text from
+    # the ended call; the caller receives one fresh `done` event afterwards.
+    _drain_queue(session.audio_event_queue)
+    _drain_queue(session.control_event_queue)
+
+
+def _schedule_realtime_session_eviction(
+    session_id: str,
+    *,
+    retention_sec: float = 60.0,
+) -> None:
+    """Keep trace metadata briefly for save_aligned, then remove the session."""
+    def _evict() -> None:
+        if retention_sec > 0:
+            time.sleep(float(retention_sec))
+        with _realtime_sessions_lock:
+            current = _realtime_sessions.get(session_id)
+            if current is None:
+                return
+            with current.lock:
+                finished = bool(current.finished)
+            if finished:
+                _realtime_sessions.pop(session_id, None)
+
+    threading.Thread(
+        target=_evict,
+        name=f"realtime_evict_{session_id[:8]}",
+        daemon=True,
+    ).start()
+
+
+def _schedule_avatar_bridge_cleanup(
+    session: RealtimeSessionState,
+    *,
+    reason: str,
+) -> bool:
+    """Detach a bridge once and stop it without blocking an HTTP handler."""
+    with session.lock:
+        avatar_bridge = session.avatar_bridge
+        session.avatar_bridge = None
+    if avatar_bridge is None:
+        return False
+
+    def _stop_detached_avatar_bridge() -> None:
+        try:
+            avatar_bridge.stop()
+        except Exception:
+            logger.exception(
+                "Failed to stop detached avatar bridge for session %s reason=%s",
+                session.session_id,
+                reason,
+            )
+
+    threading.Thread(
+        target=_stop_detached_avatar_bridge,
+        name=f"avatar_cleanup_{session.session_id[:8]}",
+        daemon=True,
+    ).start()
+    return True
 
 
 def _fmt_diag_float(value, digits: int = 4) -> str:
@@ -4105,6 +4326,36 @@ def _flush_control_prob_trace_json(
 
 def register_realtime_session_routes(app) -> None:
     """Register HTTP API routes for realtime sessions."""
+    @app.get("/api/realtime/avatar/idle-image")
+    async def realtime_avatar_idle_image():
+        """Serve the configured fixed Avatar image to the browser.
+
+        LiveAct consumes a server-local filesystem path, while the browser
+        needs an HTTP URL.  Keeping the mapping here avoids copying the same
+        identity image into the frontend bundle.
+        """
+
+        image_path = os.path.abspath(AVATAR_IMAGE_PATH)
+        if not os.path.isfile(image_path):
+            raise HTTPException(status_code=404, detail="Avatar idle image is not configured.")
+        return FileResponse(
+            image_path,
+            headers={"Cache-Control": "public, max-age=3600"},
+        )
+
+    @app.get("/api/realtime/avatar/idle-video")
+    async def realtime_avatar_idle_video():
+        """Serve an optional pre-rendered silent Avatar loop."""
+
+        video_path = os.path.abspath(AVATAR_IDLE_VIDEO_PATH) if AVATAR_IDLE_VIDEO_PATH else ""
+        if not video_path or not os.path.isfile(video_path):
+            raise HTTPException(status_code=404, detail="Avatar idle video is not configured.")
+        return FileResponse(
+            video_path,
+            media_type="video/mp4",
+            headers={"Cache-Control": "public, max-age=3600"},
+        )
+
     @app.get("/api/realtime/voices")
     async def list_realtime_prompt_voices():
         """Return available prompt voices."""
@@ -4236,6 +4487,10 @@ def register_realtime_session_routes(app) -> None:
             stage_timing_log_path=stage_timing_log_path,
             control_prob_trace_log=control_prob_trace_log,
             control_prob_trace_path=control_prob_trace_path,
+            avatar_enabled=bool(payload.get("avatar_enabled", AVATAR_ENABLED_DEFAULT)),
+            avatar_image_path=str(payload.get("avatar_image_path") or AVATAR_IMAGE_PATH),
+            avatar_prompt=str(payload.get("avatar_prompt") or AVATAR_PROMPT),
+            avatar_fps=max(1, int(payload.get("avatar_fps", AVATAR_FPS))),
         )
         worker = threading.Thread(
             target=_run_realtime_session_worker,
@@ -4247,6 +4502,25 @@ def register_realtime_session_routes(app) -> None:
 
         with _realtime_sessions_lock:
             _realtime_sessions[session_id] = session
+        if session.avatar_enabled:
+            if not session.avatar_image_path:
+                _push_session_event(
+                    session,
+                    {"type": "avatar_error", "error": "avatar_image_path is not configured"},
+                )
+            else:
+                session.avatar_bridge = RealtimeAvatarBridge(
+                    image_path=session.avatar_image_path,
+                    prompt=session.avatar_prompt,
+                    avatar_url=AVATAR_URL,
+                    fps=session.avatar_fps,
+                    sample_rate=TTS_SAMPLE_RATE,
+                    session_id=session_id,
+                    timeout_sec=AVATAR_TIMEOUT_SEC,
+                    playback_buffer_sec=AVATAR_PLAYBACK_BUFFER_SEC,
+                    event_callback=lambda event: _push_session_event(session, event),
+                )
+                session.avatar_bridge.start()
         worker.start()
 
         return JSONResponse(
@@ -4270,6 +4544,24 @@ def register_realtime_session_routes(app) -> None:
                     "hangover_ms": int(INPUT_SILENCE_GATE_HANGOVER_MS),
                     "preroll_ms": int(INPUT_SILENCE_GATE_PREROLL_MS),
                 },
+                "avatar_enabled": bool(session.avatar_bridge is not None),
+                "avatar_idle_image_url": (
+                    "/api/realtime/avatar/idle-image"
+                    if session.avatar_bridge is not None
+                    else None
+                ),
+                "avatar_idle_video_url": (
+                    "/api/realtime/avatar/idle-video"
+                    if session.avatar_bridge is not None
+                    and AVATAR_IDLE_VIDEO_PATH
+                    and os.path.isfile(os.path.abspath(AVATAR_IDLE_VIDEO_PATH))
+                    else None
+                ),
+                "avatar_stream_url": (
+                    f"/api/realtime/session/{session_id}/avatar/live.m3u8"
+                    if session.avatar_bridge is not None
+                    else None
+                ),
             }
         )
 
@@ -4277,6 +4569,11 @@ def register_realtime_session_routes(app) -> None:
     async def push_realtime_chunk(session_id: str, request: Request):
         """Receive a realtime audio chunk and append it to the session queue."""
         session = _get_realtime_session_or_404(session_id)
+        avatar_bridge = session.avatar_bridge
+        if avatar_bridge is not None:
+            # Microphone chunks continue during user silence, so this is the
+            # authoritative liveness signal for the Avatar sidecar lease.
+            avatar_bridge.touch()
         chunk_recv_epoch_ms = int(time.time() * 1000)
         client_chunk_sent_epoch_ms = None
         client_chunk_sent_header = request.headers.get("x-client-chunk-sent-epoch-ms")
@@ -4355,6 +4652,11 @@ def register_realtime_session_routes(app) -> None:
 
         def event_stream():
             while True:
+                avatar_bridge = session.avatar_bridge
+                if avatar_bridge is not None:
+                    # Also cover the short interval before microphone capture
+                    # starts (for example while permission UI is open).
+                    avatar_bridge.touch()
                 try:
                     event = _pop_session_event(session, timeout_sec=0.5)
                 except queue.Empty:
@@ -4397,6 +4699,14 @@ def register_realtime_session_routes(app) -> None:
                     if finished:
                         break
 
+        def _on_event_stream_closed() -> None:
+            with session.lock:
+                should_stop = not session.finished and not session.stop_requested
+                if should_stop:
+                    session.stop_requested = True
+            if should_stop:
+                _schedule_avatar_bridge_cleanup(session, reason="event_stream_disconnected")
+
         return StreamingResponse(
             event_stream(),
             media_type="text/event-stream",
@@ -4405,6 +4715,7 @@ def register_realtime_session_routes(app) -> None:
                 "Connection": "keep-alive",
                 "X-Accel-Buffering": "no",
             },
+            background=BackgroundTask(_on_event_stream_closed),
         )
 
     @app.post("/api/realtime/session/{session_id}/stop")
@@ -4413,8 +4724,108 @@ def register_realtime_session_routes(app) -> None:
         session = _get_realtime_session_or_404(session_id)
         with session.lock:
             session.stop_requested = True
+        avatar_cleanup_started = _schedule_avatar_bridge_cleanup(
+            session,
+            reason="explicit_hangup",
+        )
         _push_session_event(session, {"type": "status", "status": "Realtime session is stopping..."})
-        return JSONResponse({"ok": True, "session_id": session_id})
+        return JSONResponse(
+            {
+                "ok": True,
+                "session_id": session_id,
+                "avatar_cleanup_started": bool(avatar_cleanup_started),
+            }
+        )
+
+    @app.get("/api/realtime/session/{session_id}/avatar/video/status")
+    async def realtime_avatar_video_status(session_id: str):
+        """Report whether the finalized full-call Avatar MP4 is available."""
+        encoded_session_id = urllib.parse.quote(str(session_id), safe="")
+        upstream = f"{AVATAR_URL}/v1/avatar/video_status/{encoded_session_id}"
+        try:
+            with urllib.request.urlopen(upstream, timeout=10.0) as response:
+                result = json.loads(response.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            raise HTTPException(status_code=exc.code, detail="Avatar video status is unavailable.") from exc
+        except (urllib.error.URLError, json.JSONDecodeError) as exc:
+            raise HTTPException(status_code=503, detail=f"Avatar sidecar unavailable: {exc}") from exc
+        if not isinstance(result, dict):
+            raise HTTPException(status_code=502, detail="Avatar video status response is invalid.")
+        result["download_url"] = (
+            f"/api/realtime/session/{encoded_session_id}/avatar/output.mp4"
+        )
+        return JSONResponse(result)
+
+    @app.get("/api/realtime/session/{session_id}/avatar/{filename}")
+    async def proxy_realtime_avatar_stream(session_id: str, filename: str, request: Request):
+        """Proxy LiveAct HLS and finalized MP4 through the Lychee-FD origin."""
+        if (
+            filename != "live.m3u8"
+            and filename != "output.mp4"
+            and not re.fullmatch(r"live\d*\.ts", filename)
+        ):
+            raise HTTPException(status_code=400, detail="Invalid avatar stream filename.")
+        encoded_session_id = urllib.parse.quote(str(session_id), safe="")
+        if filename == "output.mp4":
+            upstream = f"{AVATAR_URL}/video/{encoded_session_id}/output.mp4"
+            headers = {}
+            range_header = request.headers.get("range")
+            if range_header:
+                headers["Range"] = range_header
+            upstream_request = urllib.request.Request(upstream, headers=headers)
+            try:
+                response = urllib.request.urlopen(upstream_request, timeout=30.0)
+            except urllib.error.HTTPError as exc:
+                detail = "Complete Avatar video is still being saved."
+                raise HTTPException(status_code=exc.code, detail=detail) from exc
+            except urllib.error.URLError as exc:
+                raise HTTPException(status_code=503, detail=f"Avatar sidecar unavailable: {exc}") from exc
+
+            response_headers = {
+                "Cache-Control": "no-store",
+                "Accept-Ranges": response.headers.get("Accept-Ranges", "bytes"),
+                "Content-Disposition": response.headers.get(
+                    "Content-Disposition",
+                    f'attachment; filename="liveact_{session_id}.mp4"',
+                ),
+            }
+            for header_name in ("Content-Length", "Content-Range"):
+                value = response.headers.get(header_name)
+                if value:
+                    response_headers[header_name] = value
+
+            def _iter_video():
+                try:
+                    while True:
+                        chunk = response.read(1024 * 1024)
+                        if not chunk:
+                            break
+                        yield chunk
+                finally:
+                    response.close()
+
+            return StreamingResponse(
+                _iter_video(),
+                status_code=int(getattr(response, "status", 200)),
+                media_type=response.headers.get_content_type() or "video/mp4",
+                headers=response_headers,
+            )
+
+        _get_realtime_session_or_404(session_id)
+        upstream = f"{AVATAR_URL}/stream/{encoded_session_id}/{filename}"
+        try:
+            with urllib.request.urlopen(upstream, timeout=10.0) as response:
+                body = response.read()
+                content_type = response.headers.get_content_type()
+        except urllib.error.HTTPError as exc:
+            raise HTTPException(status_code=exc.code, detail="Avatar stream is not ready.") from exc
+        except urllib.error.URLError as exc:
+            raise HTTPException(status_code=503, detail=f"Avatar sidecar unavailable: {exc}") from exc
+        return Response(
+            content=body,
+            media_type=content_type,
+            headers={"Cache-Control": "no-store"},
+        )
 
     @app.post("/api/realtime/session/{session_id}/save_aligned")
     async def save_realtime_aligned_audio(session_id: str, request: Request):

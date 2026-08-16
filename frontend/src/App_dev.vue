@@ -73,34 +73,29 @@
           <div class="rt-panel-header">
             <span class="rt-panel-title">Agent Response</span>
           </div>
-          <div class="rt-orb-stage">
-            <span class="rt-call-timer">{{ callTimerDisplay }}</span>
-            <div class="rt-orb" :class="'rt-orb-' + callState">
-              <span class="rt-orb-core"></span>
-              <span class="rt-orb-ring"></span>
-            </div>
-            <div class="rt-orb-status">{{ callStateText }}</div>
-          </div>
-          <div class="rt-subtitle-panel" ref="chatMessagesRef">
-            <template v-if="aiReplyText || realtimeTextAudioGatePlaceholderVisible">
-              <div
-                v-if="aiReplyText"
-                class="markdown-body rt-subtitle-text"
-                :class="{ 'is-streaming': isAiSpeaking }"
-                v-html="renderMarkdown(aiReplyText)"
-              ></div>
-              <div v-else-if="realtimeTextAudioGatePlaceholderVisible" class="rt-subtitle-thinking">
-                <span class="rt-typing-indicator">Processing<span>.</span><span>.</span><span>.</span></span>
-              </div>
-            </template>
-            <div v-else class="rt-subtitle-idle">
-              <template v-if="isTalking">
-                <span class="rt-typing-indicator">Waiting for response<span>.</span><span>.</span><span>.</span></span>
-              </template>
-              <template v-else>
-                <p class="rt-welcome-title">👋 Welcome to Lychee-FD</p>
-                <p class="rt-welcome-desc">Start a realtime full-duplex voice conversation with natural turn-taking and interruption support.</p>
-                <div v-if="randomShowcaseCases.length > 0" class="rt-welcome-suggestions">
+          <div class="rt-response-split">
+            <div class="rt-response-column rt-response-text-column">
+              <div class="rt-response-column-title">Text</div>
+              <div class="rt-subtitle-panel" ref="chatMessagesRef">
+                <template v-if="aiReplyText || realtimeTextAudioGatePlaceholderVisible">
+                  <div
+                    v-if="aiReplyText"
+                    class="markdown-body rt-subtitle-text"
+                    :class="{ 'is-streaming': isAiSpeaking }"
+                    v-html="renderMarkdown(aiReplyText)"
+                  ></div>
+                  <div v-else-if="realtimeTextAudioGatePlaceholderVisible" class="rt-subtitle-thinking">
+                    <span class="rt-typing-indicator">Processing<span>.</span><span>.</span><span>.</span></span>
+                  </div>
+                </template>
+                <div v-else class="rt-subtitle-idle">
+                  <span v-if="isTalking" class="rt-typing-indicator">Waiting for response<span>.</span><span>.</span><span>.</span></span>
+                  <template v-else>
+                    <p class="rt-welcome-title">👋 Welcome to Lychee-FD</p>
+                    <p class="rt-welcome-desc">Start a realtime full-duplex voice conversation with natural turn-taking and interruption support.</p>
+                  </template>
+                </div>
+                <div v-if="!isTalking && randomShowcaseCases.length > 0" class="rt-welcome-suggestions">
                   <div class="rt-welcome-suggestions-row">
                     <button
                       v-for="item in randomShowcaseCases"
@@ -124,7 +119,47 @@
                     <span>Shuffle</span>
                   </button>
                 </div>
-              </template>
+              </div>
+            </div>
+            <div class="rt-response-column rt-response-video-column">
+              <div class="rt-response-column-title">Avatar</div>
+              <div class="rt-avatar-stage is-visible">
+                <video
+                  v-show="avatarPlaybackVisible"
+                  ref="avatarVideoRef"
+                  class="rt-avatar-video"
+                  autoplay
+                  playsinline
+                  @timeupdate="handleAvatarTimeUpdate"
+                  @ended="handleAvatarPlaybackEnded"
+                ></video>
+                <video
+                  v-if="!avatarPlaybackVisible && avatarIdleVideoUrl"
+                  :src="avatarIdleVideoUrl"
+                  class="rt-avatar-idle-image"
+                  autoplay
+                  muted
+                  loop
+                  playsinline
+                ></video>
+                <img
+                  v-else-if="!avatarPlaybackVisible && avatarIdleImageUrl"
+                  :src="avatarIdleImageUrl"
+                  class="rt-avatar-idle-image"
+                  alt="数字人待机画面"
+                />
+                <div
+                  v-else-if="!avatarPlaybackVisible"
+                  class="rt-avatar-empty-state"
+                >等待数字人会话</div>
+                <div v-if="avatarMode === 'buffering'" class="rt-avatar-state-badge">正在生成数字人回复…</div>
+                <button
+                  v-if="avatarPlaybackVisible && avatarAudioNeedsGesture"
+                  type="button"
+                  class="rt-avatar-audio-unlock"
+                  @click="enableAvatarAudio"
+                >点击开启声音</button>
+              </div>
             </div>
           </div>
         </section>
@@ -162,6 +197,16 @@
                 <div v-if="item.rawOutputUrl" class="rt-history-audio-block">
                   <div class="rt-history-label">Raw output chunks<span class="rt-history-dur">{{ item.rawOutputSec }}s</span></div>
                   <audio :src="item.rawOutputUrl" controls preload="metadata"></audio>
+                </div>
+                <div v-if="item.avatarVideoUrl" class="rt-history-video-block">
+                  <div class="rt-history-label">Complete avatar video</div>
+                  <button
+                    type="button"
+                    class="rt-history-video-download"
+                    :disabled="item.avatarVideoState === 'saving'"
+                    :title="item.avatarVideoError || ''"
+                    @click="downloadSavedAvatarVideo(item)"
+                  >{{ savedAvatarVideoButtonLabel(item) }}</button>
                 </div>
               </div>
             </template>
@@ -387,6 +432,7 @@ import hljs from 'highlight.js'
 import 'highlight.js/styles/atom-one-dark.css' // 可选样式，比如 GitHub 风格
 import newFavicon from '@/assets/hit.png'  // 引入新的 favicon 图标
 import MarkdownIt from 'markdown-it'         // 引入 Markdown 解析库
+import Hls from 'hls.js'
 import WAVEncoder from 'wav-encoder'         // 引入 WAV 编码器
 import { ElNotification } from 'element-plus'  // 引入 Element Plus 的通知组件
 
@@ -853,6 +899,406 @@ const captureAudioContext = ref(null);
 const connectionStatus = ref('');
 const connectionStatusClass = ref('');
 const aiReplyText = ref(''); // 用于在页面上流式展示 AI 的文字回复
+const avatarVideoRef = ref(null);
+const avatarRequested = ref(false);
+const avatarAvailable = ref(false);
+// Once the first real HLS fragment has been rendered, keep the video layer
+// visible while waiting at the live edge or recovering the loader.  Falling
+// back to the idle image is reserved for a real response boundary/interrupt.
+const avatarPlaybackVisible = ref(false);
+const avatarMode = ref('disabled');
+const avatarIdleImageUrl = ref('');
+const avatarIdleVideoUrl = ref('');
+const avatarActiveGeneration = ref(null);
+const avatarSegmentEndSec = ref(null);
+// Once an avatar session is accepted, its muxed HLS owns both audio and video.
+// Keep this independent from transient HLS/UI availability so a load error can
+// never re-enable the standalone WebAudio PCM path and create split playback.
+const avatarMuxOwnsAudio = ref(false);
+const avatarAudioNeedsGesture = ref(false);
+let avatarHls = null;
+let avatarRetryTimer = null;
+let avatarStreamUrl = '';
+let avatarResumePosition = 0;
+let avatarPlaybackWatchdogTimer = null;
+let avatarPlaybackLastTime = 0;
+let avatarPlaybackLastProgressAt = 0;
+let avatarPlaybackRecoveryAttempts = 0;
+let avatarPlaybackWatchdogGeneration = null;
+let avatarSegmentEndGeneration = null;
+const AVATAR_PLAYBACK_STALL_MS = 3000;
+const stopAvatarPlaybackWatchdog = () => {
+  if (avatarPlaybackWatchdogTimer) clearInterval(avatarPlaybackWatchdogTimer);
+  avatarPlaybackWatchdogTimer = null;
+  avatarPlaybackWatchdogGeneration = null;
+};
+const noteAvatarPlaybackProgress = () => {
+  const current = Number(avatarVideoRef.value?.currentTime);
+  if (!Number.isFinite(current) || current < 0) return;
+  if (current > avatarPlaybackLastTime + 0.04) {
+    avatarPlaybackLastTime = current;
+    avatarPlaybackLastProgressAt = Date.now();
+    avatarPlaybackRecoveryAttempts = 0;
+  }
+};
+const getAvatarBufferedEnd = () => {
+  const video = avatarVideoRef.value;
+  if (!video?.buffered || video.buffered.length <= 0) return Number.NaN;
+  try {
+    return Number(video.buffered.end(video.buffered.length - 1));
+  } catch (_err) {
+    return Number.NaN;
+  }
+};
+const startAvatarPlaybackWatchdog = (generationId) => {
+  stopAvatarPlaybackWatchdog();
+  avatarPlaybackWatchdogGeneration = generationId;
+  avatarPlaybackLastTime = Math.max(0, Number(avatarVideoRef.value?.currentTime) || 0);
+  avatarPlaybackLastProgressAt = Date.now();
+  avatarPlaybackRecoveryAttempts = 0;
+  avatarPlaybackWatchdogTimer = setInterval(() => {
+    if (
+      !avatarRequested.value
+      || !avatarStreamUrl
+    ) {
+      stopAvatarPlaybackWatchdog();
+      return;
+    }
+    noteAvatarPlaybackProgress();
+    if (Date.now() - avatarPlaybackLastProgressAt < AVATAR_PLAYBACK_STALL_MS) return;
+
+    avatarPlaybackLastProgressAt = Date.now();
+    avatarPlaybackRecoveryAttempts += 1;
+    rememberAvatarPosition();
+    const resumeAt = Math.max(0, avatarResumePosition - 0.1);
+    const generation = avatarPlaybackWatchdogGeneration;
+    const current = Number(avatarVideoRef.value?.currentTime);
+    const bufferedEnd = getAvatarBufferedEnd();
+    const waitingAtLiveEdge = Number.isFinite(current)
+      && Number.isFinite(bufferedEnd)
+      && bufferedEnd - current <= 0.25;
+
+    if (waitingAtLiveEdge && avatarHls) {
+      // LiveAct appends frames in inference-sized bursts. Reaching the current
+      // SourceBuffer edge is therefore an expected wait, not an end-of-video
+      // condition. Keep the last frame visible and make sure playlist loading
+      // remains active without rebuilding MediaSource.
+      avatarMode.value = 'buffering';
+      try { avatarHls.startLoad(resumeAt); } catch (_err) { /* retry next pass */ }
+      attemptAvatarPlayback();
+      return;
+    }
+    if (avatarHls && avatarPlaybackRecoveryAttempts % 2 === 1) {
+      // First recovery is cheap: force Hls.js to reload the live playlist and
+      // continue from the last frame instead of leaving the video frozen at
+      // the first fragment.
+      try {
+        avatarHls.stopLoad();
+        avatarHls.startLoad(resumeAt);
+      } catch (_err) {
+        // The next watchdog pass rebuilds the HLS instance.
+      }
+      attemptAvatarPlayback();
+      return;
+    }
+    // A loader can remain internally wedged without emitting a fatal error.
+    // Recreate it on the second failed recovery while preserving position.
+    startAvatarPlayback(avatarStreamUrl, {
+      generationId: generation,
+      startPosition: resumeAt
+    });
+  }, 1000);
+};
+const rememberAvatarPosition = () => {
+  const video = avatarVideoRef.value;
+  const current = Number(video?.currentTime);
+  if (Number.isFinite(current) && current >= 0) {
+    avatarResumePosition = Math.max(avatarResumePosition, current);
+  }
+};
+const attemptAvatarPlayback = async () => {
+  const video = avatarVideoRef.value;
+  if (!video) return;
+  video.volume = 1;
+  video.muted = false;
+  // Some browsers leave delayed unmuted autoplay pending instead of rejecting
+  // it promptly.  Do not let that keep a valid HLS stream hidden forever.
+  const mutedFallbackTimer = setTimeout(() => {
+    if (!video.paused) return;
+    video.muted = true;
+    avatarAudioNeedsGesture.value = true;
+    video.play().catch(() => {});
+  }, 500);
+  try {
+    await video.play();
+    avatarAudioNeedsGesture.value = false;
+  } catch (_err) {
+    // Browsers commonly reject delayed unmuted autoplay. Keep video moving
+    // silently and expose an explicit user-gesture audio unlock button.
+    video.muted = true;
+    avatarAudioNeedsGesture.value = true;
+    video.play().catch(() => {});
+  } finally {
+    clearTimeout(mutedFallbackTimer);
+  }
+};
+const enableAvatarAudio = async () => {
+  const video = avatarVideoRef.value;
+  if (!video) return;
+  video.volume = 1;
+  video.muted = false;
+  try {
+    await video.play();
+    avatarAudioNeedsGesture.value = false;
+  } catch (err) {
+    console.warn('浏览器仍未允许数字人声音播放:', err);
+  }
+};
+const stopAvatarPlayback = () => {
+  stopAvatarPlaybackWatchdog();
+  if (avatarRetryTimer) clearTimeout(avatarRetryTimer);
+  avatarRetryTimer = null;
+  if (avatarHls) avatarHls.destroy();
+  avatarHls = null;
+  const video = avatarVideoRef.value;
+  if (video) {
+    try { video.pause(); } catch (_err) { /* ignore */ }
+    video.removeAttribute('src');
+    video.load();
+  }
+  avatarRequested.value = false;
+  avatarAvailable.value = false;
+  avatarPlaybackVisible.value = false;
+  avatarMuxOwnsAudio.value = false;
+  avatarMode.value = 'disabled';
+  avatarIdleImageUrl.value = '';
+  avatarIdleVideoUrl.value = '';
+  avatarActiveGeneration.value = null;
+  avatarSegmentEndSec.value = null;
+  avatarSegmentEndGeneration = null;
+  avatarAudioNeedsGesture.value = false;
+  avatarResumePosition = 0;
+  avatarStreamUrl = '';
+};
+
+const showAvatarIdle = ({ preserveAudioOwnership = true } = {}) => {
+  stopAvatarPlaybackWatchdog();
+  if (avatarRetryTimer) clearTimeout(avatarRetryTimer);
+  avatarRetryTimer = null;
+  if (avatarHls) avatarHls.destroy();
+  avatarHls = null;
+  const video = avatarVideoRef.value;
+  if (video) {
+    try { video.pause(); } catch (_err) { /* ignore */ }
+    video.removeAttribute('src');
+    video.load();
+  }
+  avatarAvailable.value = false;
+  avatarPlaybackVisible.value = false;
+  avatarMode.value = avatarRequested.value ? 'idle' : 'disabled';
+  avatarActiveGeneration.value = null;
+  avatarSegmentEndSec.value = null;
+  avatarSegmentEndGeneration = null;
+  avatarAudioNeedsGesture.value = false;
+  avatarResumePosition = 0;
+  avatarStreamUrl = '';
+  if (!preserveAudioOwnership) avatarMuxOwnsAudio.value = false;
+};
+
+const startAvatarPlayback = (streamUrl, { generationId = null, startPosition = 0 } = {}) => {
+  if (streamUrl && avatarStreamUrl && streamUrl !== avatarStreamUrl) {
+    avatarResumePosition = 0;
+  }
+  if (streamUrl) avatarStreamUrl = streamUrl;
+  const normalizedStart = Math.max(0, Number(startPosition) || 0);
+  avatarResumePosition = normalizedStart;
+  avatarActiveGeneration.value = generationId;
+  avatarMuxOwnsAudio.value = true;
+  avatarRequested.value = true;
+  avatarMode.value = 'buffering';
+  stopAvatarPlaybackWatchdog();
+  const video = avatarVideoRef.value;
+  if (!video || !avatarStreamUrl) return;
+  if (avatarRetryTimer) clearTimeout(avatarRetryTimer);
+  avatarRetryTimer = null;
+  if (avatarHls) {
+    rememberAvatarPosition();
+    avatarHls.destroy();
+  }
+  const base = buildGradioApiBase() || window.location.origin;
+  const url = new URL(avatarStreamUrl, `${base.replace(/\/$/, '')}/`).toString();
+  startAvatarPlaybackWatchdog(generationId);
+  const retry = () => {
+    // Keep an already rendered frame on screen during recovery.  Before the
+    // first fragment arrives the idle image remains visible as usual.
+    if (!avatarPlaybackVisible.value) avatarAvailable.value = false;
+    avatarMode.value = 'buffering';
+    if (!avatarRequested.value || avatarRetryTimer) return;
+    const retryGeneration = generationId;
+    const retryStart = Math.max(normalizedStart, avatarResumePosition - 0.1, 0);
+    avatarRetryTimer = setTimeout(() => {
+      avatarRetryTimer = null;
+      if (avatarActiveGeneration.value !== retryGeneration) return;
+      startAvatarPlayback(avatarStreamUrl, {
+        generationId: retryGeneration,
+        startPosition: retryStart
+      });
+    }, 1500);
+  };
+  if (Hls.isSupported()) {
+    avatarHls = new Hls({
+      startPosition: normalizedStart,
+      lowLatencyMode: false,
+      autoStartLoad: true,
+      startFragPrefetch: true,
+      maxLiveSyncPlaybackRate: 1,
+      liveSyncDurationCount: 2,
+      liveMaxLatencyDurationCount: 6,
+      maxBufferLength: 30,
+      maxMaxBufferLength: 60,
+      manifestLoadingMaxRetry: 12,
+      levelLoadingMaxRetry: 12,
+      fragLoadingMaxRetry: 12
+    });
+    const playbackStreamUrl = avatarStreamUrl;
+    const markStreamPlayable = () => {
+      if (!avatarRequested.value || avatarStreamUrl !== playbackStreamUrl) return;
+      const shouldStartPlayback = !avatarAvailable.value || avatarMode.value !== 'playing';
+      avatarAvailable.value = true;
+      avatarPlaybackVisible.value = true;
+      avatarMode.value = 'playing';
+      if (shouldStartPlayback) attemptAvatarPlayback();
+    };
+    // Do not expose the video merely because a playlist exists: the playlist
+    // can precede the first decodable frame.  FRAG_BUFFERED is the first point
+    // at which replacing the idle image is safe.
+    avatarHls.on(Hls.Events.FRAG_BUFFERED, () => {
+      markStreamPlayable();
+    });
+    avatarHls.on(Hls.Events.LEVEL_UPDATED, () => {
+      if (!avatarPlaybackVisible.value || avatarStreamUrl !== playbackStreamUrl) return;
+      const shouldResume = avatarMode.value !== 'playing' || Boolean(avatarVideoRef.value?.paused);
+      avatarMode.value = 'playing';
+      if (shouldResume) attemptAvatarPlayback();
+    });
+    avatarHls.on(Hls.Events.ERROR, (_event, data) => {
+      if (!data?.fatal) return;
+      rememberAvatarPosition();
+      avatarMode.value = 'buffering';
+      if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+        avatarHls?.startLoad(Math.max(0, avatarResumePosition));
+      } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+        avatarHls?.recoverMediaError();
+      } else {
+        retry();
+      }
+    });
+    avatarHls.on(Hls.Events.MEDIA_ATTACHED, () => {
+      if (avatarStreamUrl === playbackStreamUrl) avatarHls?.loadSource(url);
+    });
+    avatarHls.attachMedia(video);
+  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    video.src = url;
+    video.addEventListener('loadedmetadata', () => {
+      if (avatarActiveGeneration.value !== generationId) return;
+      video.currentTime = normalizedStart;
+      avatarAvailable.value = true;
+      avatarPlaybackVisible.value = true;
+      avatarMode.value = 'playing';
+      attemptAvatarPlayback();
+    }, { once: true });
+  }
+};
+
+const handleAvatarTimeUpdate = () => {
+  noteAvatarPlaybackProgress();
+  // Continuous mode has no per-response endpoint.  Natural TTS completion and
+  // S->L interruption only switch future model input to silence; hangup is the
+  // sole lifecycle event allowed to remove the call-wide HLS player.
+};
+
+const handleAvatarPlaybackEnded = () => {
+  // Reaching the end of the currently buffered live fragments is not the end
+  // of the call. Keep the last frame visible and wait for the next silent or
+  // speaking LiveAct chunk to extend the playlist.
+  avatarMode.value = 'buffering';
+  rememberAvatarPosition();
+  try { avatarHls?.startLoad(Math.max(0, avatarResumePosition - 0.1)); } catch (_err) { /* watchdog retries */ }
+  attemptAvatarPlayback();
+};
+
+const sameAvatarGeneration = (left, right) => (
+  left !== null
+  && typeof left !== 'undefined'
+  && right !== null
+  && typeof right !== 'undefined'
+  && String(left) === String(right)
+);
+
+const clearAvatarSegmentBoundary = () => {
+  avatarSegmentEndSec.value = null;
+  avatarSegmentEndGeneration = null;
+};
+
+const activateAvatarGeneration = (generationId) => {
+  if (
+    avatarSegmentEndGeneration !== null
+    && !sameAvatarGeneration(avatarSegmentEndGeneration, generationId)
+  ) {
+    clearAvatarSegmentBoundary();
+  }
+  avatarActiveGeneration.value = generationId;
+};
+
+const recordAvatarSegmentBoundary = (playbackEndSec, generationId = null) => {
+  const normalizedEnd = Number(playbackEndSec);
+  if (!Number.isFinite(normalizedEnd) || normalizedEnd <= 0) return;
+  const boundaryGeneration = generationId ?? avatarActiveGeneration.value;
+  if (
+    avatarActiveGeneration.value !== null
+    && boundaryGeneration !== null
+    && !sameAvatarGeneration(avatarActiveGeneration.value, boundaryGeneration)
+  ) {
+    return;
+  }
+  const previousEndSec = sameAvatarGeneration(
+    avatarSegmentEndGeneration,
+    boundaryGeneration
+  ) ? Number(avatarSegmentEndSec.value) : Number.NaN;
+  avatarSegmentEndGeneration = boundaryGeneration;
+  avatarSegmentEndSec.value = Math.max(
+    Number.isFinite(previousEndSec) ? previousEndSec : 0,
+    normalizedEnd
+  );
+  handleAvatarTimeUpdate();
+};
+
+const interruptAvatarPlayback = () => {
+  // S->L interrupts only the current speech source. LiveAct now owns one
+  // continuous call-wide HLS timeline and immediately continues with silence,
+  // so destroying the player here would hide valid silent animation and force
+  // the next reply through another HLS startup.
+  clearAvatarSegmentBoundary();
+  if (!avatarPlaybackVisible.value) return;
+  const video = avatarVideoRef.value;
+  if (video?.buffered?.length) {
+    // Drop already-buffered reply audio as far as the browser safely allows so
+    // full-duplex interruption remains responsive while video stays visible.
+    const liveEdge = Number(video.buffered.end(video.buffered.length - 1));
+    if (Number.isFinite(liveEdge) && liveEdge > Number(video.currentTime) + 0.25) {
+      try { video.currentTime = Math.max(0, liveEdge - 0.08); } catch (_err) { /* live edge is best-effort */ }
+    }
+  }
+  avatarMode.value = 'playing';
+  try { avatarHls?.startLoad(-1); } catch (_err) { /* watchdog retries */ }
+  attemptAvatarPlayback();
+};
+
+// The Lychee interrupt remains authoritative for speech PCM, while the Avatar
+// animation itself stays alive and changes to silence.
+const handleAvatarInterrupt = (_payload) => {
+  interruptAvatarPlayback();
+};
 const realtimeTextAudioGatePlaceholderVisible = ref(false);
 const startTalkErrorSummary = ref('');
 const startTalkErrorHint = ref('');
@@ -2949,7 +3395,8 @@ const finalizeCurrentAlignedArchive = () => {
   const outputUrl = URL.createObjectURL(outputBlob);
   const rawOutputUrl = URL.createObjectURL(rawOutputBlob);
 
-  alignedSessionHistory.value.unshift({
+  const avatarEnabledForArchive = Boolean(avatarMuxOwnsAudio.value);
+  const historyItem = {
     id: `${currentAlignedArchive.startEpochMs}_${Math.random().toString(16).slice(2, 10)}`,
     sessionId: currentAlignedArchive.sessionId || '',
     startedAt: formatSessionTime(currentAlignedArchive.startEpochMs),
@@ -2959,8 +3406,18 @@ const finalizeCurrentAlignedArchive = () => {
     rawOutputSec: ((currentAlignedArchive.rawOutputSamples || 0) / TARGET_SAMPLE_RATE).toFixed(2),
     inputUrl,
     outputUrl,
-    rawOutputUrl
-  });
+    rawOutputUrl,
+    avatarVideoUrl: avatarEnabledForArchive
+      ? buildRealtimeAvatarVideoUrl(currentAlignedArchive.sessionId)
+      : '',
+    avatarVideoState: avatarEnabledForArchive ? 'saving' : 'unavailable',
+    avatarVideoSizeBytes: 0,
+    avatarVideoError: ''
+  };
+  alignedSessionHistory.value.unshift(historyItem);
+  if (avatarEnabledForArchive) {
+    monitorSavedAvatarVideo(historyItem).catch(() => {});
+  }
 
   currentAlignedArchive.outputTraceSummary = {
     inputTailPadSamples,
@@ -3125,7 +3582,90 @@ const buildRealtimeSessionStartUrl = () => `${buildGradioApiBase()}/api/realtime
 const buildRealtimeSessionChunkUrl = (sessionId) => `${buildGradioApiBase()}/api/realtime/session/${encodeURIComponent(sessionId)}/chunk`;
 const buildRealtimeSessionEventsUrl = (sessionId) => `${buildGradioApiBase()}/api/realtime/session/${encodeURIComponent(sessionId)}/events`;
 const buildRealtimeSessionStopUrl = (sessionId) => `${buildGradioApiBase()}/api/realtime/session/${encodeURIComponent(sessionId)}/stop`;
+const buildRealtimeAvatarVideoStatusUrl = (sessionId) => `${buildGradioApiBase()}/api/realtime/session/${encodeURIComponent(sessionId)}/avatar/video/status`;
+const buildRealtimeAvatarVideoUrl = (sessionId) => `${buildGradioApiBase()}/api/realtime/session/${encodeURIComponent(sessionId)}/avatar/output.mp4`;
 const buildRealtimeVoicesUrl = () => `${buildGradioApiBase()}/api/realtime/voices`;
+const resolveRealtimeApiUrl = (path) => {
+  if (!path) return '';
+  const base = buildGradioApiBase() || window.location.origin;
+  try {
+    return new URL(path, `${base.replace(/\/$/, '')}/`).toString();
+  } catch (_err) {
+    return String(path);
+  }
+};
+
+const formatSavedAvatarVideoSize = (sizeBytes) => {
+  const size = Math.max(0, Number(sizeBytes) || 0);
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const savedAvatarVideoButtonLabel = (item) => {
+  if (item?.avatarVideoState === 'ready') {
+    const size = item.avatarVideoSizeBytes > 0
+      ? ` (${formatSavedAvatarVideoSize(item.avatarVideoSizeBytes)})`
+      : '';
+    return `Download complete MP4${size}`;
+  }
+  if (item?.avatarVideoState === 'error') return 'Retry complete video';
+  return 'Saving complete video…';
+};
+
+const triggerSavedAvatarVideoDownload = (item) => {
+  if (!item?.avatarVideoUrl) return;
+  const anchor = document.createElement('a');
+  anchor.href = item.avatarVideoUrl;
+  anchor.download = `liveact_${sanitizeSessionIdForFilename(item.sessionId)}.mp4`;
+  anchor.style.display = 'none';
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+};
+
+const monitorSavedAvatarVideo = async (item, { downloadWhenReady = false } = {}) => {
+  if (!item?.sessionId || !item?.avatarVideoUrl) return false;
+  item.avatarVideoState = 'saving';
+  item.avatarVideoError = '';
+  const deadline = Date.now() + 150000;
+  let lastError = '';
+  while (Date.now() < deadline) {
+    try {
+      const resp = await fetchWithRuntimeContext(
+        `${buildRealtimeAvatarVideoStatusUrl(item.sessionId)}?t=${Date.now()}`,
+        { cache: 'no-store' },
+        'check saved avatar video'
+      );
+      if (resp.ok) {
+        const status = await resp.json();
+        if (status?.video_ready) {
+          item.avatarVideoState = 'ready';
+          item.avatarVideoSizeBytes = Number(status.video_size_bytes) || 0;
+          item.avatarVideoError = '';
+          if (downloadWhenReady) triggerSavedAvatarVideoDownload(item);
+          return true;
+        }
+        lastError = status?.video_error || 'The complete MP4 is still being finalized.';
+      } else {
+        lastError = `Video status returned HTTP ${resp.status}`;
+      }
+    } catch (err) {
+      lastError = err?.message || String(err);
+    }
+    await sleep(1500);
+  }
+  item.avatarVideoState = 'error';
+  item.avatarVideoError = lastError || 'Timed out waiting for the complete Avatar video.';
+  return false;
+};
+
+const downloadSavedAvatarVideo = async (item) => {
+  if (item?.avatarVideoState === 'ready') {
+    triggerSavedAvatarVideoDownload(item);
+    return;
+  }
+  await monitorSavedAvatarVideo(item, { downloadWhenReady: true });
+};
 const buildUserVoiceUploadUrl = () => {
   const explicit = window.__UNIMOE_USER_VOICE_UPLOAD_URL__;
   if (typeof explicit === 'string' && explicit.trim()) {
@@ -3888,7 +4428,8 @@ const createRealtimeSession = async () => {
     tts_chunk_size: 1,
     infer_window_ms: realtimeConfig.inferWindowMs,
     client_upload_chunk_ms: realtimeConfig.streamChunkMs,
-    stage_timing_log: true
+    stage_timing_log: true,
+    avatar_enabled: true
   };
   if (realtimeBackendHint === 'hf') {
     startPayload.incremental_backend = 'hf';
@@ -3907,6 +4448,17 @@ const createRealtimeSession = async () => {
   if (!result || typeof result.session_id !== 'string' || !result.session_id) {
     throw new Error('Realtime session response has an invalid format.');
   }
+  const avatarEnabled = Boolean(result.avatar_enabled && result.avatar_stream_url);
+  avatarMuxOwnsAudio.value = avatarEnabled;
+  avatarRequested.value = avatarEnabled;
+  avatarIdleImageUrl.value = resolveRealtimeApiUrl(result.avatar_idle_image_url);
+  avatarIdleVideoUrl.value = resolveRealtimeApiUrl(result.avatar_idle_video_url);
+  avatarMode.value = avatarEnabled ? 'idle' : 'disabled';
+  avatarAvailable.value = false;
+  avatarPlaybackVisible.value = false;
+  avatarActiveGeneration.value = null;
+  avatarSegmentEndSec.value = null;
+  avatarSegmentEndGeneration = null;
   return result.session_id;
 };
 
@@ -4010,6 +4562,7 @@ const consumeRealtimeSessionSse = async (sessionId) => {
           realtimeLastState = toState;
         }
         if (eventPayload.interrupt === true) {
+          handleAvatarInterrupt(eventPayload);
           flushRealtimePlaybackBuffer().catch((err) => {
             console.warn('清理实时播放缓冲失败:', err);
           });
@@ -4017,6 +4570,7 @@ const consumeRealtimeSessionSse = async (sessionId) => {
       }
 
       if (eventPayload.type === 'audio_interrupt') {
+        handleAvatarInterrupt(eventPayload);
         flushRealtimePlaybackBuffer().catch((err) => {
           console.warn('处理实时音频中断失败:', err);
         });
@@ -4027,6 +4581,63 @@ const consumeRealtimeSessionSse = async (sessionId) => {
         if (!handleStructuredRealtimeText(eventPayload)) {
           handleAssistantRealtimeText(eventPayload.text);
         }
+      }
+
+      if (eventPayload.type === 'avatar_ready') {
+        avatarRequested.value = true;
+        avatarMuxOwnsAudio.value = true;
+        if (avatarMode.value === 'disabled') avatarMode.value = 'idle';
+      }
+      if (eventPayload.type === 'avatar_buffering') {
+        avatarRequested.value = true;
+        avatarMuxOwnsAudio.value = true;
+        const nextGeneration = eventPayload.generation_id ?? null;
+        // A session keeps one HLS timeline across responses.  Always advance
+        // the generation, even while the prior video is still playing, so a
+        // boundary from the prior response cannot hide the newly appended one.
+        activateAvatarGeneration(nextGeneration);
+        // A later response can start buffering before the preceding response
+        // has finished playing. Keep the session-wide HLS visible instead of
+        // covering it with the idle image.
+        if (!(avatarAvailable.value && avatarMode.value === 'playing')) {
+          avatarPlaybackWatchdogGeneration = nextGeneration;
+          avatarMode.value = 'buffering';
+          clearAvatarSegmentBoundary();
+        }
+      }
+      if (eventPayload.type === 'avatar_stream_ready') {
+        const generationId = eventPayload.generation_id ?? null;
+        const startPosition = Math.max(0, Number(eventPayload.playback_start_sec) || 0);
+        const streamUrl = `/api/realtime/session/${encodeURIComponent(sessionId)}/avatar/live.m3u8`;
+        // The HLS timeline is session-wide, but each response has its own end
+        // boundary.  Never let the previous response's boundary terminate the
+        // newly-ready generation at its cumulative start position.
+        activateAvatarGeneration(generationId);
+        if (avatarAvailable.value && avatarStreamUrl === streamUrl) {
+          avatarPlaybackWatchdogGeneration = generationId;
+          avatarMode.value = 'playing';
+          avatarHls?.startLoad(-1);
+          attemptAvatarPlayback();
+        } else {
+          nextTick(() => startAvatarPlayback(streamUrl, { generationId, startPosition }));
+        }
+      }
+      if (eventPayload.type === 'avatar_segment_complete') {
+        // Legacy sidecars emitted per-response boundaries. Continuous mode has
+        // no response playback boundary; only hangup may hide the HLS layer.
+        clearAvatarSegmentBoundary();
+      }
+      if (eventPayload.type === 'avatar_interrupt') {
+        handleAvatarInterrupt(eventPayload);
+      }
+      if (eventPayload.type === 'avatar_speech_interrupted') {
+        handleAvatarInterrupt(eventPayload);
+      }
+      if (eventPayload.type === 'avatar_error') {
+        avatarRequested.value = false;
+        showAvatarIdle({ preserveAudioOwnership: false });
+        avatarMode.value = 'error';
+        connectionStatus.value = `Avatar unavailable; text fallback: ${eventPayload.error || 'unknown error'}`;
       }
 
       if (eventPayload.type === 'stage_timing') {
@@ -4041,7 +4652,7 @@ const consumeRealtimeSessionSse = async (sessionId) => {
           if (pcmSamples.length > 0) {
             openRealtimeTextAudioGateOnAudio(eventPayload);
             recordRealtimeOutputSamples(pcmSamples, sampleRate);
-            scheduleRealtimePcmSamples(pcmSamples, sampleRate)
+            if (!avatarMuxOwnsAudio.value) scheduleRealtimePcmSamples(pcmSamples, sampleRate)
               .then((scheduleMetrics) => {
                 const preEmitClientMs = derivePreEmitMs(
                   eventPayload.client_chunk_sent_to_emit_ms,
@@ -4082,7 +4693,7 @@ const consumeRealtimeSessionSse = async (sessionId) => {
             openRealtimeTextAudioGateOnAudio(eventPayload);
           }
           recordRealtimeOutputSamples(decoded.samples, decoded.sampleRate);
-          scheduleRealtimePcmSamples(decoded.samples, decoded.sampleRate)
+          if (!avatarMuxOwnsAudio.value) scheduleRealtimePcmSamples(decoded.samples, decoded.sampleRate)
             .then((scheduleMetrics) => {
               const preEmitClientMs = derivePreEmitMs(
                 eventPayload.client_chunk_sent_to_emit_ms,
@@ -4145,15 +4756,26 @@ const consumeRealtimeSessionSse = async (sessionId) => {
   }
 };
 
-const stopRealtimeSession = async (sessionId) => {
+const stopRealtimeSession = async (sessionId, { keepalive = true } = {}) => {
   if (!sessionId) return;
   try {
     await fetch(buildRealtimeSessionStopUrl(sessionId), {
-      method: 'POST'
+      method: 'POST',
+      keepalive: Boolean(keepalive)
     });
   } catch (err) {
     console.warn('停止实时会话失败:', err);
   }
+};
+
+const stopRealtimeSessionOnPageExit = () => {
+  const sessionId = realtimeSessionId.value;
+  if (!sessionId) return;
+  realtimeStoppingExpected.value = true;
+  realtimeSessionId.value = '';
+  // keepalive allows this small POST to outlive page teardown.  The sidecar
+  // TTL remains the final fallback for browser/process crashes.
+  stopRealtimeSession(sessionId, { keepalive: true }).catch(() => {});
 };
 
 const uploadWavChunkToGradio = async (wavBlob, segmentId) => {
@@ -4638,7 +5260,12 @@ const startTalk = async () => {
 };
 
 const endTalk = () => {
-  if (!isTalking.value && !captureAudioContext.value && !mediaStream.value) {
+  if (
+    !isTalking.value
+    && !captureAudioContext.value
+    && !mediaStream.value
+    && !realtimeSessionId.value
+  ) {
     return;
   }
   realtimeStoppingExpected.value = true;
@@ -4656,6 +5283,7 @@ const endTalk = () => {
   resetRealtimeProbabilities();
   stopCallTimer();
   isAiSpeaking.value = false;
+  stopAvatarPlayback();
 };
 
 
@@ -4678,9 +5306,11 @@ onMounted(() => {
   document.title = 'lychee-FD'
   function_value.value = 'function_6'
   restorePersistedStartTalkError();
+  window.addEventListener('pagehide', stopRealtimeSessionOnPageExit);
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener('pagehide', stopRealtimeSessionOnPageExit);
   endTalk()
   clearRealtimeTextTypewriter()
   clearRealtimeTextAudioGateTimer()
@@ -6288,6 +6918,25 @@ watch(
   width: 100%;
 }
 
+.rt-history-video-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rt-history-video-download {
+  align-self: flex-start;
+  border: 1px solid rgba(55, 138, 221, 0.35);
+  border-radius: 8px;
+  padding: 7px 12px;
+  color: #175f9f;
+  background: #eef7ff;
+  cursor: pointer;
+}
+
+.rt-history-video-download:hover:not(:disabled) { background: #dcefff; }
+.rt-history-video-download:disabled { color: #7b8794; cursor: wait; opacity: 0.75; }
+
 .rt-waiting-text {
   color: #64748b;
   font-size: 14px;
@@ -6623,6 +7272,20 @@ watch(
   font-size: 14px; line-height: 1.6; color: #0f172a;
   scroll-padding-bottom: 24px;
 }
+.rt-response-split { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.rt-response-column { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+.rt-response-column-title { flex: 0 0 auto; color: #5f6b7a; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+.rt-response-text-column .rt-subtitle-panel { width: 100%; }
+.rt-response-video-column .rt-avatar-stage { width: 100%; }
+.rt-avatar-stage { display: none; position: relative; flex: 1; min-height: 0; overflow: hidden; border-radius: 12px; background: #0b0f16; }
+.rt-avatar-stage.is-visible { display: flex; align-items: center; justify-content: center; }
+.rt-avatar-video { width: 100%; height: 100%; object-fit: contain; }
+.rt-avatar-idle-image { width: 100%; height: 100%; object-fit: contain; }
+.rt-avatar-empty-state { color: #dce7f5; font-size: 14px; }
+.rt-avatar-state-badge { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); border-radius: 999px; padding: 7px 14px; color: #e6f0ff; background: rgba(10,18,30,.76); font-size: 13px; backdrop-filter: blur(8px); }
+.rt-avatar-audio-unlock { position: absolute; left: 50%; bottom: 18px; z-index: 3; transform: translateX(-50%); border: 1px solid rgba(255,255,255,.42); border-radius: 999px; padding: 9px 18px; color: #fff; background: rgba(10,18,30,.82); cursor: pointer; backdrop-filter: blur(8px); }
+.rt-avatar-audio-unlock:hover { background: rgba(27,65,110,.92); }
+@media (max-width: 960px) { .rt-response-split { grid-template-columns: 1fr; grid-template-rows: minmax(220px, 1fr) minmax(260px, 1fr); } }
 .rt-subtitle-thinking, .rt-subtitle-idle { color: #888780; }
 .rt-subtitle-idle p { margin: 0 0 8px; line-height: 1.7; }
 .rt-welcome-title { font-size: 15px; color: #0f172a; font-weight: 600; }

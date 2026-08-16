@@ -1,0 +1,22 @@
+# LiveAct avatar sidecar. Install this in a dedicated environment because its
+# CUDA/PyTorch requirements may differ from the Lychee-FD backend environment.
+torch==2.8.0
+torchaudio==2.8.0
+torchvision==0.23.0
+lightx2v==0.1.0
+opencv-python>=4.11.0.86
+diffusers>=0.31.0
+transformers>=4.49.0
+tokenizers>=0.20.3
+accelerate>=1.12.1
+xfuser==0.4.5
+yunchang==0.6.4
+einops
+numpy
+Pillow
+imageio
+imageio-ffmpeg
+av
+scikit-image
+ftfy
+decord

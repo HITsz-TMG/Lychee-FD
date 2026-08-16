@@ -1,4 +1,5 @@
 .env
+.env.avatar
 model_presets.local.json
 runtime_logs/
 realtime_aligned_audio/
@@ -10,6 +11,27 @@ __pycache__/
 *.pyc
 *.log
 .DS_Store
+
+# LiveAct avatar runtime outputs
+liveact_avatar/generated_videos/
+liveact_avatar/hls_output/
+generated_videos/
+hls_output/
+uploads/
+*.mp4
+*.wav
+
+# Local model weights must not be committed
+checkpoints/
+models/
+*.safetensors
+*.bin
+*.pt
+*.pth
+
+# Source backup files
+*.bak
+*.orig
 HUGGINGFACE_README.md
 DOCKER_PUBLISH.md
 reference.md
