@@ -187,47 +187,54 @@
           <div v-if="debugDrawerOpen" class="rt-debug-body">
             <div class="rt-debug-toolbar">
               <span class="rt-debug-toolbar-title">Debug</span>
-              <button type="button" class="rt-debug-copy" @click="copyDebugInfo">复制</button>
+              <button type="button" class="rt-debug-copy" @click="copyDebugInfo">Copy</button>
             </div>
 
             <div v-if="startTalkErrorSummary" class="rt-debug-alert">
-              <div class="rt-debug-alert-title">最近一次失败</div>
+              <div class="rt-debug-alert-title">Latest Failure</div>
               <div class="rt-debug-alert-text">{{ startTalkErrorSummary }}</div>
               <div v-if="startTalkErrorHint" class="rt-debug-alert-hint">{{ startTalkErrorHint }}</div>
             </div>
 
             <div class="rt-debug-group">
-              <div class="rt-debug-group-title">连接 / 状态</div>
-              <div class="rt-debug-row"><span>通话状态</span><span>{{ callState }}</span></div>
-              <div class="rt-debug-row"><span>连接</span><span>{{ connectionStatus || '—' }}</span></div>
-              <div class="rt-debug-row"><span>输入采样率</span><span>{{ captureSampleRateDisplay }} Hz</span></div>
+              <div class="rt-debug-group-title">Connection / Status</div>
+              <div class="rt-debug-row"><span>Call State</span><span>{{ callState }}</span></div>
+              <div class="rt-debug-row rt-debug-row-connection"><span>Connection</span><span>{{ connectionStatus || '—' }}</span></div>
+              <div class="rt-debug-row"><span>Input Sample Rate</span><span>{{ captureSampleRateDisplay }} Hz</span></div>
             </div>
 
             <div class="rt-debug-group">
-              <div class="rt-debug-group-title">队列</div>
-              <div class="rt-debug-row"><span>上传 / 优先</span><span>{{ segmentQueueDepth }} / {{ prioritySegmentQueueDepth }}</span></div>
-              <div class="rt-debug-row"><span>已发送分片</span><span>{{ segmentsSentCount }}</span></div>
-              <div class="rt-debug-row"><span>后端轮次 / 窗口</span><span>#{{ backendQueueRoundId || '--' }} / {{ formatNullableMs(backendQueueInferWindowMs) }}</span></div>
-              <div class="rt-debug-row"><span>取前队列</span><span>{{ formatNullableMs(backendQueueBeforeMs) }}</span></div>
-              <div class="rt-debug-row"><span>消费 / 剩余</span><span>{{ formatNullableMs(backendQueueConsumedMs) }} / {{ formatNullableMs(backendQueueAfterMs) }}</span></div>
-              <div v-if="priorityUploadInProgress" class="rt-debug-row"><span>插队发送中</span><span>{{ priorityUploadSourceName || '测试音频' }}</span></div>
+              <div class="rt-debug-group-title">Queue</div>
+              <div class="rt-debug-row"><span>Upload / Priority</span><span>{{ segmentQueueDepth }} / {{ prioritySegmentQueueDepth }}</span></div>
+              <div class="rt-debug-row"><span>Segments Sent</span><span>{{ segmentsSentCount }}</span></div>
+              <div class="rt-debug-row"><span>Backend Round / Window</span><span>#{{ backendQueueRoundId || '--' }} / {{ formatNullableMs(backendQueueInferWindowMs) }}</span></div>
+              <div class="rt-debug-row"><span>Queue Before</span><span>{{ formatNullableMs(backendQueueBeforeMs) }}</span></div>
+              <div class="rt-debug-row"><span>Consumed / Remaining</span><span>{{ formatNullableMs(backendQueueConsumedMs) }} / {{ formatNullableMs(backendQueueAfterMs) }}</span></div>
+              <div v-if="priorityUploadInProgress" class="rt-debug-row"><span>Priority Upload</span><span>{{ priorityUploadSourceName || 'Test Audio' }}</span></div>
             </div>
 
             <div class="rt-debug-group">
-              <div class="rt-debug-group-title">延迟（样本 {{ realtimeLatencySampleCount }}）</div>
+              <div class="rt-debug-group-title">Round RTF ({{ roundRtfCount }} rounds)</div>
+              <div class="rt-debug-row"><span>Last / Mean / Max</span><span>{{ formatRtf(roundRtfLast) }} / {{ formatRtf(roundRtfMean) }} / {{ formatRtf(roundRtfMax) }}</span></div>
+              <div class="rt-debug-row"><span>RTF ≤ 1</span><span>{{ roundRtfPassText }}</span></div>
+              <div class="rt-debug-row"><span>Mean Total Round</span><span>{{ formatNullableMs(roundTotalMeanMs) }}</span></div>
+            </div>
+
+            <div class="rt-debug-group">
+              <div class="rt-debug-group-title">Latency ({{ realtimeLatencySampleCount }} samples)</div>
               <div class="rt-debug-metrics">
-                <span>前端送片→后端emit: {{ formatLatencyTriplet(realtimePreEmitClientLastMs, realtimePreEmitClientAvgMs, realtimePreEmitClientP95Ms) }}</span>
-                <span>后端收片→后端emit: {{ formatLatencyTriplet(realtimePreEmitServerLastMs, realtimePreEmitServerAvgMs, realtimePreEmitServerP95Ms) }}</span>
-                <span>后端队列延迟: {{ formatLatencyTriplet(realtimeServerQueueDelayLastMs, realtimeServerQueueDelayAvgMs, realtimeServerQueueDelayP95Ms) }}</span>
-                <span>后端emit→前端收包: {{ formatLatencyTriplet(realtimeLatencyReceiveLastMs, realtimeLatencyReceiveAvgMs, realtimeLatencyReceiveP95Ms) }}</span>
-                <span>后端emit→预计开播: {{ formatLatencyTriplet(realtimeLatencyAudibleLastMs, realtimeLatencyAudibleAvgMs, realtimeLatencyAudibleP95Ms) }}</span>
-                <span>播放排队积压: {{ formatLatencyTriplet(realtimePlaybackBacklogLastMs, realtimePlaybackBacklogAvgMs, realtimePlaybackBacklogP95Ms) }}</span>
+                <span>Client Send → Backend Emit: {{ formatLatencyPair(realtimePreEmitClientLastMs, realtimePreEmitClientAvgMs) }}</span>
+                <span>Backend Receive → Emit: {{ formatLatencyPair(realtimePreEmitServerLastMs, realtimePreEmitServerAvgMs) }}</span>
+                <span>Backend Queue Delay: {{ formatLatencyPair(realtimeServerQueueDelayLastMs, realtimeServerQueueDelayAvgMs) }}</span>
+                <span>Backend Emit → Client Receive: {{ formatLatencyPair(realtimeLatencyReceiveLastMs, realtimeLatencyReceiveAvgMs) }}</span>
+                <span>Backend Emit → Estimated Playback: {{ formatLatencyPair(realtimeLatencyAudibleLastMs, realtimeLatencyAudibleAvgMs) }}</span>
+                <span>Playback Backlog: {{ formatLatencyPair(realtimePlaybackBacklogLastMs, realtimePlaybackBacklogAvgMs) }}</span>
               </div>
             </div>
 
             <div class="rt-debug-group">
-              <div class="rt-debug-group-title">Duplex / VAD</div>
-              <div class="rt-debug-row"><span>控制参数</span><span>SS={{ startSpeakFactor }} / SL={{ startListenFactor }} / END={{ endSpeakFactor }}</span></div>
+              <div class="rt-debug-group-title">Duplex (Equivalent VAD)</div>
+              <div class="rt-debug-row"><span>Control Parameters</span><span>SS={{ startSpeakFactor }} / SL={{ startListenFactor }} / END={{ endSpeakFactor }}</span></div>
               <div class="rt-debug-prob-row">
                 <span class="rt-prob-tag">S-L: {{ formatProbability(slProbability) }}</span>
                 <span class="rt-prob-tag">S-S: {{ formatProbability(ssProbability) }}</span>
@@ -242,21 +249,21 @@
             </div>
 
             <div class="rt-debug-group">
-              <div class="rt-debug-group-title">模型</div>
-              <div class="rt-debug-row"><span>state</span><span>{{ devStatus.state || 'idle' }}</span></div>
-              <div class="rt-debug-row"><span>pid</span><span>{{ devStatus.pid || '—' }}</span></div>
-              <div class="rt-debug-row"><span>backend</span><span>{{ devStatus.backend_type || '—' }}</span></div>
-              <div class="rt-debug-row rt-debug-row-path"><span>model</span><span>{{ devStatus.model_path || '—' }}</span></div>
-              <div v-if="devStatus.last_error" class="rt-debug-row rt-debug-row-error"><span>error</span><span>{{ devStatus.last_error }}</span></div>
+              <div class="rt-debug-group-title">Model</div>
+              <div class="rt-debug-row"><span>State</span><span>{{ devStatus.state || 'idle' }}</span></div>
+              <div class="rt-debug-row"><span>PID</span><span>{{ devStatus.pid || '—' }}</span></div>
+              <div class="rt-debug-row"><span>Backend</span><span>{{ devStatus.backend_type || '—' }}</span></div>
+              <div class="rt-debug-row rt-debug-row-path"><span>Model</span><span>{{ devStatus.model_path || '—' }}</span></div>
+              <div v-if="devStatus.last_error" class="rt-debug-row rt-debug-row-error"><span>Error</span><span>{{ devStatus.last_error }}</span></div>
             </div>
 
             <div class="rt-debug-group">
-              <div class="rt-debug-group-title">调试操作</div>
+              <div class="rt-debug-group-title">Debug Actions</div>
               <button
                 class="rt-debug-action"
                 :disabled="!(isTalking && realtimeInputMode === 'mic')"
                 @click="clickRealtimeAudioInjectButton"
-              >🎵 发送测试音频</button>
+              >🎵 Send Test Audio</button>
             </div>
           </div>
         </aside>
@@ -405,7 +412,7 @@ const EXTERNAL_LINKS = {
 const voicePopoverOpen = ref(false);
 const settingsPopoverOpen = ref(false);
 const debugDrawerOpen = ref(false);
-const DEBUG_DRAWER_VISIBLE = false;
+const DEBUG_DRAWER_VISIBLE = true;
 const modelMetaExpanded = ref(false);
 
 const toggleVoicePopover = () => {
@@ -561,32 +568,41 @@ const callStateText = computed(() => CALL_STATE_TEXT[callState.value] || '');
 // 复制 Debug 抽屉中的调试信息快照到剪贴板
 const copyDebugInfo = async () => {
   const snapshot = {
-    时间: new Date().toISOString(),
-    通话状态: callState.value,
-    连接: connectionStatus.value,
-    输入采样率: captureSampleRateDisplay.value,
-    队列: {
-      上传队列: segmentQueueDepth.value,
-      优先队列: prioritySegmentQueueDepth.value,
-      已发送分片: segmentsSentCount.value,
-      后端轮次: backendQueueRoundId.value,
-      推理窗口ms: backendQueueInferWindowMs.value,
-      取前队列ms: backendQueueBeforeMs.value,
-      消费ms: backendQueueConsumedMs.value,
-      剩余ms: backendQueueAfterMs.value,
+    timestamp: new Date().toISOString(),
+    call_state: callState.value,
+    connection: connectionStatus.value,
+    input_sample_rate_hz: captureSampleRateDisplay.value,
+    queue: {
+      upload_depth: segmentQueueDepth.value,
+      priority_depth: prioritySegmentQueueDepth.value,
+      segments_sent: segmentsSentCount.value,
+      backend_round: backendQueueRoundId.value,
+      inference_window_ms: backendQueueInferWindowMs.value,
+      before_ms: backendQueueBeforeMs.value,
+      consumed_ms: backendQueueConsumedMs.value,
+      remaining_ms: backendQueueAfterMs.value,
     },
-    延迟样本: realtimeLatencySampleCount.value,
-    概率: { 'S-L': slProbability.value, 'S-S': ssProbability.value },
-    控制参数: { SS: startSpeakFactor.value, SL: startListenFactor.value, END: endSpeakFactor.value },
-    LS事件: lsStartEvents.value,
-    模型: {
+    round_rtf: {
+      rounds: roundRtfCount.value,
+      last: roundRtfLast.value,
+      mean: roundRtfMean.value,
+      max: roundRtfMax.value,
+      rtf_le_1_rounds: roundRtfPassCount.value,
+      rtf_le_1_rate_percent: roundRtfPassRate.value,
+      mean_total_round_ms: roundTotalMeanMs.value,
+    },
+    latency_samples: realtimeLatencySampleCount.value,
+    equivalent_vad_probabilities: { 'S-L': slProbability.value, 'S-S': ssProbability.value },
+    control_parameters: { SS: startSpeakFactor.value, SL: startListenFactor.value, END: endSpeakFactor.value },
+    listen_to_speak_events: lsStartEvents.value,
+    model: {
       state: devStatus.value.state,
       pid: devStatus.value.pid,
       backend: devStatus.value.backend_type,
       model: devStatus.value.model_path,
       last_error: devStatus.value.last_error || null,
     },
-    最近失败: startTalkErrorSummary.value || null,
+    latest_failure: startTalkErrorSummary.value || null,
   };
   const text = JSON.stringify(snapshot, null, 2);
   try {
@@ -603,12 +619,12 @@ const copyDebugInfo = async () => {
       document.body.removeChild(ta);
     }
     if (typeof ElNotification === 'function') {
-      ElNotification({ type: 'success', title: '已复制调试信息', duration: 2000 });
+      ElNotification({ type: 'success', title: 'Debug information copied', duration: 2000 });
     }
   } catch (err) {
-    console.error('复制调试信息失败:', err);
+    console.error('Failed to copy debug information:', err);
     if (typeof ElNotification === 'function') {
-      ElNotification({ type: 'warning', title: '复制失败', message: String(err && err.message || err) });
+      ElNotification({ type: 'warning', title: 'Copy failed', message: String(err && err.message || err) });
     }
   }
 };
@@ -879,6 +895,20 @@ const backendQueueAfterMs = ref(null);    // 消费后剩余(ms)
 const backendQueueConsumedMs = ref(null); // 本轮消费(ms)
 const backendQueueInferWindowMs = ref(null);
 const backendQueueRoundId = ref(null);
+const roundRtfCount = ref(0);
+const roundRtfPassCount = ref(0);
+const roundRtfLast = ref(null);
+const roundRtfMean = ref(null);
+const roundRtfMax = ref(null);
+const roundRtfPassRate = ref(null);
+const roundTotalMeanMs = ref(null);
+let roundRtfSum = 0;
+let roundTotalMsSum = 0;
+let roundRtfSeenRoundIds = new Set();
+const roundRtfPassText = computed(() => {
+  if (roundRtfCount.value === 0) return '--';
+  return `${roundRtfPassCount.value}/${roundRtfCount.value} (${roundRtfPassRate.value.toFixed(1)}%)`;
+});
 const runtimeMetricsExpanded = ref(true);
 const realtimeBackendHint = (() => {
   try {
@@ -1057,8 +1087,13 @@ const formatLatencyMs = (v) => {
 
 const formatNullableMs = (v) => formatLatencyMs(v);
 
-const formatLatencyTriplet = (lastMs, avgMs, p95Ms) => {
-  return `last ${formatLatencyMs(lastMs)} | avg ${formatLatencyMs(avgMs)} | p95 ${formatLatencyMs(p95Ms)}`;
+const formatRtf = (v) => {
+  const n = toFiniteNumber(v);
+  return n === null ? '--' : n.toFixed(3);
+};
+
+const formatLatencyPair = (lastMs, avgMs) => {
+  return `last ${formatLatencyMs(lastMs)} | avg ${formatLatencyMs(avgMs)}`;
 };
 
 const normalizeRealtimeNumber = (value, fallback, min, max, digits = 3) => {
@@ -1148,6 +1183,16 @@ const resetRealtimeLatencyStats = () => {
   backendQueueConsumedMs.value = null;
   backendQueueInferWindowMs.value = null;
   backendQueueRoundId.value = null;
+  roundRtfCount.value = 0;
+  roundRtfPassCount.value = 0;
+  roundRtfLast.value = null;
+  roundRtfMean.value = null;
+  roundRtfMax.value = null;
+  roundRtfPassRate.value = null;
+  roundTotalMeanMs.value = null;
+  roundRtfSum = 0;
+  roundTotalMsSum = 0;
+  roundRtfSeenRoundIds = new Set();
 };
 
 const updateRealtimeAudioLatencyMetrics = ({
@@ -1246,6 +1291,32 @@ const updateBackendQueueMetricsFromStageTiming = (payload) => {
   if (afterMs !== null) backendQueueAfterMs.value = afterMs;
   if (consumedMs !== null) backendQueueConsumedMs.value = consumedMs;
   if (inferMs !== null) backendQueueInferWindowMs.value = inferMs;
+};
+
+const updateRoundRtfMetricsFromStageTiming = (payload) => {
+  if (!payload || payload.type !== 'stage_timing') return;
+  const roundId = toFiniteNumber(payload.round_id);
+  if (roundId !== null && roundRtfSeenRoundIds.has(roundId)) return;
+
+  const inputDurationSec = toFiniteNumber(payload.input_duration_sec);
+  const totalRoundMs = toFiniteNumber(payload.latency?.total_round_ms);
+  if (inputDurationSec === null || inputDurationSec <= 0 || totalRoundMs === null) return;
+
+  const rtf = totalRoundMs / (inputDurationSec * 1000.0);
+  if (!Number.isFinite(rtf)) return;
+  if (roundId !== null) roundRtfSeenRoundIds.add(roundId);
+
+  roundRtfCount.value += 1;
+  roundRtfSum += rtf;
+  roundTotalMsSum += totalRoundMs;
+  roundRtfLast.value = rtf;
+  roundRtfMean.value = roundRtfSum / roundRtfCount.value;
+  roundRtfMax.value = roundRtfMax.value === null
+    ? rtf
+    : Math.max(roundRtfMax.value, rtf);
+  if (rtf <= 1.0) roundRtfPassCount.value += 1;
+  roundRtfPassRate.value = roundRtfPassCount.value / roundRtfCount.value * 100.0;
+  roundTotalMeanMs.value = roundTotalMsSum / roundRtfCount.value;
 };
 
 const derivePreEmitMs = (explicitMs, emitEpochMs, priorEpochMs) => {
@@ -1475,7 +1546,7 @@ const normalizeProbLike = (v) => {
 };
 
 const extractReadableErrorMessage = (err) => {
-  if (!err) return '未知错误';
+  if (!err) return 'Unknown error';
   if (typeof err === 'string' && err.trim()) return err.trim();
   if (typeof err?.message === 'string' && err.message.trim()) return err.message.trim();
   try {
@@ -1587,7 +1658,7 @@ const setStartTalkError = (
   hint = '',
   {
     toast = false,
-    title = '实时通话错误',
+    title = 'Realtime call error',
     duration = 9000,
     forceToast = false
   } = {}
@@ -4031,6 +4102,7 @@ const consumeRealtimeSessionSse = async (sessionId) => {
 
       if (eventPayload.type === 'stage_timing') {
         updateBackendQueueMetricsFromStageTiming(eventPayload);
+        updateRoundRtfMetricsFromStageTiming(eventPayload);
       }
 
       if (eventPayload.type === 'audio_chunk_pcm' && typeof eventPayload.pcm_b64 === 'string' && eventPayload.pcm_b64) {
@@ -5057,8 +5129,8 @@ function clickMultiButton() {
 function clickRealtimeAudioInjectButton() {
   if (!isTalking.value) {
     ElNotification({
-      title: '提示',
-      message: '请先开始通话后再发送测试音频',
+      title: 'Call Required',
+      message: 'Start a call before sending test audio.',
       type: 'warning'
     });
     return;
@@ -5152,21 +5224,21 @@ async function onRealtimeAudioFileChange(e) {
     messages.value.push({
       id: Date.now() + 1,
       role: 'user',
-      text: '[实时测试音频：优先发送]',
+      text: '[Realtime test audio: priority upload]',
       audioUrl: localAudioUrl
     });
     scrollToBottom();
 
     const segmentCount = await enqueuePriorityAudioFile(file);
     ElNotification({
-      title: '已加入优先队列',
-      message: `${file.name}，共 ${segmentCount} 个分片，将优先于麦克风分片发送`,
+      title: 'Added to Priority Queue',
+      message: `${file.name}: ${segmentCount} segments will be sent before microphone segments.`,
       type: 'success'
     });
   } catch (err) {
-    console.error('插队发送测试音频失败:', err);
+    console.error('Failed to send priority test audio:', err);
     ElNotification({
-      title: '发送失败',
+      title: 'Send Failed',
       message: String(err),
       type: 'error'
     });
@@ -6792,6 +6864,20 @@ watch(
 .rt-debug-group-title { font-size: 12px; font-weight: 700; color: #378add; }
 .rt-debug-row { display: flex; justify-content: space-between; gap: 8px; font-size: 11px; color: #5f5e5a; }
 .rt-debug-row span:last-child { color: #0f172a; word-break: break-all; text-align: right; }
+.rt-debug-row-connection {
+  height: 30px;
+  align-items: flex-start;
+}
+.rt-debug-row-connection span:first-child { flex: 0 0 auto; }
+.rt-debug-row-connection span:last-child {
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 15px;
+  height: 30px;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
 .rt-debug-row-path span:last-child, .rt-debug-row-error span:last-child { font-size: 10px; }
 .rt-debug-row-error span:last-child { color: #e24b4a; }
 .rt-debug-metrics { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: #5f5e5a; }

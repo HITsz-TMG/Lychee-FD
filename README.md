@@ -25,7 +25,8 @@ If you appreciate our project, please consider giving us a star ⭐ on GitHub fo
 </h4>
 
 <p align="center">
-  <a href="README_CN.md">中文文档</a>
+  <a href="README_CN.md">中文文档</a> ·
+  <a href="FAQ.md">FAQ &amp; Troubleshooting</a>
 </p>
 
 ## 🔥 News

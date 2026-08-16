@@ -25,7 +25,8 @@ Lychee-FD 是一个面向低延迟语音对话的全双工实时语音交互系�
 </h4>
 
 <p align="center">
-  <a href="README.md">English README</a>
+  <a href="README.md">English README</a> ·
+  <a href="FAQ_CN.md">FAQ 与排障指南</a>
 </p>
 
 ## 🔥 最新动态
