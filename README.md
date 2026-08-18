@@ -5,7 +5,7 @@
 </p>
 
 <h4 align="center">
-Lychee-FD is a native end-to-end full-duplex spoken language model for real-time speech interaction.
+Lychee-FD is an open-source native end-to-end full-duplex spoken language model for real-time speech interaction.
 </h4>
 
 <p align="center">
@@ -30,25 +30,15 @@ If you appreciate our project, please consider giving us a star ⭐ on GitHub fo
 </p>
 
 ## 🔥 News
-
-- [2026/07/10] 🎉 We release the Lychee-FD codebase, paper, and web demo.
+- [2026/07/30] 📦 We release the Lychee-FD [training codebase](https://github.com/HITsz-TMG/Lychee-FD/tree/main/Training_package), supporting domain-specific fine-tuning.
+- [2026/07/10] 🎉 We release the Lychee-FD online serving pipeline codebase, paper, web demo, and a comprehensive [FAQ guide](https://github.com/HITsz-TMG/Lychee-FD/blob/main/FAQ.md).
 - [2026/07/07] 🏆 Our paper has been selected as an [**Outstanding Paper**](https://2026.aclweb.org/program/best_papers/#outstanding-papers) at **ACL 2026**!
 
 
 ## 📌 Introduction
 
-**Lychee-FD** is a native end-to-end full-duplex spoken language model designed for real-time speech interaction. Unlike turn-based or system-level full-duplex speech pipelines, Lychee-FD internalizes continuous listening, semantic understanding, speech generation, and interaction control within a unified multi-stream model.
+**Lychee-FD** is a native end-to-end full-duplex spoken language model for real-time speech interaction. Unlike system-level cascaded full-duplex pipelines, Lychee-FD unifies continuous listening, understanding, speech generation, and interaction control within a single multi-stream architecture. To enable low-latency online deployment, we also provide a customized multi-stream vLLM serving pipeline and a browser-based realtime interaction frontend.
 
-The project is motivated by a key observation: native full-duplex SLMs often suffer from modality interference and semantic dilution, which make it difficult to preserve both speech intelligence and interaction fluency. Lychee-FD addresses these issues through hierarchical acoustic-semantic modeling and a semantic alignment channel, while providing a customized multi-stream vLLM serving pipeline for online interaction.
-
-This repository provides:
-
-- Source code for the Lychee-FD online serving pipeline.
-- A browser-based realtime speech interaction frontend.
-- vLLM-optimized backend support for low-latency online inference.
-- `Training_package/` with reference training scripts, data loaders, model
-  code, and a DeepSpeed launch example.
-- Runtime integration notes and third-party license notices.
 
 ## 🌟 Model Structure
 
@@ -98,8 +88,8 @@ Create one local model root:
 
 ```text
 /path/to/model-root/
-  lychee_full_duplex/
-  token2wav/
+├── lychee_full_duplex/
+└── token2wav/
 ```
 
 Download the Lychee-FD checkpoint:
