@@ -30,12 +30,7 @@ IGNORE_INDEX = -100
 
 SYSTEM_MESSAGE_PREFIX = "<|BOT|>system\nYou are a helpful assistant.<|EOT|>"
 
-"""
-Compared with V3, input audio token IDs are inserted with spacing.
-Compared with V4, TTS END was changed to EOT; tts_start and tts_end were added;
-text EOT now marks the end of text instead of the tts_end section.
-Compared with V5, AI backchannel support was added.
-"""
+"""Dataset assembly for Lychee-FD full-duplex and backchannel training."""
 
 def compute_token_num(max_feature_len):
     # First, audio goes through encoder:

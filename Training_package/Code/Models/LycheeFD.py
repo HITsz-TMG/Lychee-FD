@@ -42,13 +42,13 @@ except:
     from .modeling_step_audio_2 import AudioEncoder, Adaptor
     from .configuration_step_audio_2 import StepAudio2TextConfig, StepAudio2EncoderConfig
 
-class StepAudio2FullDuplexConfig(PretrainedConfig):
-    model_type = "step_audio_2_full_duplex"
-    architectures = ["StepAudio2ForCausalLM"]
+class LycheeFDConfig(PretrainedConfig):
+    model_type = "lychee_full_duplex"
+    architectures = ["LycheeFD"]
 
     def __init__(
         self,
-        # full duplex control token
+        # Lychee-FD control tokens
         start_speaking_token_id=None,
         keep_listening_token_id=None,
         start_listening_token_id=None,
@@ -84,8 +84,8 @@ class StepAudio2FullDuplexConfig(PretrainedConfig):
         # stoken logits. It fuses stoken_model hidden states with left-shifted
         # text embeddings so stoken prediction can use the next text token.
         merge_layer_config=None,
-        # V8: the control head branches from the X-th layer from the end of the
-        # backbone, decoupled from control_layer_num.
+        # The control head branches from the X-th layer from the end of the
+        # backbone, independently of control_layer_num.
         # control_branch_layer selects which backbone hidden states feed the
         # control model.
         # control_layer_num is the number of transformer layers inside the
@@ -106,7 +106,7 @@ class StepAudio2FullDuplexConfig(PretrainedConfig):
         max_window_layers: Optional[int] = None,
         **kwargs
     ):
-        # full duplex
+        # Lychee-FD
         self.start_speaking_token_id = start_speaking_token_id
         self.keep_listening_token_id = keep_listening_token_id
         self.start_listening_token_id = start_listening_token_id
@@ -145,9 +145,9 @@ class StepAudio2FullDuplexConfig(PretrainedConfig):
             merge_layer_config = StepAudio2TextConfig(**merge_layer_config).text_config
         self.merge_layer_config = merge_layer_config
 
-        # V8: control_branch_layer falls back to
-        # control_layer_config.num_hidden_layers by default for V6/V7
-        # compatibility. When rank0_print(new_model_config) prints the config,
+        # control_branch_layer falls back to
+        # control_layer_config.num_hidden_layers by default. When
+        # rank0_print(new_model_config) prints the config,
         # transformers.__repr__ calls to_diff_dict(), which internally calls
         # self.__class__() and re-instantiates the config with default args.
         if control_branch_layer is not None:
@@ -197,8 +197,8 @@ class CausalLMOutputWithPast(ModelOutput):
 
 
 
-class StepAudio2FullDuplex(PreTrainedModel, GenerationMixin):
-    config_class = StepAudio2FullDuplexConfig
+class LycheeFD(PreTrainedModel, GenerationMixin):
+    config_class = LycheeFDConfig
     main_input_name = "input_ids"
     # Important: Add this attribute to make HF recognize it as a model with generation capability
     # _keys_to_ignore_on_load_missing = ["lm_head.weight"]
@@ -207,7 +207,7 @@ class StepAudio2FullDuplex(PreTrainedModel, GenerationMixin):
     _supports_sdpa = True
     _supports_cache_class = True
 
-    def __init__(self, config: StepAudio2TextConfig):
+    def __init__(self, config: LycheeFDConfig):
         super().__init__(config)
         if isinstance(config.torch_dtype, str):
             dtype = getattr(torch, config.torch_dtype)
@@ -220,10 +220,10 @@ class StepAudio2FullDuplex(PreTrainedModel, GenerationMixin):
         # embeddings, then outputs stoken logits after merge_layer_num layers.
         self.merge_model = Qwen2Model(config.merge_layer_config) if getattr(config, "merge_layer_config", None) is not None and config.merge_layer_config.num_hidden_layers > 0 else None
 
-        # V8: stoken branch index is unchanged.
+        # The speech-token branch uses the final configured backbone layers.
         self.stoken_model_index = config.text_config.num_hidden_layers - config.stoken_layer_config.num_hidden_layers
 
-        # V8: control branch index uses control_branch_layer, decoupled from
+        # The control branch index uses control_branch_layer, independently of
         # control_layer_num.
         # control_branch_layer selects the hidden states from the backbone.
         # control_layer_config.num_hidden_layers is the depth of control_model.

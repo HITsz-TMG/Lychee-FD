@@ -1,6 +1,6 @@
-# StepAudio Full-Duplex Training
+# Lychee-FD Training
 
-This package contains the training code for the StepAudio full-duplex model,
+This package contains the training code for Lychee-FD,
 including supervised text, speech-token, control-token, and backchannel training.
 
 ## Contents
@@ -8,19 +8,18 @@ including supervised text, speech-token, control-token, and backchannel training
 ```
 Training_package/
 ├── README.md
-├── package_training_code.sh
 ├── Script/
-│   ├── StepAudioFullDuplexV9_9.sh
+│   ├── LycheeFD.sh
 │   └── deepspeed_zero2_high.conf
 └── Code/
-    ├── Train_StepAudioFullDuplexV9.py
+    ├── Train_LycheeFD.py
     ├── training_utils.py
     ├── Models/
-    │   ├── StepAudioDuplexV9.py
+    │   ├── LycheeFD.py
     │   ├── modeling_step_audio_2.py
     │   └── configuration_step_audio_2.py
     └── DataLoaders/
-        ├── StepAudioDuplexDatasetV8.py
+        ├── LycheeFDDataset.py
         └── datasets_utils.py
 ```
 
@@ -43,7 +42,7 @@ speech-token paths. Backchannel fields are used when `--enable_user_bc` or
 
 ## Run
 
-Edit paths in `Script/StepAudioFullDuplexV9_9.sh` first:
+Edit paths in `Script/LycheeFD.sh` first:
 
 - `SAVE_PATH`
 - `MODEL_PATH`
@@ -54,7 +53,7 @@ Edit paths in `Script/StepAudioFullDuplexV9_9.sh` first:
 Then launch:
 
 ```bash
-bash Script/StepAudioFullDuplexV9_9.sh
+bash Script/LycheeFD.sh
 ```
 
 The script automatically resumes from the latest `checkpoint-<step>` under
@@ -63,9 +62,9 @@ StepAudio-2 model and adds the full-duplex special tokens.
 
 ## Main Files
 
-- `Code/Train_StepAudioFullDuplexV9.py`: argument parsing, model
+- `Code/Train_LycheeFD.py`: argument parsing, model
   initialization, tokenizer setup, and HuggingFace `Trainer` startup.
-- `Code/DataLoaders/StepAudioDuplexDatasetV8.py`: dataset loading, turn
+- `Code/DataLoaders/LycheeFDDataset.py`: dataset loading, turn
   assembly, backchannel insertion, audio feature extraction, and data collator.
-- `Code/Models/StepAudioDuplexV9.py`: full-duplex model and losses.
-- `Script/StepAudioFullDuplexV9_9.sh`: example DeepSpeed launch command.
+- `Code/Models/LycheeFD.py`: full-duplex model and losses.
+- `Script/LycheeFD.sh`: example DeepSpeed launch command.

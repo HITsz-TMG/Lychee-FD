@@ -43,11 +43,11 @@ from transformers import (
     AutoTokenizer,
 )
 
-from DataLoaders.StepAudioDuplexDatasetV8 import DataCollatorForSupervisedDataset, LazySupervisedDataset
+from DataLoaders.LycheeFDDataset import DataCollatorForSupervisedDataset, LazySupervisedDataset
 
-from Models.StepAudioDuplexV9 import (
-    StepAudio2FullDuplexConfig, 
-    StepAudio2FullDuplex
+from Models.LycheeFD import (
+    LycheeFDConfig,
+    LycheeFD,
 )
  
 
@@ -62,9 +62,9 @@ class ModelArguments:
     # It fuses stoken hidden states with left-shifted text embeddings to improve
     # stoken logits. Enabled when > 0.
     merge_layer_num: int = field(default=0)
-    # V8: the control head branches from the X-th layer from the end of the
-    # backbone, decoupled from control_layer_num. Defaults to control_layer_num
-    # for V6/V7 compatibility.
+    # The control head branches from the X-th layer from the end of the
+    # backbone, independently of control_layer_num. It defaults to
+    # control_layer_num.
     control_branch_layer: int = field(default=None)
     adding_text_hiddenstates: bool = field(default=False)
     no_text_label: bool = field(default=False) # Remove text-channel supervision and generate stokens directly.
@@ -177,7 +177,7 @@ def initial_model(model_path, training_args, model_args):
     control_config["num_hidden_layers"] = model_args.control_layer_num
     merge_config["num_hidden_layers"] = model_args.merge_layer_num
 
-    # V8: control_branch_layer falls back to control_layer_num by default.
+    # control_branch_layer falls back to control_layer_num by default.
     control_branch_layer = model_args.control_branch_layer if model_args.control_branch_layer is not None else model_args.control_layer_num
 
     new_model_config = dict(
@@ -208,12 +208,12 @@ def initial_model(model_path, training_args, model_args):
         **model_config
 
     )
-    new_model_config = StepAudio2FullDuplexConfig(**new_model_config)
+    new_model_config = LycheeFDConfig(**new_model_config)
 
     rank0_print(new_model_config)
 
 
-    model = StepAudio2FullDuplex._from_config(
+    model = LycheeFD._from_config(
         new_model_config, 
         torch_dtype=model_dtype,
         attn_implementation=training_args.attn_implementation,
@@ -237,7 +237,7 @@ def initial_model(model_path, training_args, model_args):
             if model_args.merge_layer_num > 0 and layer >= model.config.text_config.num_hidden_layers - model_args.merge_layer_num:
                 target_layer = layer - (model.config.text_config.num_hidden_layers - model_args.merge_layer_num)
                 state_dict[f"merge_model.layers.{target_layer}{rest}"] = state_dict[k]
-            # V8: control model weights are still initialized from the last
+            # Control model weights are initialized from the last
             # control_layer_num backbone layers. control_branch_layer only
             # selects the hidden-state branch point in forward.
             if layer >= model.config.text_config.num_hidden_layers - model_args.control_layer_num:
@@ -298,7 +298,7 @@ def train():
         )
         
     else:
-        model = StepAudio2FullDuplex.from_pretrained(
+        model = LycheeFD.from_pretrained(
             model_args.model_name_or_path,
             cache_dir=training_args.cache_dir,
             attn_implementation=training_args.attn_implementation,

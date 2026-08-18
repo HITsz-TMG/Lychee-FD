@@ -1,77 +1,4 @@
-
 #!/bin/bash
-
-# oripath=$PWD
-# echo $oripath
-
-# echo "----------------------- INITIALIZE -----------------------"
-
-# wget <PROXY_SETUP_URL> -O enable_internet_proxy.sh
-# bash enable_internet_proxy.sh
-# source ~/.bashrc
-
-# sudo ln -s /path/to/shared_storage /path/to/workspace
-
-# source /path/to/miniconda3/etc/profile.d/conda.sh
-
-# conda activate full_duplex
-
-# echo "conda activate full_duplex"
-
-
-# echo "----------------------- PIP --------------------------"
-
-
-# pip install pip==24.0
-
-# pip install triton==3.1.0
-# pip install -r /path/to/requirements.txt
-# pip install qwen-omni-utils
-# pip install -U venus-api-base -i https://mirrors.cloud.tencent.com/pypi/simple/ --trusted-host mirrors.cloud.tencent.com
-# pip install -r /path/to/optional_requirements.txt
-# pip install flash-attn --no-build-isolation
-
-# pip list
-
-# echo "----------------------- ARGS --------------------------"
-
-# for arg in "$@"; do
-#   case $arg in
-#     --nproc_per_node=*)
-#       export NPROC_PER_NODE="${arg#*=}"
-#       ;;
-#     --nnodes=*)
-#       export NNODES="${arg#*=}"
-#       ;;
-#     --node_rank=*)
-#       export NODE_RANK="${arg#*=}" # accelerate launch checks NODE_RANK or MACHINE_RANK
-#       ;;
-#     --master_addr=*)
-#       export MASTER_ADDR="${arg#*=}"
-#       ;;
-#     --master_port=*)
-#       export MASTER_PORT="${arg#*=}"
-#       ;;
-#     *)
-#       # Collect remaining args and pass them to the Python script.
-#       SCRIPT_ARGS+=" $arg"
-#       ;;
-#   esac
-# done
-
-# # Check whether all required environment variables are set.
-# if [ -z "$NPROC_PER_NODE" ] || [ -z "$NNODES" ] || [ -z "$NODE_RANK" ] || [ -z "$MASTER_ADDR" ] || [ -z "$MASTER_PORT" ]; then
-#     echo "Error: Missing required parameters (--nproc_per_node, --nnodes, --node_rank, --master_addr, --master_port)"
-#     exit 1
-# fi
-
-# echo "Setting environment variables:"
-# echo "  NODE_RANK=$NODE_RANK"
-# echo "  NNODES=$NNODES"
-# echo "  NPROC_PER_NODE=$NPROC_PER_NODE"
-# echo "  MASTER_ADDR=$MASTER_ADDR"
-# echo "  MASTER_PORT=$MASTER_PORT"
-# echo "  SCRIPT_ARGS=$SCRIPT_ARGS"
 
 echo "----------------------- WANDB --------------------------"
 
@@ -79,7 +6,7 @@ PROJECT_ROOT="${PROJECT_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 cd "${PROJECT_ROOT}"
 
 export WANDB_API_KEY=''
-export WANDB_PROJECT='full_duplex'
+export WANDB_PROJECT='LycheeFD'
 
 # **WANDB_WATCH** (`str`, *optional* defaults to `"false"`):
 # Can be `"gradients"`, `"all"`, `"parameters"`, or `"false"`. Set to `"all"` to log gradients and
@@ -95,7 +22,7 @@ export WANDB_LOG_MODEL='false'
 
 time=$(date "+%m-%d-%H-%M")
 
-export NAME="stepaudio_full_duplex_v9_9"
+export NAME="LycheeFD"
 
 export HF_DATASETS_CACHE="${HF_DATASETS_CACHE:-/path/to/huggingface_cache}"
 
@@ -184,7 +111,7 @@ export TORCH_NCCL_ASYNC_ERROR_HANDLING=1
 deepspeed \
     --master_addr "localhost" \
     --master_port 9269 \
-    "${PROJECT_ROOT}/Code/Train_StepAudioFullDuplexV9.py" \
+    "${PROJECT_ROOT}/Code/Train_LycheeFD.py" \
     --attn_implementation flash_attention_2 \
     --deepspeed "${PROJECT_ROOT}/Script/deepspeed_zero2_high.conf" \
     --initialize $INITIALIZE \
@@ -226,6 +153,3 @@ deepspeed \
     --dataloader_num_workers 16 \
     --report_to "none" \
     --run_name "${NAME}_${time}"
-
-#  nohup bash /path/to/project/Script/StepAudioFullDuplexV9_9.sh > /path/to/logs/StepAudioFullDuplexV9_9.txt 2>&1 &
-
