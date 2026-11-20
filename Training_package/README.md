@@ -40,7 +40,7 @@ Datasets are loaded from local HuggingFace `Dataset` directories. Each row conta
 one conversation: user audio, turn timestamps, assistant text and precomputed
 StepAudio speech-token lists.
 
-See [Data format](DATA_GUIDE.md) for field definitions and timestamp conventions,
+See Data format ([English](DATA_GUIDE.md) | [中文](DATA_GUIDE_CN.md)) for field definitions and timestamp conventions,
 and [examples/conversation.json](examples/conversation.json) for a sample structure.
 
 ## Run

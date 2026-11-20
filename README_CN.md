@@ -31,7 +31,7 @@ Lychee-FD 是一个面向低延迟语音对话的全双工实时语音交互系�
 
 ## 🔥 最新动态
 
-- [2026/11/20] 📦 我们更新了经过功能验证的[训练数据处理代码](Training_package/Code/DataLoaders)及[使用说明](Training_package/DATA_GUIDE.md)。
+- [2026/11/20] 📦 我们更新了经过功能验证的[训练数据处理代码](Training_package/Code/DataLoaders)及[使用说明](Training_package/DATA_GUIDE_CN.md)。
 - [2026/07/10] 🎉 我们发布 Lychee-FD 代码、论文和在线演示网站。
 - [2026/07/07] 🏆 我们的论文入选 **ACL 2026** [**Outstanding Paper**](https://2026.aclweb.org/program/best_papers/#outstanding-papers)。
 
