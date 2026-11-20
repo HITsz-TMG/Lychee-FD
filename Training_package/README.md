@@ -20,6 +20,7 @@ Training_package/
     │   └── configuration_step_audio_2.py
     └── DataLoaders/
         ├── LycheeFDDataset.py
+        ├── augmentation.py
         └── datasets_utils.py
 ```
 
@@ -35,10 +36,12 @@ Training_package/
 
 ## Data
 
-Datasets are loaded from local HuggingFace `Dataset` directories. Each dataset
-entry should provide conversation turns, user audio paths, assistant text, and
-speech-token paths. Backchannel fields are used when `--enable_user_bc` or
-`--enable_ai_bc` is enabled.
+Datasets are loaded from local HuggingFace `Dataset` directories. Each row contains
+one conversation: user audio, turn timestamps, assistant text and precomputed
+StepAudio speech-token lists.
+
+See [Data format](DATA_GUIDE.md) for field definitions and timestamp conventions,
+and [examples/conversation.json](examples/conversation.json) for a sample structure.
 
 ## Run
 

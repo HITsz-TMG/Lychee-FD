@@ -25,6 +25,7 @@ from transformers.feature_extraction_utils import BatchFeature
 
 from training_utils import rank0_print
 from .datasets_utils import debug_print
+from .augmentation import DNSNoisePool, ambient_noise, mix_noise, word_intervals, pause_control_positions
 
 IGNORE_INDEX = -100
 
@@ -194,6 +195,28 @@ class LazySupervisedDataset(Dataset):
         self._bc_filter_log_interval = 250
         self._bc_filter_log_cnt = 0
         self._bc_filter_stat = self._new_bc_filter_stat()
+
+        self.enable_force_align_pause = getattr(data_args, "enable_force_align_pause", False)
+        self.force_align_pause_threshold = getattr(data_args, "force_align_pause_threshold", 0.5)
+        self.force_align_pause_harder_pause_only = getattr(data_args, "force_align_pause_harder_pause_only", False)
+        self.inject_noise = getattr(data_args, "inject_noise", False)
+        self.inject_dns_noise = getattr(data_args, "inject_dns_noise", 0.0)
+        self.dns_snr_lower = getattr(data_args, "dns_snr_lower", 10.0)
+        self.dns_snr_upper = getattr(data_args, "dns_snr_upper", 45.0)
+        self.control_start_weight = getattr(data_args, "control_token_start_positions_weight", 1.0)
+        self.control_interruption_weight = getattr(data_args, "control_token_interruption_start_listening_weight", 1.0)
+        self.control_pause_weight = getattr(data_args, "control_token_pause_keep_listening_weight", 1.0)
+        values = (self.inject_dns_noise, self.force_align_pause_threshold, self.dns_snr_lower,
+                  self.dns_snr_upper, self.control_start_weight, self.control_interruption_weight,
+                  self.control_pause_weight)
+        if not all(math.isfinite(v) for v in values):
+            raise ValueError("Augmentation and control-weight parameters must be finite")
+        if not 0 <= self.inject_dns_noise <= 1 or self.force_align_pause_threshold < 0:
+            raise ValueError("DNS probability must be in [0, 1]; pause threshold must be nonnegative")
+        if self.dns_snr_lower > self.dns_snr_upper or min(values[-3:]) < 0:
+            raise ValueError("Invalid SNR range or negative control weight")
+        self.dns_noise_pool = (DNSNoisePool(getattr(data_args, "dns_noise_dir", None), self.SAMPLE_RATE)
+                               if self.inject_dns_noise > 0 else None)
 
         self._resamplers = dict() 
 
@@ -725,11 +748,40 @@ class LazySupervisedDataset(Dataset):
         user_speech_wave, user_speech_token_num, _ = self.load_audio(path=None, audio=user_speech_wave)
         return user_speech_wave, user_speech_token_num
 
-    def _postprocess_user_audio(self, user_audio):
-        """Concatenate the full user-audio track without noise or background-speech augmentation."""
-        return np.concatenate(user_audio)
+    def _postprocess_user_audio(self, user_audio, speech_segments):
+        """Apply optional noise after assembling the complete user-side timeline."""
+        audio = np.concatenate(user_audio)
+        if self.inject_noise:
+            audio = mix_noise(audio, ambient_noise(len(audio)), speech_segments,
+                              self.SAMPLE_RATE, np.random.uniform(40, 60))
+        if self.dns_noise_pool is not None and random.random() < self.inject_dns_noise:
+            audio = mix_noise(audio, self.dns_noise_pool.sample_noise(len(audio)), speech_segments,
+                              self.SAMPLE_RATE, random.uniform(self.dns_snr_lower, self.dns_snr_upper))
+        return audio
 
-    def apply_mask_control_label(self, control_label_ids, forced_bc):
+    def _control_weights(self, labels, pause_positions, interruption_positions):
+        # Weighted control objective: sum(weight * CE) / number of valid labels.
+        weights = (labels != IGNORE_INDEX).float()
+        for pos in pause_positions:
+            if labels[pos] == self.keep_listening_token_id:
+                weights[pos] = self.control_pause_weight
+        weights[(labels == self.start_speaking_token_id) |
+                (labels == self.start_listening_token_id)] = self.control_start_weight
+        # BC start/keep share an ID: only the first BC in each run receives start weight.
+        previous = None
+        for pos, label in enumerate(labels.tolist()):
+            if label == IGNORE_INDEX:
+                continue
+            if label == self.start_bc_token_id and previous != self.start_bc_token_id:
+                weights[pos] = self.control_start_weight
+            previous = label
+        for pos in interruption_positions:
+            if labels[pos] != self.start_listening_token_id:
+                raise ValueError("Interruption weight must point to an S-L label")
+            weights[pos] = self.control_interruption_weight
+        return weights
+
+    def apply_mask_control_label(self, control_label_ids, forced_bc, forced_pause=()):
         """Control-label mask entrypoint.
 
         Keep-speaking tokens covered by user backchannel are always kept.
@@ -740,7 +792,7 @@ class LazySupervisedDataset(Dataset):
             start_token_ids={self.start_speaking_token_id, self.start_listening_token_id, self.start_bc_token_id},
             normal_keep_ratio=0.2,
             special_multiple=3,
-            forced_keep_positions=list(forced_bc),
+            forced_keep_positions=list(forced_bc) + list(forced_pause),
             stat_bc=forced_bc,
         )
 
@@ -830,6 +882,12 @@ class LazySupervisedDataset(Dataset):
             stoken_label_token      = stoken_label_token[:-1]   + [IGNORE_INDEX]
             stoken_mapping_token    = stoken_mapping_token[:-1] + [-1]
         
+        input_offset = sum(len(t) for t in acc["input_ids"])
+        acc["interruption_positions"].extend(
+            input_offset + pos for pos, label in enumerate(last_control_label)
+            if label == self.start_listening_token_id
+        )
+
         overlap_token_num = len(input_token)
 
         for c in range(chunk_num):
@@ -1243,6 +1301,9 @@ class LazySupervisedDataset(Dataset):
         # Accumulator for tokens and audio segments assembled from all turns.
         acc = {
             "user_audio": [],
+            "speech_segments": [],
+            "pause_positions": [],
+            "interruption_positions": [],
             "input_ids": [],
             "stoken_ids": [],
             "stoken_mapping": [],
@@ -1281,6 +1342,12 @@ class LazySupervisedDataset(Dataset):
                 global_user_speech_wave, user_info
             )
 
+            # Record active user intervals on the assembled timeline, excluding added padding.
+            audio_offset = sum(len(wave) for wave in acc["user_audio"]) / self.SAMPLE_RATE
+            raw_duration = min(user_info["end_time"], len(global_user_speech_wave) / self.SAMPLE_RATE) - user_info["start_time"]
+            acc["speech_segments"].append((audio_offset, audio_offset + raw_duration))
+            token_offset = sum(len(t) for t in acc["input_ids"])
+
             # 2. Handle this user segment, either initial/normal or continuing an interrupted AI turn.
             if state["last_ai_resposne_ids"] is None:
                 self._append_initial_user_turn(
@@ -1290,6 +1357,14 @@ class LazySupervisedDataset(Dataset):
                 self._append_continued_user_turn(
                     acc, conv, user_info, user_speech_wave, user_speech_token_num, state
                 )
+
+            if self.enable_force_align_pause:
+                positions = pause_control_positions(
+                    word_intervals(source_data, user_info), acc["control_label_ids"][-1],
+                    self.keep_listening_token_id, self.AUDIO_TOKEN_N_SAMPLE_ALIGN / self.SAMPLE_RATE,
+                    self.force_align_pause_threshold, self.force_align_pause_harder_pause_only,
+                )
+                acc["pause_positions"].extend(token_offset + pos for pos in positions)
 
             # 3. Handle this AI response, either interrupted or normally completed.
             self._append_ai_response_turn(
@@ -1337,7 +1412,7 @@ class LazySupervisedDataset(Dataset):
             q = self.stepaudio_audio_prepreocess(a, debug=True)
             assert len(q['input_ids']) == len(t) == len(i) == len(c) == len(cl) == len(si) == len(sli) == len(sm)
 
-        user_audio = self._postprocess_user_audio(user_audio)
+        user_audio = self._postprocess_user_audio(user_audio, acc["speech_segments"])
         
         user_audio_input = self.stepaudio_audio_prepreocess(user_audio) 
         input_ids           = torch.cat([torch.tensor(t, dtype=torch.long) for t in input_ids], dim=0)
@@ -1385,6 +1460,10 @@ class LazySupervisedDataset(Dataset):
         control_label_ids = self.apply_mask_control_label(
             control_label_ids,
             forced_bc_positions,
+            acc["pause_positions"],
+        )
+        control_label_weight = self._control_weights(
+            control_label_ids, acc["pause_positions"], acc["interruption_positions"]
         )
 
         prefix_input_ids = self.tokenizer([SYSTEM_MESSAGE_PREFIX], add_special_tokens=False, return_tensors='pt').input_ids[0]
@@ -1394,6 +1473,7 @@ class LazySupervisedDataset(Dataset):
         labels = torch.cat((torch.ones_like(prefix_input_ids, dtype=torch.long, device=text_label_ids.device) * IGNORE_INDEX, text_label_ids), dim=0)
         stoken_label_ids = torch.cat((torch.ones_like(prefix_input_ids, dtype=torch.long, device=text_label_ids.device) * IGNORE_INDEX, stoken_label_ids), dim=0)
         control_label_ids = torch.cat((torch.ones_like(prefix_input_ids, dtype=torch.long, device=control_label_ids.device) * IGNORE_INDEX, control_label_ids), dim=0)
+        control_label_weight = torch.cat((torch.zeros_like(prefix_input_ids, dtype=torch.float), control_label_weight))
         audio_input_ids = torch.tensor(audio_input_ids, dtype=torch.long)
         attention_mask = torch.ones_like(input_ids, dtype=torch.long)
         
@@ -1406,6 +1486,7 @@ class LazySupervisedDataset(Dataset):
             "labels": labels,
             "stoken_label_ids": stoken_label_ids,
             "control_label_ids": control_label_ids,
+            "control_label_weight": control_label_weight,
             "wavs": feats,
             "wav_lens": feats_lengths,
             "attention_mask": attention_mask,
@@ -1454,6 +1535,10 @@ class DataCollatorForSupervisedDataset(object):
             padding_value=0).transpose(1, 2)
         wav_lens = torch.cat(wav_lens, dim=0)
 
+        control_label_weight = torch.nn.utils.rnn.pad_sequence(
+            [instance.get("control_label_weight", (instance["control_label_ids"] != IGNORE_INDEX).float())
+             for instance in instances], batch_first=True, padding_value=0.0,
+        )
         batch = dict(
             input_ids=input_ids,
             stoken_ids=stoken_ids,
@@ -1463,6 +1548,7 @@ class DataCollatorForSupervisedDataset(object):
             labels=labels,
             stoken_label_ids=stoken_label_ids,
             control_label_ids=control_label_ids,
+            control_label_weight=control_label_weight,
             attention_mask=attention_mask,
             wavs=wavs,
             wav_lens=wav_lens,

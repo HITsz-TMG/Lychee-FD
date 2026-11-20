@@ -88,6 +88,19 @@ class DataArguments:
     ai_bc_min_gap_sec: float = field(default=5.0)
     ai_bc_max_num: int = field(default=3)
 
+    # Optional E2E data augmentation. All defaults preserve the original recipe.
+    enable_force_align_pause: bool = field(default=False)
+    force_align_pause_threshold: float = field(default=0.5)
+    force_align_pause_harder_pause_only: bool = field(default=False)
+    inject_noise: bool = field(default=False)
+    inject_dns_noise: float = field(default=0.0)
+    dns_noise_dir: Optional[str] = field(default=None)
+    dns_snr_lower: float = field(default=10.0)
+    dns_snr_upper: float = field(default=45.0)
+    control_token_interruption_start_listening_weight: float = field(default=1.0)
+    control_token_start_positions_weight: float = field(default=1.0)
+    control_token_pause_keep_listening_weight: float = field(default=1.0)
+
     window_second: float = field(default=24)
     align_audio_input: bool = field(default=False)
     max_data_length: int = field(default=10000)

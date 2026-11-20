@@ -299,12 +299,12 @@ class LycheeFD(PreTrainedModel, GenerationMixin):
         return stoken_ids
 
     def clamp_loss_fn(self, logits, labels, min_clamp=None, max_clamp=None, reduction='mean',
-                      use_focal_loss=False, focal_loss_beta=2.0):
+                      use_focal_loss=False, focal_loss_beta=2.0, label_weight=None):
         # Shift so that tokens < n predict n
         shift_logits = logits[..., :-1, :].contiguous()
         shift_labels = labels[..., 1:].contiguous()
         # Flatten the tokens
-        loss_reduction = 'none' if use_focal_loss else reduction
+        loss_reduction = 'none' if use_focal_loss or label_weight is not None else reduction
         loss_fct = CrossEntropyLoss(reduction=loss_reduction, ignore_index=-100)
         shift_logits = shift_logits.view(-1, self.config.text_config.vocab_size)
         shift_labels = shift_labels.view(-1)
@@ -328,6 +328,15 @@ class LycheeFD(PreTrainedModel, GenerationMixin):
             pt = F.softmax(shift_logits, dim=-1).gather(1, safe_labels.unsqueeze(1)).squeeze(1)
             focal_factor = (1.0 - pt).clamp_min(0.0).pow(float(focal_loss_beta))
             loss = loss * focal_factor.to(dtype=loss.dtype) * valid_mask_for_focal.to(dtype=loss.dtype)
+        if label_weight is not None:
+            if label_weight.shape != labels.shape:
+                raise ValueError("Control weights must have the same shape as labels")
+            if reduction != 'mean':
+                raise ValueError("Weighted control loss supports mean reduction only")
+            weights = label_weight[..., 1:].contiguous().view(-1).to(loss.device, dtype=loss.dtype)
+            valid = (~shift_label_mask).to(loss.dtype)
+            # Normalize by valid-label count; weights scale contributions.
+            return (loss * weights * valid).sum() / valid.sum().clamp_min(1.0)
         if use_focal_loss:
             valid_mask = (~shift_label_mask).to(device=loss.device, dtype=loss.dtype)
             if reduction == 'mean':
@@ -362,6 +371,7 @@ class LycheeFD(PreTrainedModel, GenerationMixin):
         labels: Optional[torch.LongTensor] = None,
         stoken_label_ids: Optional[torch.LongTensor] = None,
         control_label_ids: Optional[torch.LongTensor] = None,
+        control_label_weight: Optional[torch.FloatTensor] = None,
         use_cache: Optional[bool] = None,
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
@@ -528,6 +538,7 @@ class LycheeFD(PreTrainedModel, GenerationMixin):
                     control_label_ids,
                     self.config.control_token_ids_min,
                     self.config.start_bc_token_id + 1,
+                    label_weight=control_label_weight,
                     use_focal_loss=self.config.control_token_use_focal_loss,
                     focal_loss_beta=self.config.control_token_focal_loss_beta,
                 )

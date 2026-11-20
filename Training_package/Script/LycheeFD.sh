@@ -121,6 +121,17 @@ deepspeed \
     --max_data_length 6000 \
     --control_token_chunk_size 10 \
     --window_second 0.4 \
+    --enable_force_align_pause "${ENABLE_FORCE_ALIGN_PAUSE:-False}" \
+    --force_align_pause_threshold "${FORCE_ALIGN_PAUSE_THRESHOLD:-0.5}" \
+    --force_align_pause_harder_pause_only "${FORCE_ALIGN_PAUSE_HARDER_ONLY:-False}" \
+    --inject_noise "${INJECT_NOISE:-False}" \
+    --inject_dns_noise "${INJECT_DNS_NOISE:-0}" \
+    --dns_noise_dir "${DNS_NOISE_DIR:-}" \
+    --dns_snr_lower "${DNS_SNR_LOWER:-10}" \
+    --dns_snr_upper "${DNS_SNR_UPPER:-45}" \
+    --control_token_interruption_start_listening_weight "${CONTROL_INTERRUPTION_WEIGHT:-1}" \
+    --control_token_start_positions_weight "${CONTROL_START_WEIGHT:-1}" \
+    --control_token_pause_keep_listening_weight "${CONTROL_PAUSE_WEIGHT:-1}" \
     --control_token_use_focal_loss False \
     --stoken_layer_num 4 \
     --merge_layer_num 4 \
